@@ -1,88 +1,201 @@
-# PitStop Triage
+<p align="center">
+  <h1 align="center">PitStop Triage</h1>
+  <p align="center">Triagem automotiva guiada que gera um diagnóstico prévio (CDP) antes da visita à oficina.</p>
+</p>
 
-Plataforma web responsiva de **triagem automotiva inteligente** com tema racing/pit lane.
-Captura veículo, zona afetada, sintomas e respostas guiadas → emite um **CDP (Código de Diagnóstico Prévio)** assistido por IA.
+---
 
-**Stack:** Angular 19 standalone + Signals · TailwindCSS 3 · Vercel Serverless · Google Gemini (`@google/genai`) · jsPDF.
+<p align="center">
+  <img src="https://github.com/joaoribeiroodev/pitstop-triage/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Angular-19-DD0031?logo=angular&logoColor=white" alt="Angular" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  <img src="https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white" alt="Vercel" />
+</p>
 
-## Rodando localmente
+---
 
-### Modo simples (sem IA — usa fallbacks locais)
+## Sobre
+
+O **PitStop Triage** é uma aplicação web que conduz o motorista ou recepcionista de oficina por uma triagem em cinco etapas — veículo, zona do problema, sintomas e refinamento com IA — e entrega um **Código de Diagnóstico Prévio (CDP)** estruturado. O sistema reduz idas e vindas na recepção ao organizar hipóteses técnicas, urgência e ações imediatas antes da inspeção presencial. É voltado a oficinas, entusiastas e equipes que precisam de um pré-diagnóstico rápido e documentado.
+
+---
+
+## Funcionalidades
+
+- 🚗 **Identificação do veículo** — consulta à tabela FIPE (API Parallelum) ou cadastro manual com observações
+- 🗺️ **Mapa interativo da zona afetada** — seleção visual da área do problema com visualização 3D do veículo
+- 🔧 **Catálogo de sintomas contextualizado** — checklist por zona, em linguagem acessível ao cliente
+- 🤖 **Refinamento com IA** — perguntas geradas pelo Google Gemini para afinar o diagnóstico
+- 📋 **CDP estruturado** — urgência, hipóteses calibradas, custos estimados, códigos OBD e ações imediatas
+- 🔒 **Conformidade LGPD** — tela de boas-vindas com consentimento, política de privacidade e exclusão de dados locais
+
+---
+
+## Stack tecnológica
+
+| Categoria | Tecnologia | Finalidade |
+|-----------|------------|------------|
+| Frontend | Angular 19 | SPA modular com rotas, guards e Signals |
+| Frontend | Tailwind CSS 3 | Estilização utilitária e tema racing/pit lane |
+| Frontend | Three.js | Visualização 3D do veículo na etapa de mapa |
+| Frontend | jsPDF | Geração do CDP em PDF no navegador |
+| Frontend | RxJS | Fluxos assíncronos e integração HTTP |
+| Backend | Vercel Serverless Functions | Endpoints `/api` em TypeScript |
+| Backend | `@google/genai` | Chamadas ao modelo Gemini com JSON Schema |
+| Backend | API FIPE (Parallelum) | Consulta de marcas, modelos, anos e valores |
+| DevOps | GitHub Actions | CI com lint, Prettier e build de produção |
+| DevOps | Vercel | Hospedagem do frontend e das funções serverless |
+
+---
+
+## Começando
+
+### Pré-requisitos
+
+- **Node.js** `>= 22` (definido em `package.json` → `engines`)
+- **npm** `10.9.2` (definido em `packageManager`)
+- Chave da API **Google Gemini** (obrigatória para as etapas de IA em produção e desenvolvimento completo)
+
+### Instalação
 
 ```bash
-npm install
-npm start          # ng serve com proxy /api -> http://localhost:3000
+git clone https://github.com/joaoribeiroodev/pitstop-triage.git
+cd pitstop-triage
+npm ci
 ```
 
-### Modo completo (com IA Gemini)
+### Variáveis de ambiente
 
-Crie `.env` na raiz (apenas a chave do Gemini — o resto é 100% gratuito):
+Crie um arquivo `.env` na raiz do projeto:
 
-```bash
+```env
+# Obrigatória para /api/gerar-diagnostico e /api/refinar-triagem
 GEMINI_API_KEY=sua_chave_aqui
-GEMINI_MODEL=gemini-2.5-flash       # opcional
+
+# Opcional — padrão: gemini-2.5-flash
+GEMINI_MODEL=gemini-2.5-flash
+
+# Opcional — porta do servidor local de API (padrão: 3000)
+API_DEV_PORT=3000
 ```
 
-> A chave do Gemini é obtida gratuitamente em https://aistudio.google.com/apikey (tier free com cota generosa).
+> Obtenha a chave gratuitamente em [Google AI Studio](https://aistudio.google.com/apikey).
 
-Suba o ambiente Vercel:
+### Execução local
+
+**Ambiente completo (Angular + API local em paralelo):**
 
 ```bash
-npm i -g vercel
-npm run start:full   # vercel dev (Angular + funções /api juntos em :3000)
+npm run dev
 ```
 
-> Se preferir rodar Angular separado (`npm start`) e Vercel em paralelo (`vercel dev --listen 3000`), o `proxy.conf.json` já encaminha `/api/*`.
+- Frontend: `http://localhost:4200` (proxy `/api` → `:3000`)
+- API dev: `http://localhost:3000` (emula as Vercel Functions via `scripts/dev-api.mjs`)
 
-## Fluxo
+**Somente frontend** (IA indisponível — componentes usam fallbacks locais):
 
-1. `/veiculo` — cascata **FIPE** (gratuita) **ou** entrada **manual** com campo livre de observações.
-2. `/mapa` — SVG inline com zonas clicáveis (mouse, toque e teclado) + atalhos.
-3. `/sintomas` — sintomas contextualizados, em linguagem leiga.
-4. `/chat-ia` — 2 perguntas de refinamento geradas por Gemini (com fallback local).
-5. `/resultado` — CDP técnico estruturado + download em PDF.
-
-## Tema visual
-
-- **Dark racing** permanente, com glassmorphism, glow neon laranja (`#FB923C`) e cyan (`#22D3EE`).
-- Tipografia: **Space Grotesk** (display) + **Inter** (texto) + **JetBrains Mono** (números).
-- Tokens em `tailwind.config.js` (`pit.*`) e utilitários em `src/styles.css`.
-
-## Estrutura
-
-```
-src/
-  app/
-    app.component.ts          # header + stepper + progresso
-    app.routes.ts
-    core/
-      triage-state.service.ts # Signals + persistência localStorage
-      diagnostico-api.service.ts
-      fipe.service.ts
-      sintomas.catalog.ts
-    pages/                    # veículo, mapa, sintomas, chat-ia, resultado
-api/
-  _shared.ts                  # CORS, validação, model
-  gerar-diagnostico.ts        # POST → JSON Schema Gemini
-  refinar-triagem.ts          # POST → 2 perguntas multi-escolha
-proxy.conf.json
-vercel.json
+```bash
+npm start
 ```
 
-## Scripts
+**Runtime Vercel unificado** (frontend + serverless juntos):
 
-| Comando                | O que faz                                         |
-| ---------------------- | ------------------------------------------------- |
-| `npm start`            | Angular dev server (com proxy `/api → :3000`)     |
-| `npm run start:full`   | `vercel dev` (Angular + serverless juntos)        |
-| `npm run build`        | Build de produção (`dist/pitstop-triage/browser`) |
-| `npm run lint`         | ESLint (TS + templates Angular + `api/`)          |
-| `npm run lint:fix`     | ESLint com `--fix`                                |
-| `npm run format`       | Prettier — formata todo o código                  |
-| `npm run format:check` | Prettier check (usado no CI)                      |
-| `npm run check`        | Pipeline completo: lint + format:check + build    |
-| `npm test`             | (placeholder)                                     |
+```bash
+npm run start:full
+```
 
-## CI
+**Validar o mesmo pipeline do CI:**
 
-`.github/workflows/ci.yml` roda em todo push/PR: `npm ci → lint → format:check → build` (Node 20, cache npm, artifact do `dist/` em pushes).
+```bash
+npm run check
+```
+
+| Comando | Descrição |
+|---------|-----------|
+| `npm run build` | Build de produção em `dist/pitstop-triage/browser` |
+| `npm run lint` | ESLint (TypeScript, templates Angular e `api/`) |
+| `npm run lint:fix` | ESLint com correção automática |
+| `npm run format` | Formata o código com Prettier |
+| `npm run format:check` | Verifica formatação (usado no CI) |
+
+---
+
+## Estrutura do projeto
+
+```
+pitstop-triage/
+├── api/                          # Vercel Serverless Functions (Gemini)
+│   ├── _shared.ts                # CORS, validação de triagem e chave Gemini
+│   ├── gerar-diagnostico.ts      # POST — gera o CDP estruturado
+│   └── refinar-triagem.ts        # POST — perguntas de refinamento da IA
+├── scripts/
+│   ├── dev-api.mjs               # Servidor HTTP local que emula as functions
+│   └── predev.mjs                # Libera portas 3000/4200 antes do `npm run dev`
+├── src/
+│   ├── app/
+│   │   ├── core/                 # Models, services, guards, constantes e dados
+│   │   ├── pages/                # Telas do fluxo (início, veículo, mapa, CDP…)
+│   │   ├── shared/               # Componentes reutilizáveis (car-3d, aviso LGPD)
+│   │   ├── app.module.ts         # Módulo raiz da aplicação
+│   │   └── app-routing.module.ts # Rotas principais e redirecionamento
+│   ├── index.html
+│   ├── main.ts                   # Bootstrap Angular
+│   └── styles.css                # Estilos globais e utilitários Tailwind
+├── .github/workflows/ci.yml      # Pipeline de lint, format e build
+├── proxy.conf.json               # Proxy /api → localhost:3000 no ng serve
+├── vercel.json                   # Build, output e rewrites para SPA + API
+├── angular.json                  # Configuração do Angular CLI
+└── package.json                  # Dependências, scripts e engines Node
+```
+
+**Padrão arquitetural:** Angular modular com separação **core / pages / shared**, estado centralizado em `TriageStateService` (Signals + `localStorage`) e rotas protegidas por guards de etapa e consentimento LGPD.
+
+---
+
+## Roadmap
+
+### Implementado
+
+- [x] Fluxo de triagem em 5 etapas com stepper e progresso
+- [x] Integração FIPE e entrada manual de veículo
+- [x] Mapa 3D com Three.js para seleção de zona
+- [x] Refinamento e CDP via Google Gemini com fallbacks locais
+- [x] Exportação do CDP em PDF
+- [x] Tela de boas-vindas, política de privacidade e fluxo LGPD
+- [x] CI no GitHub Actions (lint, Prettier, build)
+
+### Planejado
+
+- [ ] Suíte de testes automatizados (unitários e e2e)
+- [ ] Internacionalização (i18n) do fluxo de triagem
+- [ ] Painel ou API para oficinas receberem o CDP diretamente
+- [ ] Histórico de triagens com armazenamento opcional em backend
+- [ ] Modo PWA para uso offline nas etapas sem IA
+
+---
+
+## Contribuindo
+
+Contribuições são bem-vindas — bugs, melhorias de UX, ajustes no CDP e documentação ajudam bastante. Antes de abrir um PR, rode `npm run check` localmente. Consulte o [CONTRIBUTING.md](CONTRIBUTING.md) para diretrizes de branches, commits e revisão.
+
+---
+
+## Licença
+
+Este projeto está sob a licença **MIT** (nenhum arquivo `LICENSE` foi encontrado no repositório; padrão adotado para projetos open source).
+
+---
+
+## Autor
+
+<p align="center">
+  <strong>João Pedro Lima Ribeiro</strong><br />
+  Desenvolvedor do PitStop Triage
+</p>
+
+<p align="center">
+  <a href="https://github.com/joaoribeiroodev">
+    <img src="https://img.shields.io/badge/GitHub-joaoribeiroodev-181717?logo=github&logoColor=white" alt="GitHub" />
+  </a>
+</p>
