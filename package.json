@@ -17,7 +17,8 @@
     "lint:fix": "ng lint --fix",
     "format": "prettier --write \"{src,api}/**/*.{ts,html,css,md,json}\" \"*.{js,json,md}\"",
     "format:check": "prettier --check \"{src,api}/**/*.{ts,html,css,md,json}\" \"*.{js,json,md}\"",
-    "check": "npm run lint && npm run format:check && npm run build"
+    "typecheck:api": "tsc -p api/tsconfig.json --noEmit",
+    "check": "npm run lint && npm run format:check && npm run typecheck:api && npm run build"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

@@ -34,18 +34,18 @@ O **PitStop Triage** é uma aplicação web que conduz o motorista ou recepcioni
 
 ## Stack tecnológica
 
-| Categoria | Tecnologia | Finalidade |
-|-----------|------------|------------|
-| Frontend | Angular 19 | SPA modular com rotas, guards e Signals |
-| Frontend | Tailwind CSS 3 | Estilização utilitária e tema racing/pit lane |
-| Frontend | Three.js | Visualização 3D do veículo na etapa de mapa |
-| Frontend | jsPDF | Geração do CDP em PDF no navegador |
-| Frontend | RxJS | Fluxos assíncronos e integração HTTP |
-| Backend | Vercel Serverless Functions | Endpoints `/api` em TypeScript |
-| Backend | `@google/genai` | Chamadas ao modelo Gemini com JSON Schema |
-| Backend | API FIPE (Parallelum) | Consulta de marcas, modelos, anos e valores |
-| DevOps | GitHub Actions | CI com lint, Prettier e build de produção |
-| DevOps | Vercel | Hospedagem do frontend e das funções serverless |
+| Categoria | Tecnologia                  | Finalidade                                      |
+| --------- | --------------------------- | ----------------------------------------------- |
+| Frontend  | Angular 19                  | SPA modular com rotas, guards e Signals         |
+| Frontend  | Tailwind CSS 3              | Estilização utilitária e tema racing/pit lane   |
+| Frontend  | Three.js                    | Visualização 3D do veículo na etapa de mapa     |
+| Frontend  | jsPDF                       | Geração do CDP em PDF no navegador              |
+| Frontend  | RxJS                        | Fluxos assíncronos e integração HTTP            |
+| Backend   | Vercel Serverless Functions | Endpoints `/api` em TypeScript                  |
+| Backend   | `@google/genai`             | Chamadas ao modelo Gemini com JSON Schema       |
+| Backend   | API FIPE (Parallelum)       | Consulta de marcas, modelos, anos e valores     |
+| DevOps    | GitHub Actions              | CI com lint, Prettier e build de produção       |
+| DevOps    | Vercel                      | Hospedagem do frontend e das funções serverless |
 
 ---
 
@@ -111,13 +111,13 @@ npm run start:full
 npm run check
 ```
 
-| Comando | Descrição |
-|---------|-----------|
-| `npm run build` | Build de produção em `dist/pitstop-triage/browser` |
-| `npm run lint` | ESLint (TypeScript, templates Angular e `api/`) |
-| `npm run lint:fix` | ESLint com correção automática |
-| `npm run format` | Formata o código com Prettier |
-| `npm run format:check` | Verifica formatação (usado no CI) |
+| Comando                | Descrição                                          |
+| ---------------------- | -------------------------------------------------- |
+| `npm run build`        | Build de produção em `dist/pitstop-triage/browser` |
+| `npm run lint`         | ESLint (TypeScript, templates Angular e `api/`)    |
+| `npm run lint:fix`     | ESLint com correção automática                     |
+| `npm run format`       | Formata o código com Prettier                      |
+| `npm run format:check` | Verifica formatação (usado no CI)                  |
 
 ---
 
