@@ -1,0 +1,32 @@
+<div #host class="car3d-host">
+  <canvas #canvas class="car3d-canvas" aria-label="Modelo 3D do veículo"></canvas>
+
+  <div class="car3d-labels">
+    @for (h of hotspotsForTemplate; track h.id) {
+      <button
+        type="button"
+        class="car3d-label"
+        [class.is-selected]="selected === h.id"
+        [class.is-hover]="hovered === h.id"
+        [attr.aria-pressed]="selected === h.id"
+        [style.transform]="h.transform"
+        [style.opacity]="h.opacity"
+        [style.pointer-events]="h.opacity === 0 ? 'none' : 'auto'"
+        (click)="selectFromLabel(h.id)"
+        (mouseenter)="hoverFromLabel(h.id)"
+        (mouseleave)="hoverFromLabel(null)"
+      >
+        <span class="car3d-label-icon" aria-hidden="true">{{ h.icone }}</span>
+        <span class="car3d-label-text">{{ h.label }}</span>
+      </button>
+    }
+
+    <div class="car3d-hud">
+      <button type="button" class="car3d-hud-btn" (click)="resetView()" title="Resetar visão" aria-label="Resetar visão">↺</button>
+      <button type="button" class="car3d-hud-btn" (click)="zoomBy(0.85)" title="Zoom +" aria-label="Aproximar">＋</button>
+      <button type="button" class="car3d-hud-btn" (click)="zoomBy(1.18)" title="Zoom -" aria-label="Afastar">−</button>
+    </div>
+
+    <div class="car3d-hint" aria-hidden="true">arraste para girar · scroll/pinça para zoom · clique nas zonas</div>
+  </div>
+</div>

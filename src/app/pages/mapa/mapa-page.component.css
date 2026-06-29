@@ -1,0 +1,17 @@
+.car3d-wrap {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 75%;
+  min-height: 360px;
+}
+.car3d-wrap > app-car-3d {
+  position: absolute;
+  inset: 0;
+}
+@media (min-width: 1024px) {
+  .car3d-wrap {
+    padding-bottom: 0;
+    height: 540px;
+  }
+}

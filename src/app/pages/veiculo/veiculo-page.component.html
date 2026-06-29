@@ -1,0 +1,213 @@
+<section class="page-shell gap-6 animate-fade-up">
+  <header class="flex flex-col gap-2">
+    <span class="chip-signal w-fit">Etapa 1 · Identificação</span>
+    <h1 class="font-display text-3xl font-bold leading-tight text-pit-ink sm:text-4xl">
+      Quem é o paciente do <span class="text-pit-signal">box</span>?
+    </h1>
+    <p class="max-w-2xl text-sm text-pit-mute sm:text-base">
+      Use a tabela <strong class="text-pit-ink">FIPE</strong> (gratuita) para identificar o veículo automaticamente, ou preencha os campos
+      manualmente.
+    </p>
+  </header>
+
+  <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+    <article class="panel-strong relative overflow-hidden p-5 sm:p-7">
+      <div class="absolute inset-x-0 top-0 stripes-divider"></div>
+
+      <div
+        role="tablist"
+        aria-label="Forma de identificação"
+        class="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-white/5 bg-pit-surface/60 p-1"
+      >
+        <button
+          role="tab"
+          type="button"
+          class="focus-ring rounded-lg px-3 py-2 text-sm font-bold transition"
+          [class]="
+            modo() === 'fipe'
+              ? 'bg-gradient-to-br from-pit-signal to-pit-signalDeep text-pit-bg shadow-glow'
+              : 'text-pit-mute hover:text-pit-ink'
+          "
+          [attr.aria-selected]="modo() === 'fipe'"
+          (click)="setModo('fipe')"
+        >
+          <span aria-hidden="true">📋</span> Tabela FIPE
+        </button>
+        <button
+          role="tab"
+          type="button"
+          class="focus-ring rounded-lg px-3 py-2 text-sm font-bold transition"
+          [class]="
+            modo() === 'manual'
+              ? 'bg-gradient-to-br from-pit-cyan to-pit-signal text-pit-bg shadow-glowCyan'
+              : 'text-pit-mute hover:text-pit-ink'
+          "
+          [attr.aria-selected]="modo() === 'manual'"
+          (click)="setModo('manual')"
+        >
+          <span aria-hidden="true">✍️</span> Manual
+        </button>
+      </div>
+
+      @if (modo() === 'fipe') {
+        <section class="grid gap-4">
+          <p class="text-xs text-pit-dim">
+            Cascata <strong class="text-pit-ink">Marca → Modelo → Ano</strong> consultando a base pública FIPE — preenche o código FIPE
+            automaticamente.
+          </p>
+
+          <div class="grid gap-4 sm:grid-cols-3">
+            <label class="label">
+              Marca
+              <select class="field" [ngModel]="marcaSelecionada()" (ngModelChange)="selecionarMarca($event)">
+                <option value="">Selecione</option>
+                @for (marca of marcas(); track marca.codigo) {
+                  <option [value]="marca.codigo">{{ marca.nome }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="label">
+              Modelo
+              <select
+                class="field"
+                [disabled]="!marcaSelecionada() || modelos().length === 0"
+                [ngModel]="modeloSelecionado()"
+                (ngModelChange)="selecionarModelo($event)"
+              >
+                <option value="">Selecione</option>
+                @for (modelo of modelos(); track modelo.codigo) {
+                  <option [value]="modelo.codigo">{{ modelo.nome }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="label">
+              Ano
+              <select
+                class="field"
+                [disabled]="!modeloSelecionado() || anos().length === 0"
+                [ngModel]="anoSelecionado()"
+                (ngModelChange)="selecionarAno($event)"
+              >
+                <option value="">Selecione</option>
+                @for (ano of anos(); track ano.codigo) {
+                  <option [value]="ano.codigo">{{ ano.nome }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          @if (carregando()) {
+            <p class="inline-flex items-center gap-2 text-xs font-semibold text-pit-cyan">
+              <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-pit-cyan"></span>
+              Consultando FIPE...
+            </p>
+          }
+        </section>
+      } @else {
+        <section class="grid gap-4">
+          <p class="text-xs text-pit-dim">Útil para veículos antigos, importados ou quando a FIPE não tiver retornado o modelo exato.</p>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="label">
+              Marca *
+              <input
+                class="field"
+                type="text"
+                placeholder="Ex.: Ford"
+                [ngModel]="manualMarca()"
+                (ngModelChange)="setManual({ marca: $event })"
+              />
+            </label>
+
+            <label class="label">
+              Modelo *
+              <input
+                class="field"
+                type="text"
+                placeholder="Ex.: Ka 1.0 SE"
+                [ngModel]="manualModelo()"
+                (ngModelChange)="setManual({ modelo: $event })"
+              />
+            </label>
+
+            <label class="label">
+              Ano *
+              <input
+                class="field"
+                type="number"
+                inputmode="numeric"
+                min="1950"
+                [max]="anoAtual"
+                placeholder="Ex.: 2019"
+                [ngModel]="manualAno()"
+                (ngModelChange)="setManual({ ano: $event })"
+              />
+            </label>
+
+            <label class="label">
+              Versão / motor (opcional)
+              <input
+                class="field"
+                type="text"
+                placeholder="Ex.: 1.0 Flex 12V"
+                [ngModel]="manualVersao()"
+                (ngModelChange)="setManual({ versao: $event })"
+              />
+            </label>
+          </div>
+
+          <label class="label">
+            Observações para a IA (opcional)
+            <textarea
+              class="field min-h-[88px] py-2.5"
+              placeholder="Ex.: rodou 180 mil km, sempre Shell V-Power, último óleo trocado há 4 meses"
+              [ngModel]="manualObservacoes()"
+              (ngModelChange)="setManual({ observacoes: $event })"
+            ></textarea>
+          </label>
+        </section>
+      }
+
+      @if (erro()) {
+        <div class="mt-4 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-3 text-sm text-pit-warn">
+          {{ erro() }}
+        </div>
+      }
+
+      <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button class="secondary-button" type="button" (click)="limpar()"><span aria-hidden="true">↺</span> Limpar tudo</button>
+        <button class="primary-button" [disabled]="!state.podeIrParaMapa()" (click)="avancar()">
+          Continuar para o mapa <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </article>
+
+    <aside class="panel relative overflow-hidden p-5 sm:p-7">
+      <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-pit-signal/15 blur-3xl"></div>
+
+      <h2 class="font-display text-xl font-bold text-pit-ink">Painel do veículo</h2>
+      <p class="mt-1 text-sm text-pit-mute">Dados consolidados antes de partir.</p>
+
+      <dl class="mt-5 grid gap-3 text-sm">
+        @for (item of resumo(); track item.label) {
+          <div class="rounded-xl border border-white/5 bg-pit-surface/60 p-3.5">
+            <dt class="text-[11px] font-bold uppercase tracking-wider text-pit-dim">{{ item.label }}</dt>
+            <dd class="mt-1 font-display text-base font-semibold text-pit-ink">
+              {{ item.value || '—' }}
+            </dd>
+          </div>
+        }
+      </dl>
+
+      <div class="mt-6 rounded-xl border border-white/5 bg-gradient-to-br from-pit-signal/10 to-transparent p-4 text-xs text-pit-mute">
+        <p class="font-semibold text-pit-ink">💡 Dica de pit</p>
+        <p class="mt-1">
+          Quanto mais preciso o veículo, melhor a IA contextualiza hipóteses na etapa final. O campo de observações no modo manual vai
+          direto para o prompt do diagnóstico.
+        </p>
+      </div>
+    </aside>
+  </div>
+</section>

@@ -1,0 +1,90 @@
+<section class="page-shell gap-6 animate-fade-up">
+  <header class="flex flex-col gap-2">
+    <span class="chip-signal w-fit">Etapa 3 · Sintomas</span>
+    <h1 class="font-display text-3xl font-bold leading-tight text-pit-ink sm:text-4xl">
+      O que está <span class="text-pit-signal">acontecendo</span>?
+    </h1>
+    <p class="max-w-2xl text-sm text-pit-mute sm:text-base">
+      Marque tudo o que o cliente descreveu sobre a área
+      <strong class="text-pit-ink">{{ zonaLabel() }}</strong
+      >. Quanto mais sinais, melhor o CDP.
+    </p>
+  </header>
+
+  @if (!state.zonaSelecionada()) {
+    <div class="panel-strong p-6">
+      <p class="font-semibold text-pit-ink">Escolha primeiro uma área no mapa.</p>
+      <p class="mt-1 text-sm text-pit-mute">Sintomas mudam conforme a zona do veículo.</p>
+      <button class="primary-button mt-5" type="button" (click)="voltar()">Abrir mapa</button>
+    </div>
+  } @else {
+    <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div class="grid gap-3 sm:grid-cols-2">
+        @for (sintoma of sintomas(); track sintoma) {
+          <button
+            type="button"
+            class="focus-ring group relative min-h-[112px] overflow-hidden rounded-2xl border p-4 text-left transition"
+            [class]="
+              selecionado(sintoma)
+                ? 'border-pit-signal bg-gradient-to-br from-pit-signal/15 to-transparent shadow-glow'
+                : 'border-white/5 bg-pit-card/60 hover:border-pit-signal/40 hover:bg-pit-card'
+            "
+            [attr.aria-pressed]="selecionado(sintoma)"
+            (click)="state.alternarSintoma(sintoma)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <span class="block text-[11px] font-bold uppercase tracking-wider text-pit-signal">{{ zonaLabel() }}</span>
+              <span
+                class="grid h-6 w-6 place-items-center rounded-md border text-xs font-bold transition"
+                [class]="
+                  selecionado(sintoma)
+                    ? 'border-pit-signal bg-pit-signal text-pit-bg'
+                    : 'border-white/15 text-pit-dim group-hover:border-pit-signal/40'
+                "
+                aria-hidden="true"
+                >{{ selecionado(sintoma) ? '✓' : '+' }}</span
+              >
+            </div>
+            <span class="mt-3 block font-display text-lg font-semibold text-pit-ink">{{ sintoma }}</span>
+          </button>
+        }
+      </div>
+
+      <aside class="panel relative overflow-hidden p-5 sm:p-7">
+        <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-pit-signal/15 blur-3xl"></div>
+
+        <h2 class="font-display text-xl font-bold text-pit-ink">Resumo da escuta</h2>
+        <p class="mt-1 text-sm text-pit-mute">
+          <span class="font-mono text-base font-bold text-pit-signal">{{ state.sintomas().length }}</span>
+          sintoma(s) marcado(s)
+        </p>
+
+        <div class="mt-4 grid gap-2">
+          @if (state.sintomas().length === 0) {
+            <p class="rounded-xl border border-dashed border-white/10 p-3 text-sm text-pit-dim">Nenhum sintoma marcado ainda.</p>
+          }
+          @for (sintoma of state.sintomas(); track sintoma) {
+            <div class="flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-pit-surface/60 px-3 py-2 text-sm">
+              <span class="text-pit-ink">{{ sintoma }}</span>
+              <button
+                class="ghost-button !min-h-0 !py-1 !text-xs"
+                type="button"
+                (click)="state.alternarSintoma(sintoma)"
+                aria-label="Remover"
+              >
+                ×
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button class="secondary-button" type="button" (click)="voltar()"><span aria-hidden="true">←</span> Mapa</button>
+          <button class="primary-button" [disabled]="state.sintomas().length === 0" (click)="avancar()">
+            Refinar com IA <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </aside>
+    </div>
+  }
+</section>
