@@ -9,15 +9,13 @@
     <h1 class="font-display text-2xl font-bold text-pit-ink sm:text-3xl">
       Bem-vindo ao <span class="text-pit-signal">PitStop Triage</span>
     </h1>
-    <p class="text-sm text-pit-mute">
-      Triagem do veículo em 5 etapas — do sintoma ao diagnóstico prévio (CDP) com apoio de IA.
-    </p>
+    <p class="text-sm text-pit-mute">Triagem do veículo em 5 etapas — do sintoma ao diagnóstico prévio (CDP) com apoio de IA.</p>
   </header>
 
   <article class="panel p-4 sm:p-5">
     <p class="text-sm leading-relaxed text-pit-mute">
-      Coletamos apenas dados do veículo e dos sintomas para gerar o CDP. As informações ficam salvas no seu
-      navegador; consultamos a API FIPE e o Google Gemini somente quando necessário.
+      Coletamos apenas dados do veículo e dos sintomas para gerar o CDP. As informações ficam salvas no seu navegador; consultamos a API
+      FIPE e o Google Gemini somente quando necessário.
     </p>
     <ul class="mt-3 space-y-1 text-xs text-pit-dim">
       <li>Não solicitamos nome, documento ou placa.</li>
@@ -28,24 +26,14 @@
     </p>
 
     <label class="mt-4 flex cursor-pointer items-start gap-2.5 rounded-lg border border-white/10 bg-pit-bg/40 p-3">
-      <input
-        type="checkbox"
-        class="mt-0.5 h-4 w-4 shrink-0 accent-pit-signal"
-        [checked]="aceitouPolitica()"
-        (change)="alternarAceite()"
-      />
+      <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 accent-pit-signal" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
       <span class="text-xs text-pit-mute">
         Li e aceito o tratamento dos meus dados conforme a
         <a routerLink="/privacidade" class="text-pit-cyan underline-offset-2 hover:underline">Política de Privacidade</a>.
       </span>
     </label>
 
-    <button
-      class="primary-button mt-4 w-full justify-center"
-      type="button"
-      [disabled]="!aceitouPolitica()"
-      (click)="comecar()"
-    >
+    <button class="primary-button mt-4 w-full justify-center" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
       Começar <span aria-hidden="true">→</span>
     </button>
   </article>

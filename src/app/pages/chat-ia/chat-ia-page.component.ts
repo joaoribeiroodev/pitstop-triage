@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, OnDestroy, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  computed,
+  inject,
+  OnDestroy,
+  signal
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, finalize, of, Subscription, TimeoutError } from 'rxjs';
 import { perguntasRefinamentoFallback } from '@core/data/refinamento.fallback';

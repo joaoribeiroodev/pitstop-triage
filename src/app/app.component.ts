@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { TRIAGE_STEPS } from '@core/constants/triage-steps';
 import { LgpdConsentService } from '@core/services/lgpd-consent.service';
@@ -38,7 +38,11 @@ export class AppComponent {
   }
 
   reiniciar(): void {
-    if (typeof window !== 'undefined' && !window.confirm('Reiniciar a triagem atual? Os dados preenchidos serão apagados.')) return;
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm('Reiniciar a triagem atual? Os dados preenchidos serão apagados.')
+    )
+      return;
     this.state.reiniciar();
     void this.router.navigateByUrl('/veiculo');
   }

@@ -58,7 +58,10 @@ export class ResultadoPageComponent {
       .gerarDiagnostico(this.state.snapshot())
       .pipe(
         catchError((err) => {
-          const prefix = err instanceof TimeoutError ? 'A IA demorou mais que o esperado (45s). ' : 'A API não respondeu agora. ';
+          const prefix =
+            err instanceof TimeoutError
+              ? 'A IA demorou mais que o esperado (45s). '
+              : 'A API não respondeu agora. ';
           this.erro.set(`${prefix}Foi gerado um CDP local de contingência.`);
           return of(diagnosticoCdpFallback(this.state.zonaSelecionada(), this.state.sintomas()));
         }),

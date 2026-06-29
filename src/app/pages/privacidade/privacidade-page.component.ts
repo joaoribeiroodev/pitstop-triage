@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { POLITICA_PRIVACIDADE_SECOES, POLITICA_PRIVACIDADE_VERSAO, CONTROLADOR_DADOS } from '@core/constants/lgpd.constants';
+import {
+  POLITICA_PRIVACIDADE_SECOES,
+  POLITICA_PRIVACIDADE_VERSAO,
+  CONTROLADOR_DADOS
+} from '@core/constants/lgpd.constants';
 
 @Component({
   selector: 'app-privacidade-page',
