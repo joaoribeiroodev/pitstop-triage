@@ -3,9 +3,9 @@ import { RouterModule, Routes } from '@angular/router';
 import { PAGES_ROUTES } from '@pages/pages.routes';
 
 const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'veiculo' },
+  { path: '', pathMatch: 'full', redirectTo: 'inicio' },
   ...PAGES_ROUTES,
-  { path: '**', redirectTo: 'veiculo' }
+  { path: '**', redirectTo: 'inicio' }
 ];
 
 @NgModule({

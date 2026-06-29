@@ -7,6 +7,9 @@
     <p class="max-w-2xl text-sm text-pit-mute sm:text-base">
       Análise técnica estruturada com hipóteses calibradas, custo estimado, OBD e descartes.
     </p>
+    <app-lgpd-notice
+      mensagem="O CDP é gerado com base nos dados informados e enviados à IA. O PDF é produzido localmente no seu navegador."
+    />
   </header>
 
   @if (!state.podeEmitirCdp()) {

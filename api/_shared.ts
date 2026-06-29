@@ -6,6 +6,7 @@ export function applyCors(req: VercelRequest, res: VercelResponse): boolean {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('X-Privacy-Policy', 'Dados processados apenas para triagem; sem persistência em banco.');
   if (req.method === 'OPTIONS') {
     res.status(204).end();
     return true;

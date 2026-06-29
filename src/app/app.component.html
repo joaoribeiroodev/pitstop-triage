@@ -2,7 +2,7 @@
   <header class="sticky top-0 z-30 border-b border-white/5 bg-pit-bg/80 backdrop-blur-xl">
     <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between gap-4">
-        <a routerLink="/veiculo" class="group flex items-center gap-3">
+        <a [routerLink]="exibirChromeTriagem() ? '/veiculo' : '/inicio'" class="group flex items-center gap-3">
           <span
             class="relative grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-pit-signal to-pit-signalDeep text-pit-bg shadow-glow"
           >
@@ -17,44 +17,48 @@
           </span>
         </a>
 
-        <div class="flex items-center gap-2">
-          <button type="button" class="ghost-button" (click)="reiniciar()" title="Reiniciar triagem">
-            <span aria-hidden="true">↺</span>
-            <span class="hidden sm:inline">Reiniciar</span>
-          </button>
-        </div>
-      </div>
-
-      <nav class="grid grid-cols-5 gap-1" aria-label="Etapas da triagem">
-        @for (step of steps; track step.path; let i = $index) {
-          @if (podeAcessarEtapa(step.path)) {
-            <a
-              [routerLink]="step.path"
-              routerLinkActive="active"
-              #rla="routerLinkActive"
-              class="step-pill"
-              [attr.aria-current]="rla.isActive ? 'step' : null"
-            >
-              <span class="num">{{ i + 1 }}</span>
-              <span class="hidden text-[11px] sm:inline">{{ step.label }}</span>
-              <span class="sm:hidden text-[11px]">{{ step.short }}</span>
-            </a>
-          } @else {
-            <span class="step-pill step-pill--locked" [attr.title]="'Complete a etapa anterior'">
-              <span class="num">{{ i + 1 }}</span>
-              <span class="hidden text-[11px] sm:inline">{{ step.label }}</span>
-              <span class="sm:hidden text-[11px]">{{ step.short }}</span>
-            </span>
-          }
+        @if (exibirChromeTriagem()) {
+          <div class="flex items-center gap-2">
+            <button type="button" class="ghost-button" (click)="reiniciar()" title="Reiniciar triagem">
+              <span aria-hidden="true">↺</span>
+              <span class="hidden sm:inline">Reiniciar</span>
+            </button>
+          </div>
         }
-      </nav>
-
-      <div class="flex items-center gap-3">
-        <div class="progress-rail">
-          <div class="progress-fill" [style.width.%]="progresso()"></div>
-        </div>
-        <span class="font-mono text-[11px] font-bold tabular-nums text-pit-mute">{{ progresso() }}%</span>
       </div>
+
+      @if (exibirChromeTriagem()) {
+        <nav class="grid grid-cols-5 gap-1" aria-label="Etapas da triagem">
+          @for (step of steps; track step.path; let i = $index) {
+            @if (podeAcessarEtapa(step.path)) {
+              <a
+                [routerLink]="step.path"
+                routerLinkActive="active"
+                #rla="routerLinkActive"
+                class="step-pill"
+                [attr.aria-current]="rla.isActive ? 'step' : null"
+              >
+                <span class="num">{{ i + 1 }}</span>
+                <span class="hidden text-[11px] sm:inline">{{ step.label }}</span>
+                <span class="sm:hidden text-[11px]">{{ step.short }}</span>
+              </a>
+            } @else {
+              <span class="step-pill step-pill--locked" [attr.title]="'Complete a etapa anterior'">
+                <span class="num">{{ i + 1 }}</span>
+                <span class="hidden text-[11px] sm:inline">{{ step.label }}</span>
+                <span class="sm:hidden text-[11px]">{{ step.short }}</span>
+              </span>
+            }
+          }
+        </nav>
+
+        <div class="flex items-center gap-3">
+          <div class="progress-rail">
+            <div class="progress-fill" [style.width.%]="progresso()"></div>
+          </div>
+          <span class="font-mono text-[11px] font-bold tabular-nums text-pit-mute">{{ progresso() }}%</span>
+        </div>
+      }
     </div>
   </header>
 
@@ -64,12 +68,16 @@
 
   <footer class="border-t border-white/5 bg-pit-bg/60">
     <div
-      class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-pit-dim sm:flex-row sm:px-6 lg:px-8"
+      class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-pit-dim sm:flex-row sm:px-6 lg:px-8"
     >
-      <span> Diagnóstico prévio — não substitui inspeção presencial. </span>
-      @if (urgencia()) {
-        <span class="chip-signal">Urgência: {{ urgencia() }}</span>
-      }
+      <span>Diagnóstico prévio — não substitui inspeção presencial.</span>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <a routerLink="/privacidade" class="text-pit-cyan hover:underline">Privacidade (LGPD)</a>
+        <button type="button" class="text-pit-warn hover:underline" (click)="excluirDados()">Excluir meus dados</button>
+        @if (urgencia() && exibirChromeTriagem()) {
+          <span class="chip-signal">Urgência: {{ urgencia() }}</span>
+        }
+      </div>
     </div>
   </footer>
 </div>
