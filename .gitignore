@@ -5,3 +5,4 @@ dist
 .env
 *.log
 .cursor/
+CONTEXTO_PROJETO_GEMINI.md
