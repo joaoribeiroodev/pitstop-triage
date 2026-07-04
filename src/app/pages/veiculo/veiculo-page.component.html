@@ -1,11 +1,11 @@
-<section class="page-shell gap-6 animate-fade-up">
-  <header class="flex flex-col gap-2">
-    <span class="chip-signal w-fit">Etapa 1 · Identificação</span>
-    <h1 class="font-display text-3xl font-bold leading-tight text-pit-ink sm:text-4xl">
+<section class="page-shell gap-8 animate-fade-up">
+  <header class="flex flex-col gap-3">
+    <span class="chip-signal w-fit">Etapa 01 · Identificação</span>
+    <h1 class="font-space text-3xl font-bold leading-tight text-white/90 sm:text-4xl">
       Quem é o paciente do <span class="text-pit-signal">box</span>?
     </h1>
-    <p class="max-w-2xl text-sm text-pit-mute sm:text-base">
-      Use a tabela <strong class="text-pit-ink">FIPE</strong> para identificar o veículo automaticamente, ou preencha os campos manualmente.
+    <p class="max-w-2xl font-inter text-sm text-white/60 sm:text-base">
+      Use a tabela <strong class="text-white/90">FIPE</strong> para identificar o veículo automaticamente, ou preencha os campos manualmente.
     </p>
     <app-lgpd-notice
       mensagem="No modo FIPE, consultamos a API pública Parallelum apenas com códigos de marca/modelo/ano. Evite incluir dados pessoais nas observações."
@@ -13,48 +13,48 @@
   </header>
 
   <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-    <article class="panel-strong relative overflow-hidden p-5 sm:p-7">
+    <article class="panel-strong relative overflow-hidden p-6 sm:p-8">
       <div class="absolute inset-x-0 top-0 stripes-divider"></div>
 
       <div
         role="tablist"
         aria-label="Forma de identificação"
-        class="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-white/5 bg-pit-surface/60 p-1"
+        class="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-pit-surface p-1"
       >
         <button
           role="tab"
           type="button"
-          class="focus-ring rounded-lg px-3 py-2 text-sm font-bold transition"
+          class="focus-ring rounded-lg px-4 py-2.5 font-inter text-sm font-bold transition-all duration-300 active:scale-95"
           [class]="
             modo() === 'fipe'
-              ? 'bg-gradient-to-br from-pit-signal to-pit-signalDeep text-pit-bg shadow-glow'
-              : 'text-pit-mute hover:text-pit-ink'
+              ? 'border border-pit-signal/40 bg-pit-signal text-pit-bg'
+              : 'border border-transparent text-white/60 hover:bg-pit-card hover:text-white/90'
           "
           [attr.aria-selected]="modo() === 'fipe'"
           (click)="setModo('fipe')"
         >
-          <span aria-hidden="true">📋</span> Tabela FIPE
+          Tabela FIPE
         </button>
         <button
           role="tab"
           type="button"
-          class="focus-ring rounded-lg px-3 py-2 text-sm font-bold transition"
+          class="focus-ring rounded-lg px-4 py-2.5 font-inter text-sm font-bold transition-all duration-300 active:scale-95"
           [class]="
             modo() === 'manual'
-              ? 'bg-gradient-to-br from-pit-cyan to-pit-signal text-pit-bg shadow-glowCyan'
-              : 'text-pit-mute hover:text-pit-ink'
+              ? 'border border-pit-signal/40 bg-pit-signal/15 text-pit-signal'
+              : 'border border-transparent text-white/60 hover:bg-pit-card hover:text-white/90'
           "
           [attr.aria-selected]="modo() === 'manual'"
           (click)="setModo('manual')"
         >
-          <span aria-hidden="true">✍️</span> Manual
+          Manual
         </button>
       </div>
 
       @if (modo() === 'fipe') {
-        <section class="grid gap-4">
-          <p class="text-xs text-pit-dim">
-            Cascata <strong class="text-pit-ink">Marca → Modelo → Ano</strong> consultando a base pública FIPE — preenche o código FIPE
+        <section class="grid gap-5">
+          <p class="font-inter text-xs text-white/40">
+            Cascata <strong class="text-white/90">Marca → Modelo → Ano</strong> consultando a base pública FIPE — preenche o código FIPE
             automaticamente.
           </p>
 
@@ -101,15 +101,15 @@
           </div>
 
           @if (carregando()) {
-            <p class="inline-flex items-center gap-2 text-xs font-semibold text-pit-cyan">
-              <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-pit-cyan"></span>
+            <p class="inline-flex items-center gap-2 font-mono text-xs font-semibold text-pit-signal">
+              <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-pit-signal"></span>
               Consultando FIPE...
             </p>
           }
         </section>
       } @else {
-        <section class="grid gap-4">
-          <p class="text-xs text-pit-dim">Útil para veículos antigos, importados ou quando a FIPE não tiver retornado o modelo exato.</p>
+        <section class="grid gap-5">
+          <p class="font-inter text-xs text-white/40">Útil para veículos antigos, importados ou quando a FIPE não tiver retornado o modelo exato.</p>
 
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="label">
@@ -163,7 +163,7 @@
           <label class="label">
             Observações para a IA (opcional)
             <textarea
-              class="field min-h-[88px] py-2.5"
+              class="field min-h-[96px] py-3 font-inter"
               placeholder="Ex.: rodou 180 mil km, sempre Shell V-Power, último óleo trocado há 4 meses"
               [ngModel]="manualObservacoes()"
               (ngModelChange)="setManual({ observacoes: $event })"
@@ -173,12 +173,12 @@
       }
 
       @if (erro()) {
-        <div class="mt-4 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-3 text-sm text-pit-warn">
+        <div class="mt-5 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-4 font-inter text-sm text-pit-warn">
           {{ erro() }}
         </div>
       }
 
-      <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <button class="secondary-button" type="button" (click)="limpar()"><span aria-hidden="true">↺</span> Limpar tudo</button>
         <button class="primary-button" [disabled]="!state.podeIrParaMapa()" (click)="avancar()">
           Continuar para o mapa <span aria-hidden="true">→</span>
@@ -186,26 +186,25 @@
       </div>
     </article>
 
-    <aside class="panel relative overflow-hidden p-5 sm:p-7">
-      <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-pit-signal/15 blur-3xl"></div>
+    <aside class="panel relative overflow-hidden p-6 sm:p-8">
+      <div class="mb-1 font-mono text-[10px] font-bold uppercase tracking-widest text-pit-signal">OBD · Painel</div>
+      <h2 class="font-space text-xl font-bold text-white/90">Dados do veículo</h2>
+      <p class="mt-1 font-inter text-sm text-white/60">Consolidados antes de partir.</p>
 
-      <h2 class="font-display text-xl font-bold text-pit-ink">Painel do veículo</h2>
-      <p class="mt-1 text-sm text-pit-mute">Dados consolidados antes de partir.</p>
-
-      <dl class="mt-5 grid gap-3 text-sm">
+      <dl class="mt-6 grid gap-3">
         @for (item of resumo(); track item.label) {
-          <div class="rounded-xl border border-white/5 bg-pit-surface/60 p-3.5">
-            <dt class="text-[11px] font-bold uppercase tracking-wider text-pit-dim">{{ item.label }}</dt>
-            <dd class="mt-1 font-display text-base font-semibold text-pit-ink">
+          <div class="rounded-xl border border-white/10 bg-pit-surface p-4 transition-all duration-300">
+            <dt class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">{{ item.label }}</dt>
+            <dd class="mt-1.5 font-space text-base font-semibold text-white/90">
               {{ item.value || '—' }}
             </dd>
           </div>
         }
       </dl>
 
-      <div class="mt-6 rounded-xl border border-white/5 bg-gradient-to-br from-pit-signal/10 to-transparent p-4 text-xs text-pit-mute">
-        <p class="font-semibold text-pit-ink">💡 Dica de pit</p>
-        <p class="mt-1">
+      <div class="mt-6 rounded-xl border border-pit-signal/20 bg-pit-signal/5 p-5">
+        <p class="font-space text-xs font-bold uppercase tracking-wider text-pit-signal">Dica de pit</p>
+        <p class="mt-2 font-inter text-xs leading-relaxed text-white/60">
           Quanto mais preciso o veículo, melhor a IA contextualiza hipóteses na etapa final. O campo de observações no modo manual vai
           direto para o prompt do diagnóstico.
         </p>

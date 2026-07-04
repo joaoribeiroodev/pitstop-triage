@@ -1,10 +1,10 @@
-<section class="page-shell gap-6 animate-fade-up">
-  <header class="flex flex-col gap-2">
-    <span class="chip-signal w-fit">Etapa 5 · Diagnóstico Prévio</span>
-    <h1 class="font-display text-3xl font-bold leading-tight text-pit-ink sm:text-4xl">
+<section class="page-shell gap-8 animate-fade-up">
+  <header class="flex flex-col gap-3">
+    <span class="chip-signal w-fit">Etapa 05 · Diagnóstico Prévio</span>
+    <h1 class="font-space text-3xl font-bold leading-tight text-white/90 sm:text-4xl">
       Código de <span class="text-pit-signal">Diagnóstico Prévio</span>
     </h1>
-    <p class="max-w-2xl text-sm text-pit-mute sm:text-base">
+    <p class="max-w-2xl font-inter text-sm text-white/60 sm:text-base">
       Análise técnica estruturada com hipóteses calibradas, custo estimado, OBD e descartes.
     </p>
     <app-lgpd-notice
@@ -13,38 +13,43 @@
   </header>
 
   @if (!state.podeEmitirCdp()) {
-    <div class="panel-strong p-6">
-      <p class="font-semibold text-pit-ink">Triagem incompleta.</p>
-      <p class="mt-1 text-sm text-pit-mute">Complete veículo, mapa, sintomas e refinamento IA antes de emitir o CDP.</p>
-      <button class="primary-button mt-5" type="button" (click)="reiniciar()">Recomeçar triagem</button>
+    <div class="panel-strong p-8">
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-pit-warn"></span>
+        <span class="font-mono text-[10px] font-bold uppercase tracking-widest text-pit-warn">Triagem incompleta</span>
+      </div>
+      <p class="mt-4 font-space text-lg font-semibold text-white/90">Complete todas as etapas antes de emitir o CDP.</p>
+      <p class="mt-1 font-inter text-sm text-white/60">Veículo, mapa, sintomas e refinamento IA são obrigatórios.</p>
+      <button class="primary-button mt-6" type="button" (click)="reiniciar()">Recomeçar triagem</button>
     </div>
   } @else if (!diagnostico()) {
-    <div class="panel-strong p-6">
-      <div class="grid min-h-72 place-items-center text-center">
-        <div class="max-w-md">
-          <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-pit-cyan to-pit-signal shadow-glowCyan">
-            <span class="font-display text-2xl font-bold text-pit-bg">CDP</span>
+    <div class="panel-strong p-8">
+      <div class="grid min-h-80 place-items-center text-center">
+        <div class="max-w-md px-4">
+          <div class="mx-auto grid h-16 w-16 place-items-center rounded-xl border border-pit-signal/30 bg-pit-surface">
+            <span class="font-mono text-sm font-bold text-pit-signal">CDP</span>
           </div>
-          <h2 class="mt-5 font-display text-2xl font-bold text-pit-ink">CDP ainda não emitido</h2>
-          <p class="mt-2 text-sm text-pit-mute">A IA vai compilar todas as evidências em um diagnóstico estruturado.</p>
-          <button class="primary-button mt-6" [disabled]="carregando()" (click)="gerar()">
+          <h2 class="mt-6 font-space text-2xl font-bold text-white/90">CDP ainda não emitido</h2>
+          <p class="mt-3 font-inter text-sm text-white/60">A IA vai compilar todas as evidências em um diagnóstico estruturado.</p>
+          <button class="primary-button mt-8" [disabled]="carregando()" (click)="gerar()">
             @if (carregando()) {
-              <span class="h-2 w-2 animate-pulse rounded-full bg-white"></span>
+              <span class="h-2 w-2 animate-pulse rounded-full bg-pit-bg"></span>
               Compilando hipóteses...
             } @else {
-              Gerar CDP <span aria-hidden="true">⚡</span>
+              Gerar CDP
+              <span aria-hidden="true">→</span>
             }
           </button>
         </div>
       </div>
     </div>
   } @else {
-    <!-- HERO: pode dirigir + urgência + ações -->
+    <!-- HERO: urgência + ações -->
     <div class="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
-      <article class="panel-strong relative overflow-hidden p-5 sm:p-7">
+      <article class="panel-strong relative overflow-hidden p-6 sm:p-8">
         <div class="absolute inset-x-0 top-0 stripes-divider"></div>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div class="flex flex-wrap items-center gap-2">
             <span [attr.class]="'badge-urgencia ' + urgenciaClass()">
               <span
@@ -65,38 +70,39 @@
             </button>
             <button class="primary-button" type="button" (click)="baixarPdf()" [disabled]="baixandoPdf()">
               @if (baixandoPdf()) {
-                <span class="h-2 w-2 animate-pulse rounded-full bg-white"></span>
+                <span class="h-2 w-2 animate-pulse rounded-full bg-pit-bg"></span>
                 Gerando...
               } @else {
-                <span aria-hidden="true">⬇</span> Baixar PDF
+                Baixar PDF
+                <span aria-hidden="true">↓</span>
               }
             </button>
           </div>
         </div>
 
-        <div class="mt-5 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-4">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-pit-warn">Risco principal</p>
-          <p class="mt-1.5 font-display text-lg font-semibold text-pit-ink">{{ diagnostico()!.risco_principal }}</p>
-          <p class="mt-2 text-sm text-pit-mute">{{ diagnostico()!.observacoes_seguranca }}</p>
+        <div class="mt-6 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-5">
+          <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-pit-warn">Risco principal</p>
+          <p class="mt-2 font-space text-lg font-semibold text-white/90">{{ diagnostico()!.risco_principal }}</p>
+          <p class="mt-3 font-inter text-sm leading-relaxed text-white/60">{{ diagnostico()!.observacoes_seguranca }}</p>
         </div>
 
-        <div class="mt-5 rounded-xl border border-pit-cyan/30 bg-gradient-to-br from-pit-cyan/10 to-transparent p-4">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-pit-cyan">Resumo para o cliente</p>
-          <p class="mt-1.5 text-pit-ink">{{ diagnostico()!.resumo_para_cliente }}</p>
+        <div class="mt-5 rounded-xl border border-white/10 bg-pit-surface p-5">
+          <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Resumo para o cliente</p>
+          <p class="mt-2 font-inter text-white/90">{{ diagnostico()!.resumo_para_cliente }}</p>
         </div>
       </article>
 
-      <aside class="panel relative overflow-hidden p-5 sm:p-7">
-        <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-pit-signal/15 blur-3xl"></div>
-        <h2 class="font-display text-lg font-bold text-pit-ink">Ações imediatas</h2>
-        <p class="mt-1 text-xs text-pit-dim">Sequência sugerida na bancada.</p>
-        <ol class="mt-4 grid gap-2">
+      <aside class="panel relative overflow-hidden p-6 sm:p-8">
+        <div class="mb-1 font-mono text-[10px] font-bold uppercase tracking-widest text-pit-signal">Sequência</div>
+        <h2 class="font-space text-lg font-bold text-white/90">Ações imediatas</h2>
+        <p class="mt-1 font-inter text-xs text-white/40">Sugeridas na bancada.</p>
+        <ol class="mt-5 grid gap-2">
           @for (acao of diagnostico()!.acoes_imediatas; track acao; let i = $index) {
-            <li class="flex gap-3 rounded-xl border border-white/5 bg-pit-surface/60 p-3 text-sm">
-              <span class="grid h-6 w-6 shrink-0 place-items-center rounded bg-pit-signal/15 font-mono text-xs font-bold text-pit-signal">{{
+            <li class="flex gap-3 rounded-xl border border-white/10 bg-pit-surface p-4 font-inter text-sm transition-all duration-300">
+              <span class="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-pit-signal/30 bg-pit-signal/10 font-mono text-xs font-bold text-pit-signal">{{
                 i + 1
               }}</span>
-              <span class="text-pit-ink">{{ acao }}</span>
+              <span class="text-white/90">{{ acao }}</span>
             </li>
           }
         </ol>
@@ -104,32 +110,32 @@
     </div>
 
     <!-- HIPÓTESES -->
-    <article class="panel-strong p-5 sm:p-7">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="font-display text-xl font-bold text-pit-ink">Hipóteses técnicas calibradas</h2>
-        <span class="chip">{{ diagnostico()!.hipoteses.length }} hipótese(s)</span>
+    <article class="panel-strong p-6 sm:p-8">
+      <div class="mb-6 flex items-center justify-between border-b border-white/10 pb-4">
+        <h2 class="font-space text-xl font-bold text-white/90">Hipóteses técnicas calibradas</h2>
+        <span class="chip font-mono">{{ diagnostico()!.hipoteses.length }} hipótese(s)</span>
       </div>
 
-      <ol class="grid gap-4">
+      <ol class="grid gap-5">
         @for (hipotese of diagnostico()!.hipoteses; track hipotese.titulo; let i = $index) {
-          <li class="rounded-2xl border border-white/5 bg-pit-surface/60 p-4 sm:p-5 animate-fade-up">
+          <li class="rounded-xl border border-white/10 bg-pit-surface p-5 sm:p-6 animate-fade-up">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div class="flex items-start gap-3">
                 <span
-                  class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-pit-signal/15 font-mono text-base font-bold text-pit-signal"
+                  class="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-pit-signal/30 bg-pit-signal/10 font-mono text-base font-bold text-pit-signal"
                   >{{ i + 1 }}</span
                 >
                 <div>
-                  <h3 class="font-display text-lg font-semibold text-pit-ink">{{ hipotese.titulo }}</h3>
-                  <p class="mt-0.5 text-xs uppercase tracking-wider text-pit-dim">{{ hipotese.sistema_afetado }}</p>
+                  <h3 class="font-space text-lg font-semibold text-white/90">{{ hipotese.titulo }}</h3>
+                  <p class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-white/40">{{ hipotese.sistema_afetado }}</p>
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <span class="rounded-lg bg-pit-card px-3 py-1 font-mono text-sm font-bold text-pit-cyan" title="Probabilidade"
+                <span class="rounded-lg border border-pit-signal/30 bg-pit-signal/10 px-3 py-1 font-mono text-sm font-bold text-pit-signal" title="Probabilidade"
                   >{{ hipotese.probabilidade }}%</span
                 >
                 <span
-                  [attr.class]="'rounded-lg border px-2 py-1 text-[10px] font-bold uppercase ' + confiancaClass(hipotese.confianca)"
+                  [attr.class]="'rounded-lg border px-2 py-1 font-mono text-[10px] font-bold uppercase ' + confiancaClass(hipotese.confianca)"
                   title="Confiança da hipótese"
                 >
                   conf. {{ hipotese.confianca }}
@@ -137,67 +143,63 @@
               </div>
             </header>
 
-            <p class="mt-3 text-sm text-pit-mute">{{ hipotese.justificativa_tecnica }}</p>
+            <p class="mt-4 font-inter text-sm leading-relaxed text-white/60">{{ hipotese.justificativa_tecnica }}</p>
 
-            <div class="mt-4 grid gap-4 lg:grid-cols-2">
-              <!-- Evidências -->
-              <div class="rounded-xl border border-white/5 bg-pit-bg/40 p-3">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-pit-cyan">Evidências usadas</p>
-                <ul class="mt-2 grid gap-1.5 text-xs">
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+              <div class="rounded-xl border border-white/10 bg-pit-bg p-4">
+                <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-pit-signal">Evidências usadas</p>
+                <ul class="mt-3 grid gap-2 font-inter text-xs">
                   @for (ev of hipotese.evidencias_usadas; track ev) {
-                    <li class="flex items-start gap-2 text-pit-mute">
-                      <span class="mt-0.5 text-pit-cyan" aria-hidden="true">▸</span>
+                    <li class="flex items-start gap-2 text-white/60">
+                      <span class="mt-0.5 font-mono text-pit-signal" aria-hidden="true">▸</span>
                       {{ ev }}
                     </li>
                   }
                 </ul>
               </div>
 
-              <!-- Custo + tempo -->
               <div class="grid grid-cols-2 gap-3">
-                <div class="rounded-xl border border-white/5 bg-pit-bg/40 p-3">
-                  <p class="text-[11px] font-bold uppercase tracking-wider text-pit-dim">Custo estimado</p>
-                  <p class="mt-1 font-display text-lg font-bold text-pit-ink">
-                    R$ {{ hipotese.custo_estimado_brl.min }}<span class="text-pit-dim"> – </span>{{ hipotese.custo_estimado_brl.max }}
+                <div class="rounded-xl border border-white/10 bg-pit-bg p-4">
+                  <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Custo estimado</p>
+                  <p class="mt-2 font-space text-lg font-bold text-white/90">
+                    R$ {{ hipotese.custo_estimado_brl.min }}<span class="text-white/40"> – </span>{{ hipotese.custo_estimado_brl.max }}
                   </p>
                 </div>
-                <div class="rounded-xl border border-white/5 bg-pit-bg/40 p-3">
-                  <p class="text-[11px] font-bold uppercase tracking-wider text-pit-dim">Tempo na bancada</p>
-                  <p class="mt-1 font-display text-lg font-bold text-pit-ink">
-                    {{ hipotese.tempo_reparo_horas.min }}<span class="text-pit-dim"> – </span>{{ hipotese.tempo_reparo_horas.max }} h
+                <div class="rounded-xl border border-white/10 bg-pit-bg p-4">
+                  <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Tempo na bancada</p>
+                  <p class="mt-2 font-space text-lg font-bold text-white/90">
+                    {{ hipotese.tempo_reparo_horas.min }}<span class="text-white/40"> – </span>{{ hipotese.tempo_reparo_horas.max }} h
                   </p>
                 </div>
               </div>
             </div>
 
-            <!-- Componentes -->
-            <div class="mt-4">
-              <p class="text-[11px] font-bold uppercase tracking-wider text-pit-signal">Componentes a verificar (ordem de prioridade)</p>
-              <ul class="mt-2 grid gap-2">
+            <div class="mt-5">
+              <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-pit-signal">Componentes a verificar</p>
+              <ul class="mt-3 grid gap-2">
                 @for (c of hipotese.componentes_a_verificar; track c.nome) {
                   <li
-                    class="flex flex-col gap-1 rounded-lg border border-white/5 bg-pit-bg/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+                    class="flex flex-col gap-1 rounded-xl border border-white/10 bg-pit-bg p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div class="flex items-center gap-2">
-                      <span [attr.class]="'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ' + prioridadeClass(c.prioridade)">
+                      <span [attr.class]="'rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase ' + prioridadeClass(c.prioridade)">
                         {{ c.prioridade }}
                       </span>
-                      <span class="font-semibold text-pit-ink">{{ c.nome }}</span>
+                      <span class="font-inter font-semibold text-white/90">{{ c.nome }}</span>
                     </div>
-                    <span class="text-xs text-pit-mute">🔧 {{ c.teste_recomendado }}</span>
+                    <span class="font-inter text-xs text-white/60">{{ c.teste_recomendado }}</span>
                   </li>
                 }
               </ul>
             </div>
 
-            <!-- OBD -->
             @if (hipotese.codigos_obd_possiveis && hipotese.codigos_obd_possiveis.length > 0) {
-              <div class="mt-4">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-pit-dim">Códigos OBD-II possíveis</p>
+              <div class="mt-5">
+                <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Códigos OBD-II possíveis</p>
                 <div class="mt-2 flex flex-wrap gap-1.5">
                   @for (obd of hipotese.codigos_obd_possiveis; track obd) {
                     <span
-                      class="rounded-md border border-pit-cyan/30 bg-pit-cyan/10 px-2 py-0.5 font-mono text-xs font-bold text-pit-cyan"
+                      class="rounded-lg border border-pit-signal/30 bg-pit-signal/10 px-2.5 py-1 font-mono text-xs font-bold text-pit-signal"
                       >{{ obd }}</span
                     >
                   }
@@ -212,16 +214,16 @@
     <!-- DESCARTADOS + PREVENTIVA -->
     <div class="grid gap-6 lg:grid-cols-2">
       @if (diagnostico()!.diagnosticos_descartados && diagnostico()!.diagnosticos_descartados!.length > 0) {
-        <article class="panel p-5 sm:p-6">
-          <h2 class="font-display text-lg font-bold text-pit-ink">Diagnósticos descartados</h2>
-          <p class="mt-1 text-xs text-pit-dim">Hipóteses comuns que a IA descartou e o motivo.</p>
-          <ul class="mt-4 grid gap-2.5">
+        <article class="panel p-6 sm:p-8">
+          <h2 class="font-space text-lg font-bold text-white/90">Diagnósticos descartados</h2>
+          <p class="mt-1 font-inter text-xs text-white/40">Hipóteses comuns que a IA descartou e o motivo.</p>
+          <ul class="mt-5 grid gap-3">
             @for (d of diagnostico()!.diagnosticos_descartados!; track d.titulo) {
-              <li class="rounded-lg border border-white/5 bg-pit-surface/60 p-3 text-sm">
-                <p class="flex items-center gap-2 font-semibold text-pit-mute line-through">
-                  <span class="text-pit-danger" aria-hidden="true">✕</span> {{ d.titulo }}
+              <li class="rounded-xl border border-white/10 bg-pit-surface p-4 font-inter text-sm">
+                <p class="flex items-center gap-2 font-semibold text-white/40 line-through">
+                  <span class="font-mono text-pit-danger" aria-hidden="true">✕</span> {{ d.titulo }}
                 </p>
-                <p class="mt-1 text-xs text-pit-dim">↳ {{ d.motivo_descarte }}</p>
+                <p class="mt-1.5 font-inter text-xs text-white/40">↳ {{ d.motivo_descarte }}</p>
               </li>
             }
           </ul>
@@ -229,20 +231,20 @@
       }
 
       @if (diagnostico()!.manutencao_preventiva_relacionada && diagnostico()!.manutencao_preventiva_relacionada!.length > 0) {
-        <article class="panel p-5 sm:p-6">
-          <h2 class="font-display text-lg font-bold text-pit-ink">Aproveite o pit stop</h2>
-          <p class="mt-1 text-xs text-pit-dim">Manutenções correlatas que valem a pena fazer no mesmo dia.</p>
-          <ul class="mt-4 grid gap-2">
+        <article class="panel p-6 sm:p-8">
+          <h2 class="font-space text-lg font-bold text-white/90">Aproveite o pit stop</h2>
+          <p class="mt-1 font-inter text-xs text-white/40">Manutenções correlatas que valem a pena fazer no mesmo dia.</p>
+          <ul class="mt-5 grid gap-2">
             @for (m of diagnostico()!.manutencao_preventiva_relacionada!; track m) {
-              <li class="flex items-start gap-2 rounded-lg bg-pit-surface/60 p-2.5 text-sm">
-                <span class="text-pit-safe" aria-hidden="true">+</span>
-                <span class="text-pit-ink">{{ m }}</span>
+              <li class="flex items-start gap-2 rounded-xl border border-white/10 bg-pit-surface p-3 font-inter text-sm">
+                <span class="font-mono text-pit-safe" aria-hidden="true">+</span>
+                <span class="text-white/90">{{ m }}</span>
               </li>
             }
           </ul>
           @if (diagnostico()!.proxima_inspecao_recomendada) {
-            <p class="mt-4 rounded-lg border border-pit-cyan/20 bg-pit-cyan/5 p-3 text-xs text-pit-mute">
-              <strong class="text-pit-cyan">Próxima inspeção:</strong> {{ diagnostico()!.proxima_inspecao_recomendada }}
+            <p class="mt-5 rounded-xl border border-pit-signal/20 bg-pit-signal/5 p-4 font-inter text-xs text-white/60">
+              <strong class="text-pit-signal">Próxima inspeção:</strong> {{ diagnostico()!.proxima_inspecao_recomendada }}
             </p>
           }
         </article>
@@ -250,22 +252,22 @@
     </div>
 
     <!-- DADOS DA TRIAGEM -->
-    <article class="panel p-5 sm:p-6">
-      <h2 class="font-display text-lg font-bold text-pit-ink">Dados enviados à IA</h2>
-      <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+    <article class="panel p-6 sm:p-8">
+      <h2 class="font-space text-lg font-bold text-white/90">Dados enviados à IA</h2>
+      <dl class="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
         @for (item of resumo(); track item.label) {
-          <div class="rounded-xl border border-white/5 bg-pit-surface/60 p-3.5">
-            <dt class="text-[11px] font-bold uppercase tracking-wider text-pit-dim">{{ item.label }}</dt>
-            <dd class="mt-1 text-pit-ink">{{ item.value }}</dd>
+          <div class="rounded-xl border border-white/10 bg-pit-surface p-4">
+            <dt class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">{{ item.label }}</dt>
+            <dd class="mt-1.5 font-inter text-white/90">{{ item.value }}</dd>
           </div>
         }
       </dl>
 
       @if (erro()) {
-        <p class="mt-4 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-3 text-sm text-pit-warn">{{ erro() }}</p>
+        <p class="mt-5 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-4 font-inter text-sm text-pit-warn">{{ erro() }}</p>
       }
 
-      <button class="ghost-button mt-5 w-full justify-center" type="button" (click)="reiniciar()">
+      <button class="ghost-button mt-6 w-full justify-center border border-white/10" type="button" (click)="reiniciar()">
         <span aria-hidden="true">↺</span> Iniciar nova triagem
       </button>
     </article>

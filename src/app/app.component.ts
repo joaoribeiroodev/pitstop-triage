@@ -2,11 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
-import { TRIAGE_STEPS } from '@core/constants/triage-steps';
+import { TRIAGE_STEPS, TriageStepPath } from '@core/constants/triage-steps';
 import { LgpdConsentService } from '@core/services/lgpd-consent.service';
 import { TriageStateService } from '@core/services/triage-state.service';
 
 const ROTAS_SEM_CHROME = ['/inicio', '/privacidade'];
+
+type StepStatus = 'active' | 'done' | 'pending' | 'locked';
 
 @Component({
   selector: 'app-root',
@@ -33,8 +35,35 @@ export class AppComponent {
   readonly progresso = computed(() => this.state.progresso());
   readonly exibirChromeTriagem = computed(() => !ROTAS_SEM_CHROME.includes(this.rotaAtual()));
 
-  podeAcessarEtapa(path: (typeof TRIAGE_STEPS)[number]['path']): boolean {
+  readonly etapaAtivaIndex = computed(() => {
+    const url = this.rotaAtual();
+    const idx = TRIAGE_STEPS.findIndex((s) => url.startsWith(s.path));
+    return idx >= 0 ? idx : 0;
+  });
+
+  readonly progressTicks = [0, 25, 50, 75, 100];
+
+  podeAcessarEtapa(path: TriageStepPath): boolean {
     return this.state.podeAcessarEtapa(path);
+  }
+
+  statusEtapa(index: number): StepStatus {
+    const step = this.steps[index];
+    if (!step) return 'locked';
+    const activeIdx = this.etapaAtivaIndex();
+    if (index === activeIdx) return 'active';
+    if (index < activeIdx) return 'done';
+    if (this.podeAcessarEtapa(step.path)) return 'pending';
+    return 'locked';
+  }
+
+  classeEtapa(index: number): string {
+    const status = this.statusEtapa(index);
+    const base = 'telemetry-step';
+    if (status === 'active') return `${base} telemetry-step--active`;
+    if (status === 'done') return `${base} telemetry-step--done`;
+    if (status === 'locked') return `${base} telemetry-step--locked`;
+    return base;
   }
 
   reiniciar(): void {

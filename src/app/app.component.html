@@ -1,18 +1,23 @@
 <div class="flex min-h-screen flex-col">
-  <header class="sticky top-0 z-30 border-b border-white/5 bg-pit-bg/80 backdrop-blur-xl">
-    <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
+  <header class="sticky top-0 z-30 border-b border-white/10 bg-pit-bg/90 backdrop-blur-xl">
+    <div class="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between gap-4">
-        <a [routerLink]="exibirChromeTriagem() ? '/veiculo' : '/inicio'" class="group flex items-center gap-3">
+        <a
+          [routerLink]="exibirChromeTriagem() ? '/veiculo' : '/inicio'"
+          class="group flex items-center gap-3 transition-all duration-300 active:scale-95"
+        >
           <span
-            class="relative grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-pit-signal to-pit-signalDeep text-pit-bg shadow-glow"
+            class="relative grid h-10 w-10 place-items-center overflow-hidden rounded-xl border border-pit-signal/30 bg-pit-surface text-pit-signal transition-all duration-300 group-hover:border-pit-signal/60 group-hover:bg-pit-signal/10"
           >
-            <span class="font-display text-base font-bold">PS</span>
-            <span class="absolute inset-x-0 bottom-0 h-1 bg-checker"></span>
+            <span class="font-space text-base font-bold">PS</span>
+            <span class="absolute inset-x-0 bottom-0 h-0.5 bg-checker"></span>
           </span>
           <span class="flex flex-col leading-tight">
-            <span class="font-display text-lg font-bold text-pit-ink">PitStop <span class="text-pit-signal">Triage</span></span>
-            <span class="hidden text-[11px] font-semibold uppercase tracking-wider text-pit-dim sm:inline"
-              >Diagnóstico prévio assistido por IA</span
+            <span class="font-space text-lg font-bold text-white/90"
+              >PitStop <span class="text-pit-signal">Triage</span></span
+            >
+            <span class="hidden font-inter text-[10px] font-semibold uppercase tracking-widest text-white/40 sm:inline"
+              >Telemetria de diagnóstico · IA</span
             >
           </span>
         </a>
@@ -28,35 +33,50 @@
       </div>
 
       @if (exibirChromeTriagem()) {
-        <nav class="grid grid-cols-5 gap-1" aria-label="Etapas da triagem">
+        <nav class="telemetry-nav" aria-label="Etapas da triagem">
+          <div class="telemetry-rail-bg" aria-hidden="true"></div>
           @for (step of steps; track step.path; let i = $index) {
             @if (podeAcessarEtapa(step.path)) {
               <a
                 [routerLink]="step.path"
-                routerLinkActive="active"
+                routerLinkActive="telemetry-step--active"
                 #rla="routerLinkActive"
-                class="step-pill"
+                [class]="classeEtapa(i) + ' telemetry-step--link'"
                 [attr.aria-current]="rla.isActive ? 'step' : null"
               >
-                <span class="num">{{ i + 1 }}</span>
-                <span class="hidden text-[11px] sm:inline">{{ step.label }}</span>
-                <span class="sm:hidden text-[11px]">{{ step.short }}</span>
+                <span class="telemetry-step__gauge">
+                  @if (statusEtapa(i) === 'done' && !rla.isActive) {
+                    <span aria-hidden="true">✓</span>
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </span>
+                <span class="telemetry-step__label hidden sm:block">{{ step.label }}</span>
+                <span class="telemetry-step__label sm:hidden">{{ step.short }}</span>
               </a>
             } @else {
-              <span class="step-pill step-pill--locked" [attr.title]="'Complete a etapa anterior'">
-                <span class="num">{{ i + 1 }}</span>
-                <span class="hidden text-[11px] sm:inline">{{ step.label }}</span>
-                <span class="sm:hidden text-[11px]">{{ step.short }}</span>
+              <span [class]="classeEtapa(i)" [attr.title]="'Complete a etapa anterior'">
+                <span class="telemetry-step__gauge">{{ i + 1 }}</span>
+                <span class="telemetry-step__label hidden sm:block">{{ step.label }}</span>
+                <span class="telemetry-step__label sm:hidden">{{ step.short }}</span>
               </span>
             }
           }
         </nav>
 
-        <div class="flex items-center gap-3">
-          <div class="progress-rail">
-            <div class="progress-fill" [style.width.%]="progresso()"></div>
+        <div class="flex items-center gap-4">
+          <div class="telemetry-progress flex-1">
+            <div class="telemetry-progress__fill" [style.width.%]="progresso()"></div>
+            <div class="telemetry-progress__ticks" aria-hidden="true">
+              @for (tick of progressTicks; track tick) {
+                <span class="telemetry-progress__tick"></span>
+              }
+            </div>
           </div>
-          <span class="font-mono text-[11px] font-bold tabular-nums text-pit-mute">{{ progresso() }}%</span>
+          <div class="telemetry-readout" aria-label="Progresso da triagem">
+            <span class="telemetry-readout__value">{{ progresso() }}</span>
+            <span class="telemetry-readout__unit">% compl.</span>
+          </div>
         </div>
       }
     </div>
@@ -66,14 +86,24 @@
     <router-outlet />
   </main>
 
-  <footer class="border-t border-white/5 bg-pit-bg/60">
+  <footer class="border-t border-white/10 bg-pit-bg/80">
     <div
-      class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-pit-dim sm:flex-row sm:px-6 lg:px-8"
+      class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-5 font-inter text-xs text-white/40 sm:flex-row sm:px-6 lg:px-8"
     >
       <span>Diagnóstico prévio — não substitui inspeção presencial.</span>
       <div class="flex flex-wrap items-center justify-center gap-3">
-        <a routerLink="/privacidade" class="text-pit-cyan hover:underline">Privacidade (LGPD)</a>
-        <button type="button" class="text-pit-warn hover:underline" (click)="excluirDados()">Excluir meus dados</button>
+        <a
+          routerLink="/privacidade"
+          class="text-pit-signal/80 transition-all duration-300 hover:text-pit-signal active:scale-95"
+          >Privacidade (LGPD)</a
+        >
+        <button
+          type="button"
+          class="text-pit-warn/80 transition-all duration-300 hover:text-pit-warn active:scale-95"
+          (click)="excluirDados()"
+        >
+          Excluir meus dados
+        </button>
         @if (urgencia() && exibirChromeTriagem()) {
           <span class="chip-signal">Urgência: {{ urgencia() }}</span>
         }

@@ -15,7 +15,7 @@
     margin: 0;
     min-height: 100vh;
     background: #070b14;
-    color: #e2e8f0;
+    color: rgba(255, 255, 255, 0.9);
     font-family:
       Inter,
       ui-sans-serif,
@@ -41,7 +41,6 @@
     color: #fff;
   }
 
-  /* Scrollbar */
   *::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -80,9 +79,15 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(1100px 600px at 80% -10%, rgba(251, 146, 60, 0.16), transparent 60%),
-      radial-gradient(900px 500px at -10% 20%, rgba(34, 211, 238, 0.1), transparent 55%),
-      radial-gradient(800px 600px at 50% 110%, rgba(124, 58, 237, 0.1), transparent 60%);
+      radial-gradient(1100px 600px at 80% -10%, rgba(251, 146, 60, 0.12), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, rgba(34, 211, 238, 0.06), transparent 55%),
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      100% 100%,
+      48px 48px,
+      48px 48px;
     pointer-events: none;
     z-index: 0;
   }
@@ -104,78 +109,130 @@
   }
 
   .panel {
-    @apply rounded-2xl border border-white/5 bg-pit-card/70 backdrop-blur-md shadow-panel shadow-inset;
+    @apply rounded-xl border border-white/10 bg-pit-card backdrop-blur-sm;
   }
 
   .panel-strong {
-    @apply rounded-2xl border border-white/10 bg-gradient-to-b from-pit-card/90 to-pit-surface/90 backdrop-blur-md shadow-panel shadow-inset;
+    @apply rounded-xl border border-white/10 bg-gradient-to-b from-pit-card to-pit-surface backdrop-blur-sm;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-pit-mute;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-pit-surface px-3 py-1 font-inter text-xs font-semibold text-white/60 transition-all duration-300;
   }
 
   .chip-signal {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-pit-signal/30 bg-pit-signal/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-pit-signal;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-pit-signal/30 bg-pit-signal/10 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-pit-signal;
   }
 
   .primary-button {
-    @apply focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-pit-signal to-pit-signalDeep px-5 py-2.5 font-bold text-white shadow-glow transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-pit-line disabled:to-pit-line disabled:text-pit-mute disabled:shadow-none;
+    @apply focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-pit-signal/40 bg-pit-signal px-5 py-2.5 font-inter font-bold text-pit-bg transition-all duration-300 hover:border-pit-signal hover:bg-pit-signalHi active:scale-95 disabled:cursor-not-allowed disabled:border-pit-line disabled:bg-pit-line disabled:text-white/40;
   }
 
   .secondary-button {
-    @apply focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 font-semibold text-pit-ink transition hover:border-pit-signal/40 hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40;
+    @apply focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-pit-surface px-5 py-2.5 font-inter font-semibold text-white/90 transition-all duration-300 hover:border-pit-signal/40 hover:bg-pit-card active:scale-95 disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .ghost-button {
-    @apply focus-ring inline-flex min-h-9 items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-pit-mute transition hover:bg-white/5 hover:text-pit-ink;
+    @apply focus-ring inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-transparent px-3 py-1.5 font-inter text-sm font-semibold text-white/60 transition-all duration-300 hover:border-white/10 hover:bg-pit-surface hover:text-white/90 active:scale-95;
   }
 
   .field {
-    @apply focus-ring min-h-11 w-full rounded-xl border border-white/10 bg-pit-surface/80 px-3.5 text-pit-ink placeholder:text-pit-dim transition hover:border-white/20 focus:border-pit-signal/60;
+    @apply focus-ring min-h-11 w-full rounded-xl border border-white/10 bg-pit-surface px-3.5 font-inter text-white/90 placeholder:text-white/40 transition-all duration-300 hover:border-white/20 focus:border-pit-signal/60;
   }
 
   .label {
-    @apply grid gap-1.5 text-xs font-bold uppercase tracking-wider text-pit-mute;
-  }
-
-  .step-pill {
-    @apply relative flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-center text-xs font-semibold text-pit-mute transition hover:text-pit-ink;
-  }
-
-  .step-pill.active {
-    @apply bg-gradient-to-b from-pit-signal/15 to-transparent text-pit-signal;
-  }
-
-  .step-pill .num {
-    @apply grid h-6 w-6 place-items-center rounded-md border border-white/10 text-[11px] font-bold;
-  }
-  .step-pill.active .num {
-    @apply border-pit-signal/60 bg-pit-signal text-pit-bg shadow-glow;
-  }
-
-  .step-pill--locked {
-    @apply cursor-not-allowed opacity-40;
+    @apply grid gap-1.5 font-inter text-xs font-bold uppercase tracking-wider text-white/60;
   }
 
   .badge-urgencia {
-    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider;
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider;
   }
 
   .stripes-divider {
     background-image: repeating-linear-gradient(
       135deg,
-      rgba(251, 146, 60, 0.7) 0 10px,
-      transparent 10px 20px
+      rgba(251, 146, 60, 0.5) 0 8px,
+      transparent 8px 16px
     );
-    height: 4px;
+    height: 3px;
   }
 
-  .progress-rail {
-    @apply h-1.5 w-full overflow-hidden rounded-full bg-white/5;
+  /* ── Telemetry stepper ── */
+  .telemetry-nav {
+    @apply relative grid grid-cols-5 gap-0;
   }
-  .progress-fill {
-    @apply h-full rounded-full bg-gradient-to-r from-pit-signal via-pit-signalHi to-pit-cyan transition-[width] duration-500;
+
+  .telemetry-rail-bg {
+    @apply pointer-events-none absolute left-[10%] right-[10%] top-[18px] h-px bg-white/10;
+  }
+
+  .telemetry-step {
+    @apply relative z-10 flex flex-col items-center gap-2 px-1 py-1 text-center transition-all duration-300;
+  }
+
+  .telemetry-step__gauge {
+    @apply relative grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-pit-surface font-mono text-[11px] font-bold text-white/60 transition-all duration-300;
+  }
+
+  .telemetry-step__label {
+    @apply font-inter text-[10px] font-semibold uppercase tracking-wide text-white/40 transition-all duration-300 sm:text-[11px];
+  }
+
+  .telemetry-step--active .telemetry-step__gauge {
+    @apply border-pit-signal/60 bg-pit-signal/15 text-pit-signal;
+    box-shadow: 0 0 12px rgba(251, 146, 60, 0.25);
+  }
+
+  .telemetry-step--active .telemetry-step__label {
+    @apply text-pit-signal;
+  }
+
+  .telemetry-step--done .telemetry-step__gauge {
+    @apply border-pit-safe/40 bg-pit-safe/10 text-pit-safe;
+  }
+
+  .telemetry-step--done .telemetry-step__label {
+    @apply text-white/60;
+  }
+
+  .telemetry-step--locked {
+    @apply cursor-not-allowed opacity-35;
+  }
+
+  .telemetry-step--link {
+    @apply rounded-xl hover:bg-pit-surface/60 active:scale-95;
+  }
+
+  .telemetry-step--link:hover .telemetry-step__gauge {
+    @apply border-pit-signal/30 text-white/90;
+  }
+
+  .telemetry-progress {
+    @apply relative h-2 w-full overflow-hidden rounded-full border border-white/10 bg-pit-surface;
+  }
+
+  .telemetry-progress__fill {
+    @apply relative h-full rounded-full bg-gradient-to-r from-pit-signal via-pit-signalHi to-pit-signal transition-all duration-500;
+  }
+
+  .telemetry-progress__ticks {
+    @apply pointer-events-none absolute inset-0 flex justify-between px-0.5;
+  }
+
+  .telemetry-progress__tick {
+    @apply h-full w-px bg-white/5;
+  }
+
+  .telemetry-readout {
+    @apply flex shrink-0 flex-col items-end font-mono leading-none;
+  }
+
+  .telemetry-readout__value {
+    @apply text-lg font-bold tabular-nums text-pit-signal;
+  }
+
+  .telemetry-readout__unit {
+    @apply text-[9px] font-semibold uppercase tracking-widest text-white/40;
   }
 }
 
