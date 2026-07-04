@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { PAGES_ROUTES } from '@pages/pages.routes';
+import { PAGES_ROUTES } from '@modules/pages.routes';
 
 const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'inicio' },

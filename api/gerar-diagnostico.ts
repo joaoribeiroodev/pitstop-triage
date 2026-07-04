@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
 import { GEMINI_MODEL, applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
-import { corrigirDiagnosticoCdp } from './pt-br-text';
+import { corrigirDiagnosticoCdp } from '@utils/pt-br-text.util';
 
 const faixaSchema = {
   type: Type.OBJECT,

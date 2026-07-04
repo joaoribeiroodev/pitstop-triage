@@ -3,6 +3,11 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
+    "baseUrl": "..",
+    "paths": {
+      "@utils/*": ["src/app/utils/*"],
+      "@models/*": ["src/app/models/*"]
+    },
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
@@ -14,5 +19,11 @@
     "lib": ["ES2022"],
     "types": ["node"]
   },
-  "include": ["**/*.ts", "../shared/**/*.ts"]
+  "include": [
+    "**/*.ts",
+    "../src/app/utils/pt-br-ortografia.ts",
+    "../src/app/utils/pt-br-text.util.ts",
+    "../src/app/models/cdp.model.ts",
+    "../src/app/models/refinamento.model.ts"
+  ]
 }

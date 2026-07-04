@@ -149,11 +149,7 @@
   }
 
   .stripes-divider {
-    background-image: repeating-linear-gradient(
-      135deg,
-      rgba(251, 146, 60, 0.5) 0 8px,
-      transparent 8px 16px
-    );
+    background-image: repeating-linear-gradient(135deg, rgba(251, 146, 60, 0.5) 0 8px, transparent 8px 16px);
     height: 3px;
   }
 

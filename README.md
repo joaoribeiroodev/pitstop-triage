@@ -134,11 +134,16 @@ pitstop-triage/
 │   └── predev.mjs                # Libera portas 3000/4200 antes do `npm run dev`
 ├── src/
 │   ├── app/
-│   │   ├── core/                 # Models, services, guards, constantes e dados
-│   │   ├── pages/                # Telas do fluxo (início, veículo, mapa, CDP…)
-│   │   ├── shared/               # Componentes reutilizáveis (car-3d, aviso LGPD)
-│   │   ├── app.module.ts         # Módulo raiz da aplicação
-│   │   └── app-routing.module.ts # Rotas principais e redirecionamento
+│   │   ├── components/           # Telas e componentes reutilizáveis (car-3d, LGPD…)
+│   │   ├── services/             # Serviços Angular (estado, API, FIPE, PDF)
+│   │   ├── modules/              # NgModules (pages, shared) e rotas
+│   │   ├── models/               # Interfaces e tipos
+│   │   ├── guards/               # Guards de rota
+│   │   ├── constants/            # Constantes e helpers de exibição
+│   │   ├── data/                 # Catálogos e fallbacks locais
+│   │   ├── utils/                # Utilitários (ex.: ortografia pt-BR)
+│   │   ├── app.module.ts
+│   │   └── app-routing.module.ts
 │   ├── index.html
 │   ├── main.ts                   # Bootstrap Angular
 │   └── styles.css                # Estilos globais e utilitários Tailwind
@@ -149,7 +154,7 @@ pitstop-triage/
 └── package.json                  # Dependências, scripts e engines Node
 ```
 
-**Padrão arquitetural:** Angular modular com separação **core / pages / shared**, estado centralizado em `TriageStateService` (Signals + `localStorage`) e rotas protegidas por guards de etapa e consentimento LGPD.
+**Padrão arquitetural:** Angular modular com pastas **components / services / modules**, além de **models**, **guards**, **constants**, **data** e **utils**. Estado centralizado em `TriageStateService` (Signals + `localStorage`) e rotas protegidas por guards.
 
 ---
 

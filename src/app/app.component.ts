@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
-import { TRIAGE_STEPS, TriageStepPath } from '@core/constants/triage-steps';
-import { LgpdConsentService } from '@core/services/lgpd-consent.service';
-import { TriageStateService } from '@core/services/triage-state.service';
+import { TRIAGE_STEPS, TriageStepPath } from '@constants/triage-steps';
+import { LgpdConsentService } from '@services/lgpd-consent.service';
+import { TriageStateService } from '@services/triage-state.service';
 
 const ROTAS_SEM_CHROME = ['/inicio', '/privacidade'];
 
