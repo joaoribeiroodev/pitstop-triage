@@ -4,6 +4,7 @@ import { ZonaId, zonasCatalogo } from '@core/data/sintomas.catalog';
 import { DiagnosticoCdp } from '@core/models/cdp.model';
 import { PersistedTriageState, TriageSnapshot } from '@core/models/triage.model';
 import { Veiculo } from '@core/models/veiculo.model';
+import { corrigirDiagnosticoCdp } from '@core/utils/pt-br-text.util';
 
 const STORAGE_KEY = 'pitstop-triage/state/v2';
 
@@ -22,7 +23,8 @@ function loadInitial(): PersistedTriageState {
       zonaSelecionada: '',
       sintomas: [],
       respostasRefinamento: {},
-      diagnostico: null
+      diagnostico: null,
+      triagemConcluida: false
     };
   }
 
@@ -35,7 +37,8 @@ function loadInitial(): PersistedTriageState {
       zonaSelecionada: (parsed.zonaSelecionada as ZonaId | '') ?? '',
       sintomas: parsed.sintomas ?? [],
       respostasRefinamento: parsed.respostasRefinamento ?? {},
-      diagnostico: parsed.diagnostico ?? null
+      diagnostico: parsed.diagnostico ? corrigirDiagnosticoCdp(parsed.diagnostico) : null,
+      triagemConcluida: parsed.triagemConcluida ?? false
     };
   } catch {
     return {
@@ -43,7 +46,8 @@ function loadInitial(): PersistedTriageState {
       zonaSelecionada: '',
       sintomas: [],
       respostasRefinamento: {},
-      diagnostico: null
+      diagnostico: null,
+      triagemConcluida: false
     };
   }
 }
@@ -57,6 +61,7 @@ export class TriageStateService {
   readonly sintomas = signal<string[]>(this.initial.sintomas);
   readonly respostasRefinamento = signal<Record<string, string>>(this.initial.respostasRefinamento);
   readonly diagnostico = signal<DiagnosticoCdp | null>(this.initial.diagnostico);
+  readonly triagemConcluida = signal(this.initial.triagemConcluida ?? false);
 
   readonly snapshot = computed<TriageSnapshot>(() => ({
     veiculo: this.veiculo(),
@@ -79,6 +84,7 @@ export class TriageStateService {
   );
 
   readonly progresso = computed(() => {
+    if (this.triagemConcluida()) return 100;
     let etapas = 0;
     if (this.podeIrParaMapa()) etapas++;
     if (this.zonaSelecionada()) etapas++;
@@ -96,7 +102,8 @@ export class TriageStateService {
         zonaSelecionada: this.zonaSelecionada(),
         sintomas: this.sintomas(),
         respostasRefinamento: this.respostasRefinamento(),
-        diagnostico: this.diagnostico()
+        diagnostico: this.diagnostico(),
+        triagemConcluida: this.triagemConcluida()
       };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -159,7 +166,13 @@ export class TriageStateService {
   }
 
   definirDiagnostico(diagnostico: DiagnosticoCdp | null): void {
-    this.diagnostico.set(diagnostico);
+    this.diagnostico.set(diagnostico ? corrigirDiagnosticoCdp(diagnostico) : null);
+    if (diagnostico) this.triagemConcluida.set(false);
+  }
+
+  confirmarTriagem(): void {
+    if (!this.diagnostico()) return;
+    this.triagemConcluida.set(true);
   }
 
   reiniciar(): void {
@@ -168,6 +181,7 @@ export class TriageStateService {
     this.sintomas.set([]);
     this.respostasRefinamento.set({});
     this.diagnostico.set(null);
+    this.triagemConcluida.set(false);
     if (typeof localStorage !== 'undefined') {
       try {
         localStorage.removeItem(STORAGE_KEY);

@@ -2,15 +2,21 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { catchError, finalize, of, TimeoutError } from 'rxjs';
 import {
-  confiancaBadgeClass,
+  buildRoteiroOficina,
+  exibirAlertaSegurancaCdp,
   PODE_DIRIGIR_LABEL,
   podeDirigirBadgeClass,
+  confiancaBadgeClass,
   prioridadeBadgeClass,
   urgenciaBadgeClass,
-  urgenciaDotColor
+  urgenciaDotColor,
+  urgenciaLabelHuman,
+  veiculoResumoTexto
 } from '@core/constants/cdp-display';
+import { corrigirDiagnosticoCdp } from '@core/utils/pt-br-text.util';
 import { diagnosticoCdpFallback } from '@core/data/cdp.fallback';
 import { rotulosZona } from '@core/data/sintomas.catalog';
+import { HipoteseDiagnostica } from '@core/models/cdp.model';
 import { DiagnosticoApiService } from '@core/services/diagnostico-api.service';
 import { CdpPdfService } from '@core/services/cdp-pdf.service';
 import { TriageStateService } from '@core/services/triage-state.service';
@@ -30,7 +36,13 @@ export class ResultadoPageComponent {
   readonly carregando = signal(false);
   readonly baixandoPdf = signal(false);
   readonly erro = signal('');
-  readonly diagnostico = computed(() => this.state.diagnostico());
+  readonly detalhesTecnicosAberto = signal(false);
+  readonly triagemAberta = signal(false);
+
+  readonly diagnostico = computed(() => {
+    const d = this.state.diagnostico();
+    return d ? corrigirDiagnosticoCdp(d) : null;
+  });
 
   readonly podeDirigirMeta = computed(() => {
     const d = this.diagnostico();
@@ -38,16 +50,33 @@ export class ResultadoPageComponent {
     return PODE_DIRIGIR_LABEL[d.pode_dirigir] ?? PODE_DIRIGIR_LABEL.sim_normal;
   });
 
-  readonly resumo = computed(() => {
+  readonly urgenciaLabel = computed(() => urgenciaLabelHuman(this.diagnostico()?.urgencia_geral));
+
+  readonly exibirAlertaSeguranca = computed(() => {
+    const d = this.diagnostico();
+    return d ? exibirAlertaSegurancaCdp(d) : false;
+  });
+
+  readonly hipotesesResumo = computed((): HipoteseDiagnostica[] => {
+    const hipoteses = this.diagnostico()?.hipoteses ?? [];
+    return hipoteses.slice(0, 3);
+  });
+
+  readonly veiculoResumo = computed(() => veiculoResumoTexto(this.state.snapshot()));
+
+  readonly roteiroOficina = computed(() => {
+    const d = this.diagnostico();
+    if (!d) return [];
+    return buildRoteiroOficina(this.state.snapshot(), d);
+  });
+
+  readonly resumoTriagem = computed(() => {
     const snapshot = this.state.snapshot();
     const veiculo = snapshot.veiculo;
     return [
-      { label: 'Veículo', value: `${veiculo.marca} ${veiculo.modelo} ${veiculo.ano}`.trim() || '—' },
-      { label: 'FIPE / Origem', value: veiculo.codigoFipe || (veiculo.origem === 'manual' ? 'Manual' : '—') },
+      { label: 'Veículo', value: this.veiculoResumo() },
       { label: 'Zona', value: rotulosZona[snapshot.zonaSelecionada] ?? snapshot.zonaSelecionada },
-      { label: 'Sintomas', value: snapshot.sintomas.join(', ') || '—' },
-      { label: 'Respostas IA', value: Object.values(snapshot.respostasRefinamento).join(' · ') || '—' },
-      { label: 'Observações', value: veiculo.observacoes || '—' }
+      { label: 'Sintomas', value: snapshot.sintomas.join(', ') || '—' }
     ];
   });
 
@@ -80,6 +109,11 @@ export class ResultadoPageComponent {
     void this.router.navigateByUrl('/veiculo');
   }
 
+  confirmarTriagem(): void {
+    this.state.confirmarTriagem();
+    void this.router.navigateByUrl('/inicio');
+  }
+
   async baixarPdf(): Promise<void> {
     const diagnostico = this.diagnostico();
     if (!diagnostico) return;
@@ -90,6 +124,19 @@ export class ResultadoPageComponent {
     } finally {
       this.baixandoPdf.set(false);
     }
+  }
+
+  alternarDetalhesTecnicos(): void {
+    this.detalhesTecnicosAberto.update((v) => !v);
+  }
+
+  alternarTriagem(): void {
+    this.triagemAberta.update((v) => !v);
+  }
+
+  formatarCusto(hipotese: HipoteseDiagnostica): string {
+    const { min, max } = hipotese.custo_estimado_brl;
+    return `R$ ${min} – ${max}`;
   }
 
   urgenciaClass(): string {

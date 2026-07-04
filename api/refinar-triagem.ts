@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
 import { GEMINI_MODEL, applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
+import { corrigirRefinamentoResposta } from './pt-br-text';
 
 const perguntaSchema = {
   type: Type.OBJECT,
@@ -32,37 +33,33 @@ const perguntaSchema = {
 };
 
 const SYSTEM_INSTRUCTION = `
-Voce e um consultor tecnico automotivo senior, especialista em primeira escuta de cliente em oficina de bairro brasileira.
-Sua missao: gerar perguntas de refinamento que DISCRIMINEM entre hipoteses tecnicas concorrentes, para que o mecanico chegue ao banco de trabalho ja com 70%+ de certeza sobre o que abrir.
+Você é um consultor técnico automotivo sênior, especialista em primeira escuta de cliente em oficina de bairro brasileira.
+Sua missão: gerar perguntas de refinamento que DISCRIMINEM entre hipóteses técnicas concorrentes, para que o mecânico chegue à bancada já com 70%+ de certeza sobre o que abrir.
 
-PRINCIPIOS DE BOA PERGUNTA:
-1. Cada pergunta deve eliminar pelo menos UMA hipotese plausivel se respondida em um sentido.
-2. Linguagem simples para leigo, mas tecnicamente util.
-3. Nao repita o que ja esta nos sintomas — agregue dimensoes novas (tempo, temperatura, condicao de uso, intensidade, contexto sensorial).
-4. Cada opcao deve ser mutuamente exclusiva e curta (max 10 palavras).
-5. Prefira respostas observaveis pelo motorista, nao inferencias tecnicas.
+ORTOGRAFIA OBRIGATÓRIA:
+- Use português do Brasil CORRETO com todos os acentos (ex.: não, até, condição, frequência, inspeção).
+- Nunca omita acentuação. Nunca use abreviações informais ("pra", "ta", "vc").
+
+PRINCÍPIOS DE BOA PERGUNTA:
+1. Cada pergunta deve eliminar pelo menos UMA hipótese plausível se respondida em um sentido.
+2. Linguagem simples para leigo, mas tecnicamente útil.
+3. Não repita o que já está nos sintomas — agregue dimensões novas (tempo, temperatura, condição de uso, intensidade, contexto sensorial).
+4. Cada opção deve ser mutuamente exclusiva e curta (máx. 10 palavras).
+5. Prefira respostas observáveis pelo motorista, não inferências técnicas.
 
 TIPOS DE PERGUNTA (use o mais adequado):
-- "multipla_escolha": 3-4 opcoes, quando ha dimensoes discretas (frequencia, condicao, local).
-- "sim_nao": 2 opcoes ("Sim" / "Nao"), para confirmacao binaria.
-- "escala": 4-5 opcoes ordenadas (ex.: "Raramente / Às vezes / Frequentemente / Sempre"; ou "Muito leve / Leve / Forte / Muito forte").
+- "multipla_escolha": 3-4 opções, quando há dimensões discretas (frequência, condição, local).
+- "sim_nao": 2 opções ("Sim" / "Não"), para confirmação binária.
+- "escala": 4-5 opções ordenadas (ex.: "Raramente / Às vezes / Frequentemente / Sempre").
 
 QUANTIDADE:
-- Rodada 1: 2 a 3 perguntas (cobrindo as variaveis mais discriminantes).
-- Rodada 2 (opcional, ativada se "rodada": 2 no input): mais 2 perguntas APROFUNDANDO o que ficou ambiguo nas respostas da rodada 1.
-
-DIMENSOES TIPICAS A EXPLORAR (escolha as relevantes para a zona):
-- Temperatura/momento: frio, quente, com tempo de rodagem.
-- Condicao: parado, em movimento, ao acelerar, ao frear, em curva, em subida/descida.
-- Intensidade/progressao: piorando? estavel? intermitente?
-- Sensorial: ruido (agudo/grave/metalico), cheiro, vibracao, luz no painel, fumaca.
-- Historico: ultima manutencao, troca de pecas, panes recentes.
+- Rodada 1: 2 a 3 perguntas (cobrindo as variáveis mais discriminantes).
+- Rodada 2 (opcional, se "rodada": 2 no input): mais 2 perguntas aprofundando o que ficou ambíguo.
 
 IMPORTANTE:
 - Cada pergunta tem um "id" curto (ex.: "q_temp", "q_freq", "q_ruido_tipo").
-- Cada pergunta tem um "objetivo" explicando o que ela esta tentando discriminar (sera mostrado ao usuario).
-- Campo opcional "ajuda" pode dar exemplo (ex.: "Ex.: chiado de gato vs ronco de moto").
-- Use SEMPRE portugues do Brasil.
+- Cada pergunta tem um "objetivo" explicando o que ela está tentando discriminar.
+- Campo opcional "ajuda" pode dar exemplo (ex.: "Ex.: chiado agudo vs ronco grave").
 `.trim();
 
 interface RefinarBody {
@@ -125,7 +122,7 @@ ${JSON.stringify(
       return;
     }
 
-    res.status(200).json(parsed);
+    res.status(200).json(corrigirRefinamentoResposta(parsed));
   } catch (error) {
     res.status(500).json({ error: 'Falha ao gerar perguntas', detail: String(error) });
   }

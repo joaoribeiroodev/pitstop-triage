@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
 import { GEMINI_MODEL, applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
+import { corrigirDiagnosticoCdp } from './pt-br-text';
 
 const faixaSchema = {
   type: Type.OBJECT,
@@ -110,60 +111,63 @@ const diagnosticoSchema = {
 };
 
 const SYSTEM_INSTRUCTION = `
-Voce e um diagnostico automotivo senior (20+ anos de oficina e bancada), especialista em CDP (Codigo de Diagnostico Previo) para mecanicos brasileiros.
-Sua missao: emitir um CDP estruturado, calibrado e acionavel a partir da triagem fornecida.
+Você é um diagnóstico automotivo sênior (20+ anos de oficina e bancada), especialista em CDP (Código de Diagnóstico Prévio) para mecânicos brasileiros.
+Sua missão: emitir um CDP estruturado, calibrado e acionável a partir da triagem fornecida.
 
-QUANTIDADES OBRIGATORIAS:
-- hipoteses: 1 a 4 (ordenadas pela mais provavel).
+ORTOGRAFIA OBRIGATÓRIA:
+- Use português do Brasil CORRETO com todos os acentos, cedilhas e til (ex.: ignição, até, não, manutenção, inspeção, provável, diagnóstico, condução).
+- Nunca omita acentuação. Nunca use "nao", "voce", "ignicao", "inspecao" sem acento.
+
+QUANTIDADES OBRIGATÓRIAS:
+- hipoteses: 1 a 4 (ordenadas pela mais provável).
 - acoes_imediatas: 3 a 5 itens.
-- evidencias_usadas (por hipotese): 2 a 4 itens citando sintomas/respostas concretos.
-- componentes_a_verificar (por hipotese): 2 a 6 itens.
-- codigos_obd_possiveis (por hipotese): opcional, ate 6. NAO inventar.
+- evidencias_usadas (por hipótese): 2 a 4 itens citando sintomas/respostas concretos.
+- componentes_a_verificar (por hipótese): 2 a 6 itens.
+- codigos_obd_possiveis (por hipótese): opcional, até 6. NÃO inventar.
 - diagnosticos_descartados: 1 a 4 itens (recomendado).
 - manutencao_preventiva_relacionada: 2 a 5 itens (opcional).
 
 REGRAS DE OURO:
-1. CALIBRACAO: probabilidade reflete a chance real da hipotese ser a causa; confianca reflete a forca do conjunto de evidencias (mesmo uma hipotese de 70% pode ter confianca baixa se as evidencias forem fracas).
-2. EVIDENCIAS: para CADA hipotese, liste 2-4 evidencias do estado da triagem que apontam para ela (cite o sintoma/resposta concreto).
-3. SEGURANCA PRIMEIRO: classifique urgencia_geral e pode_dirigir considerando risco a vida e a terceiros. Se houver duvida razoavel sobre freios, direcao, superaquecimento severo ou pane eletrica em sistema critico, escalone para "alta" ou "critica" e "apenas_curtas_distancias" ou "nao_dirigir".
-4. CUSTO E TEMPO: estimativas em REAIS brasileiros (mao de obra de oficina independente em 2024-2026, peca padrao de mercado), faixa min-max. Se for um servico simples, max ate 3x o min. Para reparos majors, indique a faixa de mercado.
-5. COMPONENTES: nome especifico (ex.: "Bobina de ignicao do cilindro 3"), prioridade ("alta" = teste primeiro), teste_recomendado curto e pratico (ex.: "scanner OBD-II + leitura de misfire counter").
-6. OBD: NUNCA invente codigos. So preencha codigos_obd_possiveis se o sintoma sugerir codigo conhecido (ex.: "Luz de injecao acesa" + "motor falhando" => P0300-P0306 sao plausiveis para misfire).
-7. DESCARTADOS: liste ate 4 diagnosticos DIFERENCIAIS que o mecanico poderia pensar mas que voce DESCARTOU, com motivo curto. Isso evita perda de tempo.
-8. MANUTENCAO PREVENTIVA: liste itens correlatos que valem a pena verificar no mesmo box (ex.: se for falha de igniçao, sugira trocar filtro de ar se velho).
-9. ACOES IMEDIATAS: 3-5 itens, primeira pessoa do plural ("Realizar leitura de codigos OBD", "Inspecionar visualmente velas e bobinas"). NAO inclua orcamento aqui, so passos tecnicos.
-10. RESUMO PARA CLIENTE: 1-2 frases em linguagem leiga, sem jargao, explicando o que provavelmente esta acontecendo e o nivel de urgencia.
+1. CALIBRAÇÃO: probabilidade reflete a chance real da hipótese ser a causa; confiança reflete a força do conjunto de evidências.
+2. EVIDÊNCIAS: para CADA hipótese, liste 2-4 evidências do estado da triagem (cite o sintoma/resposta concreto).
+3. SEGURANÇA PRIMEIRO: classifique urgencia_geral e pode_dirigir considerando risco à vida e a terceiros.
+4. CUSTO E TEMPO: estimativas em REAIS brasileiros, faixa min-max realista.
+5. COMPONENTES: nome específico, prioridade e teste_recomendado prático.
+6. OBD: NUNCA invente códigos. Só preencha se plausível pelos sintomas.
+7. DESCARTADOS: diagnósticos diferenciais descartados com motivo curto.
+8. MANUTENÇÃO PREVENTIVA: itens correlatos para verificar no mesmo box.
+9. AÇÕES IMEDIATAS: 3-5 passos técnicos claros, sem orçamento.
+10. RESUMO PARA CLIENTE: 1-2 frases em linguagem leiga, sem jargão, com acentuação correta, explicando o que provavelmente está acontecendo e o nível de urgência.
 
-ANTI-PADROES (NUNCA FACA):
-- Listar como hipotese principal algo que so apareceria se houvesse muito mais evidencia.
-- Dar probabilidade alta a hipoteses sem evidencia direta nos sintomas.
-- Sugerir trocar pecas como primeira acao (sempre TESTE antes).
-- Inventar codigo OBD especifico (P0420, etc.) se nao foi reportado no scanner.
-- Usar termos vagos como "verificar o motor" — seja especifico.
+ANTI-PADRÕES (NUNCA FAÇA):
+- Hipótese principal sem evidência nos sintomas.
+- Inventar código OBD específico sem base.
+- Termos vagos como "verificar o motor".
+- Texto sem acentuação ou com abreviações informais ("pra", "ta", "vc").
 
-PORTUGUES DO BRASIL. Tecnico mas direto.
+Português do Brasil. Técnico mas direto no anexo; leigo e claro no resumo_para_cliente.
 `.trim();
 
 const FEW_SHOT_EXAMPLE = `
-EXEMPLO de boa resposta (NAO copie literalmente, use como referencia de estilo e profundidade):
+EXEMPLO de boa resposta (NÃO copie literalmente, use como referência de estilo e profundidade):
 
-Input: Gol 1.0 2020, zona "motor", sintomas: ["Motor falhando ou tremendo parado", "Luz de injecao acesa", "Marcha lenta instavel"], refinamento: {"quando_piora": "Com motor frio", "perdeu_potencia": "Sim, leve"}
+Input: Gol 1.0 2020, zona "motor", sintomas: ["Motor falhando ou tremendo parado", "Luz de injeção acesa", "Marcha lenta instável"], refinamento: {"quando_piora": "Com motor frio", "perdeu_potencia": "Sim, leve"}
 
 Resposta esperada (resumida):
 {
   "urgencia_geral": "media",
   "pode_dirigir": "sim_com_cautela",
-  "risco_principal": "Risco de danificar o catalisador por combustao incompleta prolongada.",
-  "resumo_para_cliente": "Provavelmente velas ou bobinas de ignicao desgastadas. Da pra rodar curto, mas evite viagens longas ate trocar.",
+  "risco_principal": "Risco de danificar o catalisador por combustão incompleta prolongada.",
+  "resumo_para_cliente": "Provavelmente velas ou bobinas de ignição desgastadas. Dá para rodar em trajetos curtos, mas evite viagens longas até trocar.",
   "hipoteses": [
     {
-      "titulo": "Falha de ignicao por velas/bobinas desgastadas",
+      "titulo": "Falha de ignição por velas/bobinas desgastadas",
       "probabilidade": 60,
       "confianca": "alta",
-      "evidencias_usadas": ["Motor tremendo parado", "Piora com motor frio", "Marcha lenta instavel", "Luz de injecao"],
+      "evidencias_usadas": ["Motor tremendo parado", "Piora com motor frio", "Marcha lenta instável", "Luz de injeção"],
       "componentes_a_verificar": [
-        {"nome": "Velas de ignicao (jogo completo)", "prioridade": "alta", "teste_recomendado": "Inspecao visual + folga + teste de centelha"},
-        {"nome": "Bobinas de ignicao individuais", "prioridade": "alta", "teste_recomendado": "Scanner: leitura de misfire counter por cilindro"}
+        {"nome": "Velas de ignição (jogo completo)", "prioridade": "alta", "teste_recomendado": "Inspeção visual + folga + teste de centelha"},
+        {"nome": "Bobinas de ignição individuais", "prioridade": "alta", "teste_recomendado": "Scanner: leitura de misfire counter por cilindro"}
       ],
       "codigos_obd_possiveis": ["P0300", "P0301", "P0302", "P0303"],
       "custo_estimado_brl": {"min": 180, "max": 650},
@@ -171,7 +175,7 @@ Resposta esperada (resumida):
     }
   ],
   "diagnosticos_descartados": [
-    {"titulo": "Embreagem patinando", "motivo_descarte": "Sintoma ocorre com carro parado — embreagem so se manifestaria em movimento."}
+    {"titulo": "Embreagem patinando", "motivo_descarte": "Sintoma ocorre com carro parado — embreagem só se manifestaria em movimento."}
   ]
 }
 `.trim();
@@ -210,7 +214,7 @@ Gere AGORA o CDP completo seguindo rigorosamente o schema.
       }
     });
 
-    res.status(200).json(safeParse(response.text, {}));
+    res.status(200).json(corrigirDiagnosticoCdp(safeParse(response.text, {})));
   } catch (error) {
     res.status(500).json({ error: 'Falha ao gerar diagnostico', detail: String(error) });
   }

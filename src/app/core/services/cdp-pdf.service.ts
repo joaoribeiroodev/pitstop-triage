@@ -1,17 +1,43 @@
 import { Injectable } from '@angular/core';
 import type jsPDF from 'jspdf';
-import { PODE_DIRIGIR_LABEL } from '@core/constants/cdp-display';
+import {
+  buildRoteiroOficina,
+  exibirAlertaSegurancaCdp,
+  podeDirigirLabelPdf,
+  urgenciaLabelHuman,
+  veiculoResumoTexto
+} from '@core/constants/cdp-display';
 import { rotulosZona } from '@core/data/sintomas.catalog';
-import { DiagnosticoCdp } from '@core/models/cdp.model';
+import { DiagnosticoCdp, HipoteseDiagnostica } from '@core/models/cdp.model';
 import { TriageSnapshot } from '@core/models/triage.model';
+import { normalizarTextoPdf } from '@core/utils/pt-br-text.util';
+
+/** Cores pit-lane para impressão (RGB). */
+const C = {
+  bg: [7, 11, 20] as [number, number, number],
+  surface: [248, 250, 252] as [number, number, number],
+  ink: [15, 23, 42] as [number, number, number],
+  mute: [100, 116, 139] as [number, number, number],
+  signal: [251, 146, 60] as [number, number, number],
+  safe: [34, 197, 94] as [number, number, number],
+  warn: [234, 179, 8] as [number, number, number],
+  danger: [220, 38, 38] as [number, number, number],
+  white: [255, 255, 255] as [number, number, number]
+};
+
+const URGENCIA_RGB: Record<string, [number, number, number]> = {
+  baixa: C.safe,
+  media: C.warn,
+  alta: C.signal,
+  critica: C.danger
+};
 
 @Injectable({ providedIn: 'root' })
 export class CdpPdfService {
-  private readonly margin = 14;
-  private readonly topY = 20;
-  private readonly lineH = 5;
-  /** Área reservada para o rodapé em cada página. */
-  private readonly footerZone = 22;
+  private readonly margin = 16;
+  private readonly topY = 22;
+  private readonly lineH = 4.8;
+  private readonly footerZone = 20;
 
   async generate(snapshot: TriageSnapshot, diagnostico: DiagnosticoCdp): Promise<jsPDF> {
     const { default: JsPDF } = await import('jspdf');
@@ -23,241 +49,375 @@ export class CdpPdfService {
   private paint(doc: jsPDF, snapshot: TriageSnapshot, d: DiagnosticoCdp): void {
     const pageW = this.pageWidth(doc);
     const contentW = pageW - this.margin * 2;
-    let y = 20;
+    let y = this.paintBrandHeader(doc, pageW);
 
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageW, 14, 'F');
-    doc.setTextColor(251, 146, 60);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text('PITSTOP TRIAGE', this.margin, 9);
-    doc.setTextColor(226, 232, 240);
-    doc.setFontSize(9);
-    doc.text('Código de Diagnóstico Prévio', pageW - this.margin, 9, { align: 'right' });
+    y = this.paintTitleBlock(doc, y, contentW);
+    y = this.paintVehicleCard(doc, y, contentW, snapshot);
+    y = this.paintSummaryHero(doc, y, contentW, d.resumo_para_cliente);
+    y = this.paintStatusRow(doc, y, contentW, d);
+    if (exibirAlertaSegurancaCdp(d)) {
+      y = this.paintAlertBox(doc, y, contentW, d.risco_principal, d.observacoes_seguranca);
+    }
+    y = this.paintCausesSection(doc, y, contentW, d.hipoteses.slice(0, 3));
+    y = this.paintOfficeSection(doc, y, contentW, buildRoteiroOficina(snapshot, d));
+    if (d.acoes_imediatas.length > 0) {
+      y = this.paintBulletSection(doc, y, contentW, 'Enquanto isso', d.acoes_imediatas);
+    }
 
-    doc.setTextColor(15, 23, 42);
-    doc.setFontSize(18);
+    y = this.paintSectionDivider(doc, y, contentW, 'Detalhes técnicos - oficina');
+    y = this.paintTechnicalHypotheses(doc, y, contentW, d.hipoteses);
+
+    if (d.diagnosticos_descartados?.length) {
+      y = this.paintBulletSection(
+        doc,
+        y,
+        contentW,
+        'Diagnósticos descartados',
+        d.diagnosticos_descartados.map((x) => `${x.titulo} - ${x.motivo_descarte}`)
+      );
+    }
+    if (d.manutencao_preventiva_relacionada?.length) {
+      y = this.paintBulletSection(doc, y, contentW, 'Manutenção preventiva sugerida', d.manutencao_preventiva_relacionada);
+    }
+    if (d.proxima_inspecao_recomendada) {
+      y = this.writeSection(doc, 'Próxima inspeção recomendada', d.proxima_inspecao_recomendada, y, contentW);
+    }
+
+    y = this.paintSymptomsFooter(doc, y, contentW, snapshot);
+    this.paintFooters(doc, pageW);
+  }
+
+  private paintBrandHeader(doc: jsPDF, pageW: number): number {
+    doc.setFillColor(...C.bg);
+    doc.rect(0, 0, pageW, 12, 'F');
+    doc.setFillColor(...C.signal);
+    doc.rect(0, 12, pageW, 0.8, 'F');
+
+    doc.setTextColor(...C.signal);
     doc.setFont('helvetica', 'bold');
-    doc.text('CDP — Diagnóstico Prévio', this.margin, (y = 26));
-    y += 8;
+    doc.setFontSize(11);
+    doc.text('PITSTOP TRIAGE', this.margin, 8);
+
+    doc.setTextColor(...C.white);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(this.pdfText('Diagnóstico Prévio do Veículo'), pageW - this.margin, 8, { align: 'right' });
+
+    return 20;
+  }
+
+  private paintTitleBlock(doc: jsPDF, y: number, contentW: number): number {
+    doc.setTextColor(...C.ink);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Resumo para levar na oficina', this.margin, y);
+    y += 7;
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(71, 85, 105);
+    doc.setFontSize(9);
+    doc.setTextColor(...C.mute);
     doc.text(`Emitido em ${new Date().toLocaleString('pt-BR')}`, this.margin, y);
-    y += 8;
+    return y + 8;
+  }
 
-    y = this.ensureSpace(doc, y, 32);
+  private paintVehicleCard(doc: jsPDF, y: number, contentW: number, snapshot: TriageSnapshot): number {
+    const h = 22;
+    y = this.ensureSpace(doc, y, h);
     doc.setDrawColor(226, 232, 240);
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(this.margin, y, contentW, 30, 2, 2, 'FD');
-    doc.setTextColor(15, 23, 42);
+    doc.setFillColor(...C.surface);
+    doc.roundedRect(this.margin, y, contentW, h, 2, 2, 'FD');
+
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('VEÍCULO', this.margin + 4, y + 6);
-    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...C.mute);
+    doc.text(this.pdfText('VEÍCULO'), this.margin + 4, y + 5);
+
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text(
-      `${snapshot.veiculo.marca} ${snapshot.veiculo.modelo} ${snapshot.veiculo.ano}`.trim() || '-',
-      this.margin + 4,
-      y + 13
-    );
+    doc.setTextColor(...C.ink);
+    doc.text(this.pdfText(veiculoResumoTexto(snapshot)), this.margin + 4, y + 11);
+
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(71, 85, 105);
-    doc.text(
-      `FIPE: ${snapshot.veiculo.codigoFipe || (snapshot.veiculo.origem === 'manual' ? 'Manual' : '-')}    Origem: ${snapshot.veiculo.origem || '-'}`,
-      this.margin + 4,
-      y + 20
-    );
-    doc.text(
-      `Zona: ${rotulosZona[snapshot.zonaSelecionada] ?? snapshot.zonaSelecionada}    Sintomas: ${snapshot.sintomas.length}`,
-      this.margin + 4,
-      y + 26
-    );
-    y += 38;
+    doc.setTextColor(...C.mute);
+    const zona = rotulosZona[snapshot.zonaSelecionada] ?? snapshot.zonaSelecionada;
+    doc.text(this.pdfText(`Área: ${zona}  ·  ${snapshot.sintomas.length} sintoma(s) relatado(s)`), this.margin + 4, y + 17);
 
-    const urgColors: Record<string, [number, number, number]> = {
-      baixa: [34, 197, 94],
-      media: [234, 179, 8],
-      alta: [249, 115, 22],
-      critica: [220, 38, 38]
-    };
-    const [r, g, b] = urgColors[d.urgencia_geral] ?? [100, 116, 139];
-    y = this.ensureSpace(doc, y, 12);
-    doc.setFillColor(r, g, b);
-    doc.roundedRect(this.margin, y, 50, 9, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text(`URGÊNCIA ${d.urgencia_geral.toUpperCase()}`, this.margin + 25, y + 6, { align: 'center' });
+    return y + h + 6;
+  }
 
-    const podeLabel = PODE_DIRIGIR_LABEL[d.pode_dirigir].label.toUpperCase();
-    doc.setFillColor(15, 23, 42);
-    doc.roundedRect(this.margin + 54, y, contentW - 54, 9, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(podeLabel.length > 28 ? 8 : 9);
-    doc.text(podeLabel, this.margin + 54 + (contentW - 54) / 2, y + 6, { align: 'center' });
-    y += 16;
-
-    y = this.writeSection(doc, 'Risco principal', d.risco_principal, y, contentW);
-    y = this.writeSection(doc, 'Resumo para o cliente', d.resumo_para_cliente, y, contentW);
-    y = this.writeSection(doc, 'Observações de segurança', d.observacoes_seguranca, y, contentW);
-
-    y = this.ensureSpace(doc, y, 10);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(15, 23, 42);
-    doc.text('Ações imediatas', this.margin, y);
-    y += 6;
+  private paintSummaryHero(doc: jsPDF, y: number, contentW: number, resumo: string): number {
+    const pad = 4;
+    const textW = contentW - pad * 2 - 3;
+    const texto = this.pdfText(resumo);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(51, 65, 85);
-    d.acoes_imediatas.forEach((acao, index) => {
-      y = this.writeWrapped(doc, `${index + 1}. ${acao}`, this.margin, y, contentW);
-      y += 1;
-    });
-    y += 3;
-
-    y = this.ensureSpace(doc, y, 10);
-    doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.setTextColor(15, 23, 42);
-    doc.text('Hipóteses técnicas', this.margin, y);
+    const lines = doc.splitTextToSize(texto, textW) as string[];
+    const boxH = lines.length * this.lineH + pad * 2 + 8;
+
+    y = this.ensureSpace(doc, y, boxH + 4);
+    doc.setFillColor(255, 247, 237);
+    doc.setDrawColor(...C.signal);
+    doc.roundedRect(this.margin, y, contentW, boxH, 2, 2, 'FD');
+    doc.setFillColor(...C.signal);
+    doc.rect(this.margin, y, 2.5, boxH, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...C.signal);
+    doc.text('EM POUCAS PALAVRAS', this.margin + pad + 2, y + 5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(...C.ink);
+    let ty = y + 10;
+    lines.forEach((line) => {
+      doc.text(line, this.margin + pad + 2, ty);
+      ty += this.lineH;
+    });
+
+    return y + boxH + 6;
+  }
+
+  private paintStatusRow(doc: jsPDF, y: number, contentW: number, d: DiagnosticoCdp): number {
+    const half = (contentW - 3) / 2;
+    const urgLabel = this.pdfText(urgenciaLabelHuman(d.urgencia_geral));
+    const podeLabel = this.pdfText(podeDirigirLabelPdf(d.pode_dirigir));
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    const urgLines = doc.splitTextToSize(urgLabel, half - 6) as string[];
+    const podeLines = doc.splitTextToSize(podeLabel, half - 6) as string[];
+    const h = Math.max(urgLines.length, podeLines.length) * this.lineH + 4;
+
+    y = this.ensureSpace(doc, y, h + 4);
+
+    const urgRgb = URGENCIA_RGB[d.urgencia_geral] ?? C.mute;
+    doc.setFillColor(...urgRgb);
+    doc.roundedRect(this.margin, y, half, h, 2, 2, 'F');
+    doc.setTextColor(...C.white);
+    doc.setFontSize(7.5);
+    urgLines.forEach((line, i) => {
+      doc.text(line, this.margin + half / 2, y + 4 + i * this.lineH, { align: 'center' });
+    });
+
+    doc.setFillColor(...C.ink);
+    doc.roundedRect(this.margin + half + 3, y, half, h, 2, 2, 'F');
+    podeLines.forEach((line, i) => {
+      doc.text(line, this.margin + half + 3 + half / 2, y + 4 + i * this.lineH, { align: 'center' });
+    });
+
+    return y + h + 8;
+  }
+
+  private paintAlertBox(doc: jsPDF, y: number, contentW: number, risco: string, obs: string): number {
+    const body = `${risco}\n${obs}`;
+    const lines = doc.splitTextToSize(this.pdfText(body), contentW - 8) as string[];
+    const boxH = lines.length * this.lineH + 10;
+
+    y = this.ensureSpace(doc, y, boxH);
+    doc.setFillColor(254, 252, 232);
+    doc.setDrawColor(...C.warn);
+    doc.roundedRect(this.margin, y, contentW, boxH, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(161, 98, 7);
+    doc.text(this.pdfText('ATENÇÃO - SEGURANÇA'), this.margin + 4, y + 5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...C.ink);
+    let ty = y + 10;
+    lines.forEach((line) => {
+      doc.text(line, this.margin + 4, ty);
+      ty += this.lineH;
+    });
+
+    return y + boxH + 6;
+  }
+
+  private paintCausesSection(doc: jsPDF, y: number, contentW: number, hipoteses: HipoteseDiagnostica[]): number {
+    if (hipoteses.length === 0) return y;
+
+    y = this.paintSectionHeading(doc, y, 'Possíveis causas');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...C.mute);
+    y = this.ensureSpace(doc, y, this.lineH);
+    doc.text('Hipóteses mais prováveis - a oficina confirmará com inspeção.', this.margin, y);
     y += 6;
 
-    d.hipoteses.forEach((hipotese, index) => {
-      const stats = `${hipotese.probabilidade}% | conf. ${hipotese.confianca}`;
-      const title = `${index + 1}. ${hipotese.titulo}`;
-      const titleLines = doc.splitTextToSize(title, contentW - 42) as string[];
-      const barH = Math.max(8, titleLines.length * this.lineH + 3);
-
-      y = this.ensureSpace(doc, y, barH + 28);
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(this.margin, y, contentW, barH, 1.5, 1.5, 'F');
-      doc.setTextColor(15, 23, 42);
+    hipoteses.forEach((h, index) => {
+      const title = `${index + 1}. ${h.titulo}`;
+      const cost = `Estimativa: R$ ${h.custo_estimado_brl.min} - ${h.custo_estimado_brl.max}`;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
-      titleLines.forEach((line, lineIndex) => {
-        doc.text(line, this.margin + 2, y + 4.5 + lineIndex * this.lineH);
-      });
-      doc.setTextColor(8, 145, 178);
+      doc.setFontSize(10);
+      const titleLines = doc.splitTextToSize(this.pdfText(title), contentW - 8) as string[];
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.text(stats, pageW - this.margin - 2, y + 4.5, { align: 'right' });
-      y += barH + 2;
+      const justLines = doc.splitTextToSize(this.pdfText(h.justificativa_tecnica), contentW - 8) as string[];
+      const boxH = titleLines.length * this.lineH + justLines.length * this.lineH + 18;
+
+      y = this.ensureSpace(doc, y, boxH);
+      doc.setDrawColor(226, 232, 240);
+      doc.setFillColor(...C.surface);
+      doc.roundedRect(this.margin, y, contentW, boxH, 1.5, 1.5, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...C.ink);
+      let ty = y + 5;
+      titleLines.forEach((line) => {
+        doc.text(line, this.margin + 4, ty);
+        ty += this.lineH;
+      });
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139);
-      y = this.ensureSpace(doc, y, this.lineH);
-      doc.text(`Sistema: ${hipotese.sistema_afetado}`, this.margin, y);
-      y += this.lineH;
-      y = this.ensureSpace(doc, y, this.lineH);
-      doc.text(
-        `Custo: R$ ${hipotese.custo_estimado_brl.min}-${hipotese.custo_estimado_brl.max}    Tempo: ${hipotese.tempo_reparo_horas.min}-${hipotese.tempo_reparo_horas.max}h`,
-        this.margin,
-        y
-      );
-      y += this.lineH;
-
-      doc.setFontSize(10);
-      doc.setTextColor(51, 65, 85);
-      y = this.writeWrapped(doc, hipotese.justificativa_tecnica, this.margin, y, contentW);
-      y += 2;
+      doc.setTextColor(...C.mute);
+      ty += 1;
+      justLines.forEach((line) => {
+        doc.text(line, this.margin + 4, ty);
+        ty += this.lineH;
+      });
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(8, 145, 178);
+      doc.setFontSize(8);
+      doc.setTextColor(...C.signal);
+      doc.text(this.pdfText(cost), this.margin + 4, y + boxH - 3);
+
+      y += boxH + 3;
+    });
+
+    return y + 3;
+  }
+
+  private paintOfficeSection(doc: jsPDF, y: number, contentW: number, linhas: string[]): number {
+    y = this.paintSectionHeading(doc, y, 'Leve isso na oficina');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...C.mute);
+    y = this.ensureSpace(doc, y, this.lineH);
+    doc.text('Mostre este resumo na recepção para agilizar o atendimento.', this.margin, y);
+    y += 5;
+
+    linhas.forEach((linha) => {
+      y = this.ensureSpace(doc, y, this.lineH);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...C.ink);
+      doc.text(`> ${this.pdfText(linha)}`, this.margin + 2, y);
+      y += this.lineH + 1;
+    });
+
+    return y + 4;
+  }
+
+  private paintSectionDivider(doc: jsPDF, y: number, contentW: number, label: string): number {
+    y = this.ensureSpace(doc, y, 16);
+    if (y > this.topY + 5) {
+      doc.addPage();
+      y = this.topY;
+    }
+
+    doc.setDrawColor(...C.signal);
+    doc.setLineWidth(0.4);
+    doc.line(this.margin, y, this.margin + contentW, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...C.signal);
+    doc.text(this.pdfText(label.toUpperCase()), this.margin, y);
+    return y + 8;
+  }
+
+  private paintTechnicalHypotheses(doc: jsPDF, y: number, contentW: number, hipoteses: HipoteseDiagnostica[]): number {
+    hipoteses.forEach((h, index) => {
+      y = this.ensureSpace(doc, y, 14);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...C.ink);
+      y = this.writeWrapped(doc, `${index + 1}. ${h.titulo}`, this.margin, y, contentW);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...C.mute);
       y = this.writeWrapped(
         doc,
-        `Evidências: ${hipotese.evidencias_usadas.join(' / ')}`,
+        `${h.probabilidade}% · conf. ${h.confianca} · ${h.sistema_afetado}`,
+        this.margin,
+        y,
+        contentW
+      );
+      y += 1;
+
+      doc.setFontSize(9);
+      y = this.writeWrapped(
+        doc,
+        `Custo R$ ${h.custo_estimado_brl.min}-${h.custo_estimado_brl.max} · Tempo ${h.tempo_reparo_horas.min}-${h.tempo_reparo_horas.max}h`,
         this.margin,
         y,
         contentW
       );
 
-      const componentes = hipotese.componentes_a_verificar
-        .map((c) => `${c.nome} [${c.prioridade}] - ${c.teste_recomendado}`)
-        .join(' / ');
-      doc.setTextColor(234, 88, 12);
-      y = this.writeWrapped(doc, `Verificar: ${componentes}`, this.margin, y, contentW);
-
-      if (hipotese.codigos_obd_possiveis && hipotese.codigos_obd_possiveis.length > 0) {
-        doc.setTextColor(8, 145, 178);
-        y = this.writeWrapped(
-          doc,
-          `OBD: ${hipotese.codigos_obd_possiveis.join(', ')}`,
-          this.margin,
-          y,
-          contentW
-        );
+      if (h.componentes_a_verificar.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...C.signal);
+        y = this.writeWrapped(doc, 'Verificar:', this.margin, y, contentW);
+        h.componentes_a_verificar.forEach((c) => {
+          y = this.writeWrapped(
+            doc,
+            `  [${c.prioridade}] ${c.nome} — ${c.teste_recomendado}`,
+            this.margin,
+            y,
+            contentW
+          );
+        });
       }
+
+      if (h.codigos_obd_possiveis?.length) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(...C.mute);
+        y = this.writeWrapped(doc, `OBD: ${h.codigos_obd_possiveis.join(', ')}`, this.margin, y, contentW);
+      }
+
       y += 4;
     });
+    return y;
+  }
 
-    if (d.diagnosticos_descartados && d.diagnosticos_descartados.length > 0) {
-      y = this.ensureSpace(doc, y, 10);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(15, 23, 42);
-      doc.text('Diagnósticos descartados', this.margin, y);
-      y += 6;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139);
-      d.diagnosticos_descartados.forEach((descartado) => {
-        y = this.writeWrapped(
-          doc,
-          `[X] ${descartado.titulo} - ${descartado.motivo_descarte}`,
-          this.margin,
-          y,
-          contentW
-        );
-        y += 2;
-      });
-      y += 2;
-    }
+  private paintSymptomsFooter(doc: jsPDF, y: number, contentW: number, snapshot: TriageSnapshot): number {
+    const sintomas = snapshot.sintomas.join(', ') || '—';
+    return this.writeSection(doc, 'Sintomas informados pelo cliente', sintomas, y, contentW);
+  }
 
-    if (d.manutencao_preventiva_relacionada && d.manutencao_preventiva_relacionada.length > 0) {
-      y = this.ensureSpace(doc, y, 10);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(15, 23, 42);
-      doc.text('Aproveite o pit stop', this.margin, y);
-      y += 6;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(51, 65, 85);
-      d.manutencao_preventiva_relacionada.forEach((item) => {
-        y = this.writeWrapped(doc, `+ ${item}`, this.margin, y, contentW);
-        y += 1;
-      });
-      y += 2;
-    }
+  private paintSectionHeading(doc: jsPDF, y: number, title: string): number {
+    y = this.ensureSpace(doc, y, 10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...C.ink);
+    doc.text(title, this.margin, y);
+    return y + 6;
+  }
 
-    if (d.proxima_inspecao_recomendada) {
-      y = this.ensureSpace(doc, y, 12);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(8, 145, 178);
-      y = this.writeWrapped(doc, 'Próxima inspeção:', this.margin, y, contentW);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(51, 65, 85);
-      y = this.writeWrapped(doc, d.proxima_inspecao_recomendada, this.margin, y, contentW);
-    }
-
-    this.paintFooters(doc, pageW);
+  private paintBulletSection(doc: jsPDF, y: number, contentW: number, title: string, items: string[]): number {
+    y = this.paintSectionHeading(doc, y, title);
+    items.forEach((item) => {
+      y = this.writeWrapped(doc, `· ${item}`, this.margin, y, contentW);
+      y += 1;
+    });
+    return y + 2;
   }
 
   private writeSection(doc: jsPDF, title: string, body: string, y: number, contentW: number): number {
-    y = this.ensureSpace(doc, y, 12);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(15, 23, 42);
-    doc.text(title, this.margin, y);
-    y += 6;
+    y = this.paintSectionHeading(doc, y, title);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(9.5);
+    doc.setTextColor(...C.ink);
     y = this.writeWrapped(doc, body, this.margin, y, contentW);
     return y + 3;
   }
@@ -267,15 +427,17 @@ export class CdpPdfService {
     const footerY = this.pageHeight(doc) - 8;
     for (let page = 1; page <= totalPages; page++) {
       doc.setPage(page);
+      doc.setDrawColor(226, 232, 240);
+      doc.line(this.margin, footerY - 4, pageW - this.margin, footerY - 4);
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(7.5);
+      doc.setTextColor(...C.mute);
       doc.text(
-        'Diagnóstico prévio assistido por IA - não substitui inspeção presencial qualificada.',
+        this.pdfText('Diagnóstico prévio assistido por IA - não substitui inspeção presencial qualificada.'),
         this.margin,
         footerY
       );
-      doc.text(`Página ${page}/${totalPages}`, pageW - this.margin, footerY, { align: 'right' });
+      doc.text(`Pág. ${page}/${totalPages}`, pageW - this.margin, footerY, { align: 'right' });
     }
   }
 
@@ -300,7 +462,7 @@ export class CdpPdfService {
   }
 
   private writeWrapped(doc: jsPDF, text: string, x: number, y: number, maxWidth: number): number {
-    const safeText = this.sanitizeForPdf(text);
+    const safeText = this.pdfText(text);
     const lines = doc.splitTextToSize(safeText, maxWidth) as string[];
     for (const line of lines) {
       y = this.ensureSpace(doc, y, this.lineH);
@@ -310,13 +472,7 @@ export class CdpPdfService {
     return y;
   }
 
-  /** Helvetica padrão do jsPDF não renderiza bem alguns símbolos Unicode. */
-  private sanitizeForPdf(text: string): string {
-    return text
-      .replace(/\u2014|\u2013/g, '-')
-      .replace(/\u00b7|\u2022/g, ' / ')
-      .replace(/[\u2715\u2716\u2717\u2718]/g, 'X')
-      .replace(/[\u2018\u2019]/g, "'")
-      .replace(/[\u201c\u201d]/g, '"');
+  private pdfText(text: string): string {
+    return normalizarTextoPdf(text);
   }
 }

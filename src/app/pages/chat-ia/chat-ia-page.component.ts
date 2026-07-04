@@ -13,6 +13,7 @@ import { perguntasRefinamentoFallback } from '@core/data/refinamento.fallback';
 import { DiagnosticoApiService } from '@core/services/diagnostico-api.service';
 import { TriageStateService } from '@core/services/triage-state.service';
 import { PerguntaRefinamento } from '@core/models/refinamento.model';
+import { corrigirRefinamentoResposta } from '@core/utils/pt-br-text.util';
 
 @Component({
   selector: 'app-chat-ia-page',
@@ -84,10 +85,11 @@ export class ChatIaPageComponent implements OnDestroy {
         finalize(() => this.pararCarregamento())
       )
       .subscribe((res) => {
-        this.perguntas.set(res.perguntas);
+        const corrigido = corrigirRefinamentoResposta(res);
+        this.perguntas.set(corrigido.perguntas);
         this.historicoPerguntas.update((hist) => {
           const next = { ...hist };
-          for (const p of res.perguntas) next[p.id] = p.pergunta;
+          for (const p of corrigido.perguntas) next[p.id] = p.pergunta;
           return next;
         });
         this.cdr.markForCheck();

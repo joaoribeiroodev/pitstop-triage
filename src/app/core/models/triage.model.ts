@@ -15,4 +15,5 @@ export interface PersistedTriageState {
   sintomas: string[];
   respostasRefinamento: Record<string, string>;
   diagnostico: DiagnosticoCdp | null;
+  triagemConcluida?: boolean;
 }

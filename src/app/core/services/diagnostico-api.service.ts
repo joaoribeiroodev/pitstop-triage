@@ -1,9 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, timeout } from 'rxjs';
+import { Observable, map, timeout } from 'rxjs';
 import { DiagnosticoCdp } from '@core/models/cdp.model';
 import { RefinamentoResponse } from '@core/models/refinamento.model';
 import { TriageSnapshot } from '@core/models/triage.model';
+import { corrigirDiagnosticoCdp, corrigirRefinamentoResposta } from '@core/utils/pt-br-text.util';
 
 /** Gemini costuma levar 15–90s; após isso usamos fallback local no componente. */
 export const AI_REQUEST_TIMEOUT_MS = 45_000;
@@ -13,15 +14,17 @@ export class DiagnosticoApiService {
   private readonly http = inject(HttpClient);
 
   gerarDiagnostico(snapshot: TriageSnapshot): Observable<DiagnosticoCdp> {
-    return this.http
-      .post<DiagnosticoCdp>('/api/gerar-diagnostico', snapshot)
-      .pipe(timeout({ first: AI_REQUEST_TIMEOUT_MS }));
+    return this.http.post<DiagnosticoCdp>('/api/gerar-diagnostico', snapshot).pipe(
+      map((d) => corrigirDiagnosticoCdp(d)),
+      timeout({ first: AI_REQUEST_TIMEOUT_MS })
+    );
   }
 
   gerarPerguntas(snapshot: TriageSnapshot, rodada = 1): Observable<RefinamentoResponse> {
-    return this.http
-      .post<RefinamentoResponse>('/api/refinar-triagem', { ...snapshot, rodada })
-      .pipe(timeout({ first: AI_REQUEST_TIMEOUT_MS }));
+    return this.http.post<RefinamentoResponse>('/api/refinar-triagem', { ...snapshot, rodada }).pipe(
+      map((r) => corrigirRefinamentoResposta(r)),
+      timeout({ first: AI_REQUEST_TIMEOUT_MS })
+    );
   }
 }
 

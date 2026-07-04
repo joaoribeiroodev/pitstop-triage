@@ -1,4 +1,6 @@
-import { Confianca, PodeDirigir, Prioridade, UrgenciaGeral } from '@core/models/cdp.model';
+import { Confianca, DiagnosticoCdp, PodeDirigir, Prioridade, UrgenciaGeral } from '@core/models/cdp.model';
+import { rotulosZona } from '@core/data/sintomas.catalog';
+import { TriageSnapshot } from '@core/models/triage.model';
 
 export interface PodeDirigirMeta {
   label: string;
@@ -48,4 +50,55 @@ export function prioridadeBadgeClass(prioridade: Prioridade | string): string {
   if (prioridade === 'alta') return 'bg-pit-danger/20 text-pit-danger';
   if (prioridade === 'media') return 'bg-pit-warn/20 text-pit-warn';
   return 'bg-white/10 text-pit-mute';
+}
+
+export const URGENCIA_LABEL: Record<UrgenciaGeral, string> = {
+  baixa: 'Pode agendar com calma',
+  media: 'Agende uma vistoria em breve',
+  alta: 'Procure uma oficina logo',
+  critica: 'Urgente - não ignore'
+};
+
+export function urgenciaLabelHuman(urgencia?: UrgenciaGeral): string {
+  return urgencia ? (URGENCIA_LABEL[urgencia] ?? urgencia) : '';
+}
+
+export function exibirAlertaSegurancaCdp(d: DiagnosticoCdp): boolean {
+  return (
+    d.pode_dirigir === 'nao_dirigir' ||
+    d.pode_dirigir === 'apenas_curtas_distancias' ||
+    d.urgencia_geral === 'alta' ||
+    d.urgencia_geral === 'critica'
+  );
+}
+
+export function veiculoResumoTexto(snapshot: TriageSnapshot): string {
+  const v = snapshot.veiculo;
+  return `${v.marca} ${v.modelo} ${v.ano}`.trim() || '—';
+}
+
+export function buildRoteiroOficina(snapshot: TriageSnapshot, d: DiagnosticoCdp): string[] {
+  const linhas: string[] = [
+    `Veículo: ${veiculoResumoTexto(snapshot)}`,
+    `Área com problema: ${rotulosZona[snapshot.zonaSelecionada] ?? '—'}`,
+    `Sintomas: ${snapshot.sintomas.join(', ') || '—'}`
+  ];
+
+  const principal = d.hipoteses[0];
+  if (principal) {
+    linhas.push(`Suspeita principal: ${principal.titulo}`);
+    linhas.push(
+      `Estimativa: R$ ${principal.custo_estimado_brl.min} - ${principal.custo_estimado_brl.max}`
+    );
+  }
+
+  linhas.push(`Urgência: ${urgenciaLabelHuman(d.urgencia_geral)}`);
+  linhas.push(`Condução: ${PODE_DIRIGIR_LABEL[d.pode_dirigir].label}`);
+
+  return linhas;
+}
+
+/** Rótulos de condução sem emoji (PDF / texto plano). */
+export function podeDirigirLabelPdf(podeDirigir: PodeDirigir): string {
+  return PODE_DIRIGIR_LABEL[podeDirigir].label;
 }
