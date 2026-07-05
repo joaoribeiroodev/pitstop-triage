@@ -43,6 +43,16 @@
       </div>
     </div>
   } @else {
+    @if (isContingencia()) {
+      <div class="rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-4">
+        <p class="font-inter text-sm font-semibold text-pit-warn">Diagnóstico de contingência</p>
+        <p class="mt-2 font-inter text-sm text-white/60">
+          Este resumo foi gerado localmente porque a IA não respondeu. Use o botão <strong class="text-white/90">Atualizar</strong> para
+          tentar novamente com a IA.
+        </p>
+      </div>
+    }
+
     <!-- ── 1. Resumo principal (cliente) ── -->
     <article class="panel-strong relative overflow-hidden p-6 sm:p-8">
       <div class="absolute inset-x-0 top-0 stripes-divider"></div>

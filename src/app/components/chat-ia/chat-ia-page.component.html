@@ -36,7 +36,9 @@
               }
             </button>
             @if (carregando()) {
-              <p class="mt-4 font-mono text-xs text-white/40">Consultando a IA… {{ carregandoSegundos() }}s (máx. 45s).</p>
+              <p class="mt-4 font-mono text-xs text-white/40">
+                Consultando a IA… {{ carregandoSegundos() }}s (máx. {{ timeoutSegundos }}s).
+              </p>
             }
             @if (!state.podeGerarDiagnostico()) {
               <p class="mt-4 font-inter text-xs text-pit-warn">Complete veículo, mapa e sintomas antes de continuar.</p>

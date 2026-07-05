@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, finalize, of, TimeoutError } from 'rxjs';
+import { catchError, finalize, map, of, TimeoutError } from 'rxjs';
 import {
   buildRoteiroOficina,
   exibirAlertaSegurancaCdp,
@@ -17,7 +17,7 @@ import { corrigirDiagnosticoCdp } from '@utils/pt-br-text.util';
 import { diagnosticoCdpFallback } from '@data/cdp.fallback';
 import { rotulosZona } from '@data/sintomas.catalog';
 import { HipoteseDiagnostica } from '@models/cdp.model';
-import { DiagnosticoApiService } from '@services/diagnostico-api.service';
+import { AI_REQUEST_TIMEOUT_S, DiagnosticoApiService } from '@services/diagnostico-api.service';
 import { CdpPdfService } from '@services/cdp-pdf.service';
 import { TriageStateService } from '@services/triage-state.service';
 
@@ -33,6 +33,7 @@ export class ResultadoPageComponent {
   private readonly pdf = inject(CdpPdfService);
   private readonly router = inject(Router);
 
+  readonly timeoutSegundos = AI_REQUEST_TIMEOUT_S;
   readonly carregando = signal(false);
   readonly baixandoPdf = signal(false);
   readonly erro = signal('');
@@ -43,6 +44,8 @@ export class ResultadoPageComponent {
     const d = this.state.diagnostico();
     return d ? corrigirDiagnosticoCdp(d) : null;
   });
+
+  readonly isContingencia = computed(() => this.state.diagnosticoFonte() === 'contingencia');
 
   readonly podeDirigirMeta = computed(() => {
     const d = this.diagnostico();
@@ -85,17 +88,21 @@ export class ResultadoPageComponent {
     this.api
       .gerarDiagnostico(this.state.snapshot())
       .pipe(
+        map((diagnostico) => ({ diagnostico, fonte: 'ia' as const })),
         catchError((err) => {
           const prefix =
             err instanceof TimeoutError
-              ? 'A IA demorou mais que o esperado (45s). '
+              ? `A IA demorou mais que o esperado (${AI_REQUEST_TIMEOUT_S}s). `
               : 'A API não respondeu agora. ';
           this.erro.set(`${prefix}Foi gerado um CDP local de contingência.`);
-          return of(diagnosticoCdpFallback(this.state.zonaSelecionada(), this.state.sintomas()));
+          return of({
+            diagnostico: diagnosticoCdpFallback(this.state.zonaSelecionada(), this.state.sintomas()),
+            fonte: 'contingencia' as const
+          });
         }),
         finalize(() => this.carregando.set(false))
       )
-      .subscribe((diagnostico) => this.state.definirDiagnostico(diagnostico));
+      .subscribe(({ diagnostico, fonte }) => this.state.definirDiagnostico(diagnostico, fonte));
   }
 
   reiniciar(): void {

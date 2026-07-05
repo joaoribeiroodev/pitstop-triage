@@ -201,14 +201,6 @@ A API serverless reutiliza `@utils/*` e `@models/*` via `api/tsconfig.json` (sem
 - [x] Correção ortográfica pt-BR nos textos da IA
 - [x] CI (lint, Prettier, typecheck API, build)
 
-### Planejado
-
-- [ ] Testes automatizados (unitários e e2e)
-- [ ] Internacionalização (i18n)
-- [ ] Painel ou API para oficinas receberem o CDP
-- [ ] Histórico de triagens com backend opcional
-- [ ] PWA / modo offline nas etapas sem IA
-
 ---
 
 ## Contribuindo

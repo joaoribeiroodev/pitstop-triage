@@ -8,9 +8,9 @@ import {
   signal
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, finalize, of, Subscription, TimeoutError } from 'rxjs';
+import { catchError, finalize, map, of, Subscription, TimeoutError } from 'rxjs';
 import { perguntasRefinamentoFallback } from '@data/refinamento.fallback';
-import { DiagnosticoApiService } from '@services/diagnostico-api.service';
+import { AI_REQUEST_TIMEOUT_S, DiagnosticoApiService } from '@services/diagnostico-api.service';
 import { TriageStateService } from '@services/triage-state.service';
 import { PerguntaRefinamento } from '@models/refinamento.model';
 import { corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
@@ -27,12 +27,12 @@ export class ChatIaPageComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
 
+  readonly timeoutSegundos = AI_REQUEST_TIMEOUT_S;
   readonly perguntas = signal<PerguntaRefinamento[]>([]);
   readonly carregando = signal(false);
   readonly carregandoSegundos = signal(0);
   readonly erro = signal('');
   readonly rodadaAtual = signal(1);
-  private readonly historicoPerguntas = signal<Record<string, string>>({});
   private requestSub?: Subscription;
   private loadingTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -47,7 +47,7 @@ export class ChatIaPageComponent implements OnDestroy {
 
   readonly respostasArr = computed(() => {
     const respostas = this.state.respostasRefinamento();
-    const historico = this.historicoPerguntas();
+    const historico = this.state.perguntasRefinamento();
     return Object.entries(respostas).map(([id, resposta]) => ({
       id,
       pergunta: historico[id] ?? id,
@@ -74,24 +74,24 @@ export class ChatIaPageComponent implements OnDestroy {
     this.requestSub = this.api
       .gerarPerguntas(this.state.snapshot(), rodada)
       .pipe(
+        map((res) => ({ res, contingencia: false as const })),
         catchError((err) => {
           const demorou =
             err instanceof TimeoutError
-              ? 'A IA demorou mais que o esperado (45s). '
+              ? `A IA demorou mais que o esperado (${AI_REQUEST_TIMEOUT_S}s). `
               : 'A IA não respondeu agora. ';
           this.erro.set(`${demorou}Usei perguntas locais para manter o atendimento andando.`);
-          return of({ perguntas: perguntasRefinamentoFallback(rodada) });
+          return of({
+            res: { perguntas: perguntasRefinamentoFallback(rodada) },
+            contingencia: true as const
+          });
         }),
         finalize(() => this.pararCarregamento())
       )
-      .subscribe((res) => {
+      .subscribe(({ res }) => {
         const corrigido = corrigirRefinamentoResposta(res);
         this.perguntas.set(corrigido.perguntas);
-        this.historicoPerguntas.update((hist) => {
-          const next = { ...hist };
-          for (const p of corrigido.perguntas) next[p.id] = p.pergunta;
-          return next;
-        });
+        this.state.registrarPerguntas(corrigido.perguntas);
         this.cdr.markForCheck();
       });
   }
@@ -102,7 +102,7 @@ export class ChatIaPageComponent implements OnDestroy {
   }
 
   responder(pergunta: PerguntaRefinamento, opcao: string): void {
-    this.state.responderPergunta(pergunta.id, opcao);
+    this.state.responderPergunta(pergunta.id, opcao, pergunta.pergunta);
   }
 
   resposta(id: string): string {

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { diagnosticoJsonSchema } from './ai-schemas';
+import { buildRespostasDetalhadas, isDiagnosticoCdpValid } from './cdp-validation';
 import { completeStructuredJson } from './openai';
 import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
 import { corrigirDiagnosticoCdp } from '@utils/pt-br-text.util';
@@ -74,6 +75,15 @@ Resposta esperada (resumida):
 }
 `.trim();
 
+interface GerarBody {
+  veiculo?: Record<string, unknown>;
+  zonaSelecionada?: string;
+  sintomas?: string[];
+  respostasRefinamento?: Record<string, string>;
+  respostasDetalhadas?: { id: string; pergunta: string; resposta: string }[];
+  perguntasRefinamento?: Record<string, string>;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (applyCors(req, res)) return;
   if (!requirePost(req, res)) return;
@@ -85,10 +95,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
+  const body = (req.body ?? {}) as GerarBody;
+  const respostasDetalhadas =
+    body.respostasDetalhadas ??
+    buildRespostasDetalhadas(body.respostasRefinamento, body.perguntasRefinamento);
+
+  const triagemParaPrompt = {
+    veiculo: body.veiculo,
+    zona: body.zonaSelecionada,
+    sintomas: body.sintomas,
+    respostas_refinamento: respostasDetalhadas
+  };
+
   const prompt = `
 Triagem consolidada (use TODAS as informacoes, incluindo "observacoes" quando presente):
 
-${JSON.stringify(req.body ?? {}, null, 2)}
+${JSON.stringify(triagemParaPrompt, null, 2)}
 
 ${FEW_SHOT_EXAMPLE}
 
@@ -105,7 +127,13 @@ Gere AGORA o CDP completo seguindo rigorosamente o schema JSON.
       temperature: 0.2
     });
 
-    res.status(200).json(corrigirDiagnosticoCdp(safeParse(raw, {})));
+    const parsed = safeParse(raw, null as Record<string, unknown> | null);
+    if (!isDiagnosticoCdpValid(parsed)) {
+      res.status(502).json({ error: 'IA retornou CDP incompleto ou invalido' });
+      return;
+    }
+
+    res.status(200).json(corrigirDiagnosticoCdp(parsed));
   } catch (error) {
     res.status(500).json({ error: 'Falha ao gerar diagnostico', detail: String(error) });
   }

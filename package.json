@@ -8,7 +8,7 @@
     "dev": "concurrently -k -n WEB,API -c cyan,magenta \"npm:dev:web\" \"npm:dev:api\"",
     "dev:web": "ng serve --proxy-config proxy.conf.json --open",
     "dev:api": "tsx scripts/dev-api.mjs",
-    "start": "ng serve --proxy-config proxy.conf.json --open",
+    "start": "npm run dev",
     "start:full": "vercel dev",
     "build": "ng build",
     "vercel-build": "ng build",

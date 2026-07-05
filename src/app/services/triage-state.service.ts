@@ -2,8 +2,9 @@ import { Injectable, computed, effect, signal } from '@angular/core';
 import { TriageStepPath } from '@constants/triage-steps';
 import { ZonaId, zonasCatalogo } from '@data/sintomas.catalog';
 import { DiagnosticoCdp } from '@models/cdp.model';
-import { PersistedTriageState, TriageSnapshot } from '@models/triage.model';
+import { DiagnosticoFonte, PersistedTriageState, TriageSnapshot } from '@models/triage.model';
 import { Veiculo } from '@models/veiculo.model';
+import { isDiagnosticoContingencia } from '@utils/cdp-contingencia.util';
 import { corrigirDiagnosticoCdp } from '@utils/pt-br-text.util';
 
 const STORAGE_KEY = 'pitstop-triage/state/v2';
@@ -16,39 +17,46 @@ const emptyVehicle: Veiculo = {
   origem: ''
 };
 
+function inferirFonte(
+  diagnostico: DiagnosticoCdp | null,
+  fonteSalva: DiagnosticoFonte | null | undefined
+): DiagnosticoFonte | null {
+  if (!diagnostico) return null;
+  if (fonteSalva === 'ia' || fonteSalva === 'contingencia') return fonteSalva;
+  return isDiagnosticoContingencia(diagnostico) ? 'contingencia' : 'ia';
+}
+
 function loadInitial(): PersistedTriageState {
-  if (typeof localStorage === 'undefined') {
-    return {
-      veiculo: { ...emptyVehicle },
-      zonaSelecionada: '',
-      sintomas: [],
-      respostasRefinamento: {},
-      diagnostico: null,
-      triagemConcluida: false
-    };
-  }
+  const base = {
+    veiculo: { ...emptyVehicle },
+    zonaSelecionada: '' as ZonaId | '',
+    sintomas: [] as string[],
+    respostasRefinamento: {} as Record<string, string>,
+    perguntasRefinamento: {} as Record<string, string>,
+    diagnostico: null as DiagnosticoCdp | null,
+    diagnosticoFonte: null as DiagnosticoFonte | null,
+    triagemConcluida: false
+  };
+
+  if (typeof localStorage === 'undefined') return base;
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) throw new Error('empty');
     const parsed = JSON.parse(raw) as Partial<PersistedTriageState>;
+    const diagnostico = parsed.diagnostico ? corrigirDiagnosticoCdp(parsed.diagnostico) : null;
     return {
       veiculo: { ...emptyVehicle, ...(parsed.veiculo ?? {}) },
       zonaSelecionada: (parsed.zonaSelecionada as ZonaId | '') ?? '',
       sintomas: parsed.sintomas ?? [],
       respostasRefinamento: parsed.respostasRefinamento ?? {},
-      diagnostico: parsed.diagnostico ? corrigirDiagnosticoCdp(parsed.diagnostico) : null,
+      perguntasRefinamento: parsed.perguntasRefinamento ?? {},
+      diagnostico,
+      diagnosticoFonte: inferirFonte(diagnostico, parsed.diagnosticoFonte),
       triagemConcluida: parsed.triagemConcluida ?? false
     };
   } catch {
-    return {
-      veiculo: { ...emptyVehicle },
-      zonaSelecionada: '',
-      sintomas: [],
-      respostasRefinamento: {},
-      diagnostico: null,
-      triagemConcluida: false
-    };
+    return base;
   }
 }
 
@@ -60,14 +68,17 @@ export class TriageStateService {
   readonly zonaSelecionada = signal<ZonaId | ''>(this.initial.zonaSelecionada);
   readonly sintomas = signal<string[]>(this.initial.sintomas);
   readonly respostasRefinamento = signal<Record<string, string>>(this.initial.respostasRefinamento);
+  readonly perguntasRefinamento = signal<Record<string, string>>(this.initial.perguntasRefinamento);
   readonly diagnostico = signal<DiagnosticoCdp | null>(this.initial.diagnostico);
+  readonly diagnosticoFonte = signal<DiagnosticoFonte | null>(this.initial.diagnosticoFonte);
   readonly triagemConcluida = signal(this.initial.triagemConcluida ?? false);
 
   readonly snapshot = computed<TriageSnapshot>(() => ({
     veiculo: this.veiculo(),
     zonaSelecionada: this.zonaSelecionada(),
     sintomas: this.sintomas(),
-    respostasRefinamento: this.respostasRefinamento()
+    respostasRefinamento: this.respostasRefinamento(),
+    perguntasRefinamento: this.perguntasRefinamento()
   }));
 
   readonly podeIrParaMapa = computed(() => {
@@ -102,7 +113,9 @@ export class TriageStateService {
         zonaSelecionada: this.zonaSelecionada(),
         sintomas: this.sintomas(),
         respostasRefinamento: this.respostasRefinamento(),
+        perguntasRefinamento: this.perguntasRefinamento(),
         diagnostico: this.diagnostico(),
+        diagnosticoFonte: this.diagnosticoFonte(),
         triagemConcluida: this.triagemConcluida()
       };
       try {
@@ -140,7 +153,9 @@ export class TriageStateService {
     this.zonaSelecionada.set(zona);
     this.sintomas.set([]);
     this.respostasRefinamento.set({});
+    this.perguntasRefinamento.set({});
     this.diagnostico.set(null);
+    this.diagnosticoFonte.set(null);
   }
 
   alternarSintoma(sintoma: string): void {
@@ -148,11 +163,25 @@ export class TriageStateService {
       items.includes(sintoma) ? items.filter((item) => item !== sintoma) : [...items, sintoma]
     );
     this.diagnostico.set(null);
+    this.diagnosticoFonte.set(null);
   }
 
-  responderPergunta(pergunta: string, resposta: string): void {
-    this.respostasRefinamento.update((respostas) => ({ ...respostas, [pergunta]: resposta }));
+  registrarPerguntas(perguntas: { id: string; pergunta: string }[]): void {
+    if (perguntas.length === 0) return;
+    this.perguntasRefinamento.update((hist) => {
+      const next = { ...hist };
+      for (const p of perguntas) next[p.id] = p.pergunta;
+      return next;
+    });
+  }
+
+  responderPergunta(perguntaId: string, resposta: string, perguntaTexto?: string): void {
+    if (perguntaTexto?.trim()) {
+      this.perguntasRefinamento.update((hist) => ({ ...hist, [perguntaId]: perguntaTexto.trim() }));
+    }
+    this.respostasRefinamento.update((respostas) => ({ ...respostas, [perguntaId]: resposta }));
     this.diagnostico.set(null);
+    this.diagnosticoFonte.set(null);
   }
 
   limparRespostas(ids: string[]): void {
@@ -163,10 +192,12 @@ export class TriageStateService {
       return next;
     });
     this.diagnostico.set(null);
+    this.diagnosticoFonte.set(null);
   }
 
-  definirDiagnostico(diagnostico: DiagnosticoCdp | null): void {
+  definirDiagnostico(diagnostico: DiagnosticoCdp | null, fonte: DiagnosticoFonte | null = null): void {
     this.diagnostico.set(diagnostico ? corrigirDiagnosticoCdp(diagnostico) : null);
+    this.diagnosticoFonte.set(diagnostico ? fonte : null);
     if (diagnostico) this.triagemConcluida.set(false);
   }
 
@@ -180,7 +211,9 @@ export class TriageStateService {
     this.zonaSelecionada.set('');
     this.sintomas.set([]);
     this.respostasRefinamento.set({});
+    this.perguntasRefinamento.set({});
     this.diagnostico.set(null);
+    this.diagnosticoFonte.set(null);
     this.triagemConcluida.set(false);
     if (typeof localStorage !== 'undefined') {
       try {

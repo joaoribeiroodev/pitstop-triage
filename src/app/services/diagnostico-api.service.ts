@@ -3,28 +3,31 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map, timeout } from 'rxjs';
 import { DiagnosticoCdp } from '@models/cdp.model';
 import { RefinamentoResponse } from '@models/refinamento.model';
-import { TriageSnapshot } from '@models/triage.model';
+import { TriageSnapshot, buildTriagemApiPayload } from '@models/triage.model';
 import { corrigirDiagnosticoCdp, corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
 
 /** Requisições à IA costumam levar 15–90s; após timeout usamos fallback local no componente. */
-export const AI_REQUEST_TIMEOUT_MS = 45_000;
+export const AI_REQUEST_TIMEOUT_MS = 90_000;
+export const AI_REQUEST_TIMEOUT_S = AI_REQUEST_TIMEOUT_MS / 1000;
 
 @Injectable({ providedIn: 'root' })
 export class DiagnosticoApiService {
   private readonly http = inject(HttpClient);
 
   gerarDiagnostico(snapshot: TriageSnapshot): Observable<DiagnosticoCdp> {
-    return this.http.post<DiagnosticoCdp>('/api/gerar-diagnostico', snapshot).pipe(
+    return this.http.post<DiagnosticoCdp>('/api/gerar-diagnostico', buildTriagemApiPayload(snapshot)).pipe(
       map((d) => corrigirDiagnosticoCdp(d)),
       timeout({ first: AI_REQUEST_TIMEOUT_MS })
     );
   }
 
   gerarPerguntas(snapshot: TriageSnapshot, rodada = 1): Observable<RefinamentoResponse> {
-    return this.http.post<RefinamentoResponse>('/api/refinar-triagem', { ...snapshot, rodada }).pipe(
-      map((r) => corrigirRefinamentoResposta(r)),
-      timeout({ first: AI_REQUEST_TIMEOUT_MS })
-    );
+    return this.http
+      .post<RefinamentoResponse>('/api/refinar-triagem', buildTriagemApiPayload(snapshot, { rodada }))
+      .pipe(
+        map((r) => corrigirRefinamentoResposta(r)),
+        timeout({ first: AI_REQUEST_TIMEOUT_MS })
+      );
   }
 }
 

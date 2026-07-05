@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { refinamentoJsonSchema } from './ai-schemas';
+import { buildRespostasDetalhadas } from './cdp-validation';
 import { completeStructuredJson } from './openai';
 import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
 import { corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
@@ -39,6 +40,8 @@ interface RefinarBody {
   zonaSelecionada?: string;
   sintomas?: string[];
   respostasRefinamento?: Record<string, string>;
+  respostasDetalhadas?: { id: string; pergunta: string; resposta: string }[];
+  perguntasRefinamento?: Record<string, string>;
   rodada?: number;
 }
 
@@ -55,7 +58,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const rodada = body.rodada ?? 1;
-  const ja_respondidas = body.respostasRefinamento ?? {};
+  const respostasDetalhadas =
+    body.respostasDetalhadas ??
+    buildRespostasDetalhadas(body.respostasRefinamento, body.perguntasRefinamento);
 
   const prompt = `
 Rodada de perguntas: ${rodada}
@@ -67,7 +72,7 @@ ${JSON.stringify(
     veiculo: body.veiculo,
     zona: body.zonaSelecionada,
     sintomas: body.sintomas,
-    respostas_anteriores: ja_respondidas
+    respostas_anteriores: respostasDetalhadas
   },
   null,
   2
