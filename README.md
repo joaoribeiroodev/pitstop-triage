@@ -26,7 +26,7 @@ O **PitStop Triage** conduz o motorista por uma triagem em cinco etapas — veí
 - **Identificação do veículo** — consulta FIPE (API Parallelum) ou cadastro manual
 - **Mapa interativo** — seleção da zona afetada com visualização 3D (Three.js)
 - **Sintomas contextualizados** — checklist por zona, em linguagem leiga
-- **Refinamento com IA** — perguntas geradas pelo Google Gemini
+- **Refinamento com IA** — perguntas geradas pela OpenAI
 - **CDP para o cliente** — resumo claro, urgência, hipóteses, roteiro para a oficina e detalhes técnicos colapsáveis
 - **PDF local** — geração no navegador (jsPDF), sem envio a servidor
 - **Triagem concluída** — confirmação de encerramento com CDP persistido no `localStorage`
@@ -45,7 +45,7 @@ O **PitStop Triage** conduz o motorista por uma triagem em cinco etapas — veí
 | Frontend  | jsPDF                       | PDF do CDP no navegador                  |
 | Frontend  | RxJS                        | HTTP e fluxos assíncronos                |
 | Backend   | Vercel Serverless Functions | Endpoints `/api` em TypeScript           |
-| Backend   | `@google/genai`             | Gemini com JSON Schema                   |
+| Backend   | OpenAI API                  | GPT com JSON Schema estruturado          |
 | Backend   | API FIPE (Parallelum)       | Marcas, modelos, anos e valores          |
 | DevOps    | GitHub Actions              | Lint, Prettier, typecheck da API e build |
 | DevOps    | Vercel                      | Frontend + serverless                    |
@@ -60,7 +60,7 @@ O **PitStop Triage** conduz o motorista por uma triagem em cinco etapas — veí
 /veiculo         → FIPE ou manual
 /mapa            → zona no carro 3D
 /sintomas        → checklist por zona
-/chat-ia         → refinamento (Gemini)
+/chat-ia         → refinamento (OpenAI)
 /resultado       → CDP + PDF + confirmar triagem
 ```
 
@@ -74,7 +74,7 @@ Guards garantem que cada etapa só seja acessada após a anterior. O progresso a
 
 - **Node.js** `>= 22` (`engines` em `package.json`)
 - **npm** `10.9.2` (`packageManager`)
-- Chave **Google Gemini** (obrigatória para IA em dev/produção)
+- Chave **OpenAI** (obrigatória para IA em dev/produção)
 
 ### Instalação
 
@@ -89,12 +89,12 @@ npm ci
 Crie `.env` na raiz (use `.env.example` como referência):
 
 ```env
-GEMINI_API_KEY=sua_chave_aqui
-GEMINI_MODEL=gemini-2.5-flash
+OPENAI_API_KEY=sua_chave_aqui
+OPENAI_MODEL=gpt-4o-mini
 API_DEV_PORT=3000
 ```
 
-> Chave gratuita em [Google AI Studio](https://aistudio.google.com/apikey).
+> Chave em [OpenAI Platform](https://platform.openai.com/api-keys).
 
 ### Execução local
 
@@ -120,7 +120,9 @@ Organização **Angular clássica** — pastas por tipo de artefato (`components
 ```
 pitstop-triage/
 ├── api/                              # Vercel Serverless (permanece na raiz)
-│   ├── _shared.ts                    # CORS, validação, Gemini
+│   ├── _shared.ts                    # CORS, validação, OpenAI
+│   ├── openai.ts                     # Cliente OpenAI (JSON estruturado)
+│   ├── ai-schemas.ts                 # Schemas CDP e refinamento
 │   ├── gerar-diagnostico.ts          # POST /api/gerar-diagnostico
 │   ├── refinar-triagem.ts            # POST /api/refinar-triagem
 │   └── tsconfig.json
@@ -192,7 +194,7 @@ A API serverless reutiliza `@utils/*` e `@models/*` via `api/tsconfig.json` (sem
 - [x] Fluxo em 5 etapas com stepper e progresso
 - [x] FIPE e entrada manual de veículo
 - [x] Mapa 3D (Three.js)
-- [x] Refinamento e CDP via Gemini + fallbacks locais
+- [x] Refinamento e CDP via OpenAI + fallbacks locais
 - [x] CDP orientado ao cliente e PDF para oficina
 - [x] Confirmação de triagem concluída
 - [x] LGPD (consentimento, privacidade, exclusão local)

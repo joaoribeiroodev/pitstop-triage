@@ -6,7 +6,7 @@ import { RefinamentoResponse } from '@models/refinamento.model';
 import { TriageSnapshot } from '@models/triage.model';
 import { corrigirDiagnosticoCdp, corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
 
-/** Gemini costuma levar 15–90s; após isso usamos fallback local no componente. */
+/** Requisições à IA costumam levar 15–90s; após timeout usamos fallback local no componente. */
 export const AI_REQUEST_TIMEOUT_MS = 45_000;
 
 @Injectable({ providedIn: 'root' })

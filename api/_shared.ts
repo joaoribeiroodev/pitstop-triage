@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export const GEMINI_MODEL = process.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash';
+export const OPENAI_MODEL = process.env['OPENAI_MODEL'] ?? 'gpt-4o-mini';
 
 export function applyCors(req: VercelRequest, res: VercelResponse): boolean {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,9 +23,9 @@ export function requirePost(req: VercelRequest, res: VercelResponse): boolean {
 }
 
 export function requireApiKey(res: VercelResponse): string | null {
-  const apiKey = process.env['GEMINI_API_KEY'];
+  const apiKey = process.env['OPENAI_API_KEY'];
   if (!apiKey) {
-    res.status(500).json({ error: 'GEMINI_API_KEY nao configurada no ambiente' });
+    res.status(500).json({ error: 'OPENAI_API_KEY nao configurada no ambiente' });
     return null;
   }
   return apiKey;

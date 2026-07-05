@@ -145,8 +145,8 @@ server.on('error', (err) => {
 
 server.listen(PORT, () => {
   console.log(`${tag} ${ansi('32', '▶')} dev server pronto em ${ansi('36', `http://localhost:${PORT}`)}`);
-  if (!process.env.GEMINI_API_KEY) {
-    console.log(`${tag} ${ansi('33', '⚠')}  GEMINI_API_KEY ausente — endpoints de IA retornarao 500.`);
+  if (!process.env.OPENAI_API_KEY) {
+    console.log(`${tag} ${ansi('33', '⚠')}  OPENAI_API_KEY ausente — endpoints de IA retornarao 500.`);
     console.log(`${tag}    Os fallbacks locais do frontend cobrem o fluxo.`);
   }
 });

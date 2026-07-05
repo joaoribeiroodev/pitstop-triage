@@ -1,114 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, Type } from '@google/genai';
-import { GEMINI_MODEL, applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
+import { diagnosticoJsonSchema } from './ai-schemas';
+import { completeStructuredJson } from './openai';
+import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
 import { corrigirDiagnosticoCdp } from '@utils/pt-br-text.util';
-
-const faixaSchema = {
-  type: Type.OBJECT,
-  properties: {
-    min: { type: Type.NUMBER },
-    max: { type: Type.NUMBER }
-  },
-  required: ['min', 'max']
-};
-
-const componenteSchema = {
-  type: Type.OBJECT,
-  properties: {
-    nome: { type: Type.STRING },
-    prioridade: { type: Type.STRING, enum: ['alta', 'media', 'baixa'] },
-    teste_recomendado: { type: Type.STRING }
-  },
-  required: ['nome', 'prioridade', 'teste_recomendado']
-};
-
-const hipoteseSchema = {
-  type: Type.OBJECT,
-  properties: {
-    titulo: { type: Type.STRING },
-    sistema_afetado: { type: Type.STRING },
-    probabilidade: { type: Type.NUMBER },
-    confianca: { type: Type.STRING, enum: ['baixa', 'media', 'alta'] },
-    justificativa_tecnica: { type: Type.STRING },
-    evidencias_usadas: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING }
-    },
-    componentes_a_verificar: {
-      type: Type.ARRAY,
-      items: componenteSchema
-    },
-    codigos_obd_possiveis: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING }
-    },
-    custo_estimado_brl: faixaSchema,
-    tempo_reparo_horas: faixaSchema
-  },
-  required: [
-    'titulo',
-    'sistema_afetado',
-    'probabilidade',
-    'confianca',
-    'justificativa_tecnica',
-    'evidencias_usadas',
-    'componentes_a_verificar',
-    'custo_estimado_brl',
-    'tempo_reparo_horas'
-  ]
-};
-
-const descartadoSchema = {
-  type: Type.OBJECT,
-  properties: {
-    titulo: { type: Type.STRING },
-    motivo_descarte: { type: Type.STRING }
-  },
-  required: ['titulo', 'motivo_descarte']
-};
-
-const diagnosticoSchema = {
-  type: Type.OBJECT,
-  properties: {
-    urgencia_geral: {
-      type: Type.STRING,
-      enum: ['baixa', 'media', 'alta', 'critica']
-    },
-    pode_dirigir: {
-      type: Type.STRING,
-      enum: ['sim_normal', 'sim_com_cautela', 'apenas_curtas_distancias', 'nao_dirigir']
-    },
-    risco_principal: { type: Type.STRING },
-    observacoes_seguranca: { type: Type.STRING },
-    acoes_imediatas: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING }
-    },
-    hipoteses: {
-      type: Type.ARRAY,
-      items: hipoteseSchema
-    },
-    diagnosticos_descartados: {
-      type: Type.ARRAY,
-      items: descartadoSchema
-    },
-    manutencao_preventiva_relacionada: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING }
-    },
-    proxima_inspecao_recomendada: { type: Type.STRING },
-    resumo_para_cliente: { type: Type.STRING }
-  },
-  required: [
-    'urgencia_geral',
-    'pode_dirigir',
-    'risco_principal',
-    'observacoes_seguranca',
-    'acoes_imediatas',
-    'hipoteses',
-    'resumo_para_cliente'
-  ]
-};
 
 const SYSTEM_INSTRUCTION = `
 Você é um diagnóstico automotivo sênior (20+ anos de oficina e bancada), especialista em CDP (Código de Diagnóstico Prévio) para mecânicos brasileiros.
@@ -191,7 +85,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const ai = new GoogleGenAI({ apiKey });
   const prompt = `
 Triagem consolidada (use TODAS as informacoes, incluindo "observacoes" quando presente):
 
@@ -199,22 +92,20 @@ ${JSON.stringify(req.body ?? {}, null, 2)}
 
 ${FEW_SHOT_EXAMPLE}
 
-Gere AGORA o CDP completo seguindo rigorosamente o schema.
+Gere AGORA o CDP completo seguindo rigorosamente o schema JSON.
 `.trim();
 
   try {
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.2,
-        responseMimeType: 'application/json',
-        responseSchema: diagnosticoSchema
-      }
+    const raw = await completeStructuredJson({
+      apiKey,
+      system: SYSTEM_INSTRUCTION,
+      user: prompt,
+      schemaName: 'diagnostico_cdp',
+      schema: diagnosticoJsonSchema as unknown as Record<string, unknown>,
+      temperature: 0.2
     });
 
-    res.status(200).json(corrigirDiagnosticoCdp(safeParse(response.text, {})));
+    res.status(200).json(corrigirDiagnosticoCdp(safeParse(raw, {})));
   } catch (error) {
     res.status(500).json({ error: 'Falha ao gerar diagnostico', detail: String(error) });
   }

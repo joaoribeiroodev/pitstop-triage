@@ -1,5 +1,5 @@
 /** Versão da política — incrementar ao alterar o texto legal. */
-export const POLITICA_PRIVACIDADE_VERSAO = '1.0.0';
+export const POLITICA_PRIVACIDADE_VERSAO = '1.1.0';
 
 export const CONTROLADOR_DADOS = {
   nome: 'PitStop Triage',
@@ -29,7 +29,7 @@ export const RESUMO_TRATAMENTO_DADOS = [
     titulo: 'Compartilhamento',
     itens: [
       'API pública FIPE (Parallelum) — apenas consulta de marca/modelo/ano',
-      'Google Gemini — processamento das etapas de IA (refinamento e CDP)',
+      'OpenAI — processamento das etapas de IA (refinamento e CDP)',
       'Não vendemos nem compartilhamos dados com terceiros para marketing'
     ]
   },
@@ -78,7 +78,7 @@ export const POLITICA_PRIVACIDADE_SECOES = [
     titulo: '4. Compartilhamento com terceiros',
     paragrafos: [
       'Consulta FIPE: enviamos códigos de marca/modelo/ano à API pública parallelum.com.br para identificar o veículo.',
-      'Inteligência artificial: os dados da triagem são enviados ao Google Gemini exclusivamente para gerar perguntas de refinamento e o diagnóstico prévio. O provedor processa os dados conforme seus termos de uso.',
+      'Inteligência artificial: os dados da triagem são enviados à OpenAI exclusivamente para gerar perguntas de refinamento e o diagnóstico prévio. O provedor processa os dados conforme seus termos de uso e política de privacidade.',
       'Não há transferência internacional além daquela inerente ao uso dos serviços de nuvem do provedor de IA, quando aplicável.'
     ]
   },

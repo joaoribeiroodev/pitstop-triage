@@ -1,36 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, Type } from '@google/genai';
-import { GEMINI_MODEL, applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
+import { refinamentoJsonSchema } from './ai-schemas';
+import { completeStructuredJson } from './openai';
+import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
 import { corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
-
-const perguntaSchema = {
-  type: Type.OBJECT,
-  properties: {
-    perguntas: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: { type: Type.STRING },
-          pergunta: { type: Type.STRING },
-          tipo: {
-            type: Type.STRING,
-            enum: ['multipla_escolha', 'sim_nao', 'escala']
-          },
-          objetivo: { type: Type.STRING },
-          opcoes: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING }
-          },
-          ajuda: { type: Type.STRING }
-        },
-        required: ['id', 'pergunta', 'tipo', 'objetivo', 'opcoes']
-      }
-    },
-    raciocinio: { type: Type.STRING }
-  },
-  required: ['perguntas']
-};
 
 const SYSTEM_INSTRUCTION = `
 Você é um consultor técnico automotivo sênior, especialista em primeira escuta de cliente em oficina de bairro brasileira.
@@ -85,7 +57,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const rodada = body.rodada ?? 1;
   const ja_respondidas = body.respostasRefinamento ?? {};
 
-  const ai = new GoogleGenAI({ apiKey });
   const prompt = `
 Rodada de perguntas: ${rodada}
 ${rodada > 1 ? 'IMPORTANTE: gere perguntas COMPLEMENTARES, aprofundando ambiguidades da rodada anterior. NAO repita as ja respondidas.' : 'Gere as perguntas iniciais.'}
@@ -104,19 +75,17 @@ ${JSON.stringify(
 `.trim();
 
   try {
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.35,
-        maxOutputTokens: 1536,
-        responseMimeType: 'application/json',
-        responseSchema: perguntaSchema
-      }
+    const raw = await completeStructuredJson({
+      apiKey,
+      system: SYSTEM_INSTRUCTION,
+      user: prompt,
+      schemaName: 'refinamento_triagem',
+      schema: refinamentoJsonSchema as unknown as Record<string, unknown>,
+      temperature: 0.35,
+      maxTokens: 1536
     });
 
-    const parsed = safeParse(response.text, { perguntas: [] as unknown[] });
+    const parsed = safeParse(raw, { perguntas: [] as unknown[] });
     if (!Array.isArray(parsed.perguntas) || parsed.perguntas.length === 0) {
       res.status(502).json({ error: 'IA retornou resposta vazia ou invalida' });
       return;
