@@ -1,6 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { diagnosticoJsonSchema } from './ai-schemas';
-import { buildRespostasDetalhadas, isDiagnosticoCdpValid } from './cdp-validation';
+import {
+  buildRespostasDetalhadas,
+  buildInstrucaoTransmissao,
+  isDiagnosticoCdpValid,
+  sanitizarCdpPorTransmissao
+} from './cdp-validation';
 import { completeStructuredJson } from './openai';
 import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
 import { corrigirDiagnosticoCdp } from '@utils/pt-br-text.util';
@@ -112,10 +117,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     respostas_refinamento: respostasDetalhadas
   };
 
+  const instrucaoTransmissao = buildInstrucaoTransmissao(body.veiculo);
+
   const prompt = `
-Triagem consolidada (use TODAS as informacoes, incluindo "observacoes" quando presente):
+Triagem consolidada (use TODAS as informacoes, incluindo "observacoes" e "tipoTransmissao" quando presente):
 
 ${JSON.stringify(triagemParaPrompt, null, 2)}
+
+${instrucaoTransmissao}
 
 ${FEW_SHOT_EXAMPLE}
 
@@ -138,7 +147,22 @@ Gere AGORA o CDP completo seguindo rigorosamente o schema JSON.
       return;
     }
 
-    res.status(200).json(corrigirDiagnosticoCdp(parsed));
+    const tipoTransmissao =
+      typeof body.veiculo?.['tipoTransmissao'] === 'string'
+        ? body.veiculo['tipoTransmissao']
+        : 'desconhecido';
+    const sanitizado = sanitizarCdpPorTransmissao(parsed, tipoTransmissao);
+
+    if (sanitizado.rejeitado || !isDiagnosticoCdpValid(sanitizado.cdp)) {
+      console.warn('[gerar-diagnostico] CDP rejeitado após sanitização:', sanitizado.motivo);
+      res.status(502).json({
+        error: 'IA retornou hipoteses incompativeis com o tipo de transmissao',
+        detail: sanitizado.motivo
+      });
+      return;
+    }
+
+    res.status(200).json(corrigirDiagnosticoCdp(sanitizado.cdp));
   } catch (error) {
     res.status(500).json({ error: 'Falha ao gerar diagnostico', detail: String(error) });
   }

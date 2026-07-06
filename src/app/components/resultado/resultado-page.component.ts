@@ -97,7 +97,11 @@ export class ResultadoPageComponent {
               : 'A API não respondeu agora. ';
           this.erro.set(`${prefix}Foi gerado um CDP local de contingência.`);
           return of({
-            diagnostico: diagnosticoCdpFallback(this.state.zonaSelecionada(), this.state.sintomas()),
+            diagnostico: diagnosticoCdpFallback(
+              this.state.zonaSelecionada(),
+              this.state.sintomas(),
+              this.state.veiculo()
+            ),
             fonte: 'contingencia' as const
           });
         }),

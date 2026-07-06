@@ -20,20 +20,20 @@
 
 ## 2. Stack tecnológica
 
-| Camada         | Tecnologia                  | Versão / Detalhe                                      |
-| -------------- | --------------------------- | ----------------------------------------------------- |
-| Frontend       | Angular                     | 19.2 (NgModules, **não** standalone)                  |
-| Estado         | Angular Signals             | `signal`, `computed`, `effect`                        |
-| Estilo         | **CSS puro**                | Tokens em `styles.css` + `*.component.css` por tela   |
-| 3D             | Three.js                    | 0.184 — carro 3D na etapa Mapa                        |
-| PDF            | jsPDF                       | 2.5 — CDP gerado no browser                           |
-| HTTP           | RxJS + HttpClient           | timeout **90s** nas chamadas de IA                    |
-| Backend        | Vercel Serverless Functions | TypeScript em `api/`                                  |
-| IA             | **OpenAI API**              | `openai` 4.x, JSON Schema, padrão `gpt-4o-mini`       |
-| FIPE           | API Parallelum              | `https://parallelum.com.br/fipe/api/v1/carros`        |
-| CI             | GitHub Actions              | lint + Prettier + typecheck API + build               |
-| Deploy         | Vercel                      | SPA + functions serverless                            |
-| Node           | >= 22                       | npm 10.9.2                                            |
+| Camada   | Tecnologia                  | Versão / Detalhe                                    |
+| -------- | --------------------------- | --------------------------------------------------- |
+| Frontend | Angular                     | 19.2 (NgModules, **não** standalone)                |
+| Estado   | Angular Signals             | `signal`, `computed`, `effect`                      |
+| Estilo   | **CSS puro**                | Tokens em `styles.css` + `*.component.css` por tela |
+| 3D       | Three.js                    | 0.184 — carro 3D na etapa Mapa                      |
+| PDF      | jsPDF                       | 2.5 — CDP gerado no browser                         |
+| HTTP     | RxJS + HttpClient           | timeout **90s** nas chamadas de IA                  |
+| Backend  | Vercel Serverless Functions | TypeScript em `api/`                                |
+| IA       | **OpenAI API**              | `openai` 4.x, JSON Schema, padrão `gpt-4o-mini`     |
+| FIPE     | API Parallelum              | `https://parallelum.com.br/fipe/api/v1/carros`      |
+| CI       | GitHub Actions              | lint + Prettier + typecheck API + build             |
+| Deploy   | Vercel                      | SPA + functions serverless                          |
+| Node     | >= 22                       | npm 10.9.2                                          |
 
 > **Nota histórica:** o projeto migrou de Google Gemini para OpenAI. Não há Tailwind — foi removido em favor de CSS por componente.
 
@@ -135,13 +135,13 @@ api/
 
 **Guards:**
 
-| Guard                     | Exige                          |
-| ------------------------- | ------------------------------ |
-| `requireLgpdConsentGuard` | Consentimento LGPD             |
-| `requireVeiculoGuard`     | marca + modelo + ano           |
-| `requireZonaGuard`        | zona selecionada               |
-| `requireSintomasGuard`    | ≥1 sintoma                     |
-| `requireRefinamentoGuard` | ≥1 resposta de refinamento     |
+| Guard                     | Exige                      |
+| ------------------------- | -------------------------- |
+| `requireLgpdConsentGuard` | Consentimento LGPD         |
+| `requireVeiculoGuard`     | marca + modelo + ano       |
+| `requireZonaGuard`        | zona selecionada           |
+| `requireSintomasGuard`    | ≥1 sintoma                 |
+| `requireRefinamentoGuard` | ≥1 resposta de refinamento |
 
 `/inicio` e `/privacidade` não exibem chrome de triagem (stepper/progresso).
 
@@ -213,29 +213,29 @@ Normalização: `src/app/utils/refinamento.util.ts` (garante `opcoes`, aliases `
 
 ## 7. Componentes principais
 
-| Componente              | Rota           | Destaques                                              |
-| ----------------------- | -------------- | ------------------------------------------------------ |
-| `BoasVindasPage`        | `/inicio`      | LGPD, logo, fluxo pós-triagem concluída                |
-| `VeiculoPage`           | `/veiculo`     | FIPE cascata / manual, painel OBD lateral              |
-| `MapaPage`              | `/mapa`        | Car3D + sidebar (zona, atalhos compactos)              |
-| `SintomasPage`          | `/sintomas`    | Checklist por zona                                     |
-| `ChatIaPage`            | `/chat-ia`     | Rodadas IA, persistência sessão, regerar explícito     |
-| `ResultadoPage`         | `/resultado`   | CDP cliente + técnico colapsável, PDF, confirmar fim   |
-| `PrivacidadePage`       | `/privacidade` | Política LGPD                                          |
-| `Car3dComponent`        | (mapa)         | Three.js, hotspots, OrbitControls                      |
-| `LgpdNoticeComponent`   | (várias)       | Aviso compacto OpenAI/FIPE                             |
+| Componente            | Rota           | Destaques                                            |
+| --------------------- | -------------- | ---------------------------------------------------- |
+| `BoasVindasPage`      | `/inicio`      | LGPD, logo, fluxo pós-triagem concluída              |
+| `VeiculoPage`         | `/veiculo`     | FIPE cascata / manual, painel OBD lateral            |
+| `MapaPage`            | `/mapa`        | Car3D + sidebar (zona, atalhos compactos)            |
+| `SintomasPage`        | `/sintomas`    | Checklist por zona                                   |
+| `ChatIaPage`          | `/chat-ia`     | Rodadas IA, persistência sessão, regerar explícito   |
+| `ResultadoPage`       | `/resultado`   | CDP cliente + técnico colapsável, PDF, confirmar fim |
+| `PrivacidadePage`     | `/privacidade` | Política LGPD                                        |
+| `Car3dComponent`      | (mapa)         | Three.js, hotspots, OrbitControls                    |
+| `LgpdNoticeComponent` | (várias)       | Aviso compacto OpenAI/FIPE                           |
 
 ---
 
 ## 8. Serviços
 
-| Serviço                 | Função                                                |
-| ----------------------- | ----------------------------------------------------- |
-| `TriageStateService`    | Estado + localStorage                                 |
-| `DiagnosticoApiService` | POST diagnóstico e refinamento (timeout **90s**)      |
-| `FipeService`           | API FIPE                                              |
-| `CdpPdfService`         | PDF A4 — resumo “Em poucas palavras” com caixa fixa   |
-| `LgpdConsentService`    | Consentimento LGPD                                    |
+| Serviço                 | Função                                              |
+| ----------------------- | --------------------------------------------------- |
+| `TriageStateService`    | Estado + localStorage                               |
+| `DiagnosticoApiService` | POST diagnóstico e refinamento (timeout **90s**)    |
+| `FipeService`           | API FIPE                                            |
+| `CdpPdfService`         | PDF A4 — resumo “Em poucas palavras” com caixa fixa |
+| `LgpdConsentService`    | Consentimento LGPD                                  |
 
 ---
 
@@ -253,13 +253,13 @@ Sem chave: APIs retornam 500; frontend usa fallbacks locais.
 
 ## 10. Scripts npm
 
-| Comando              | Descrição                                    |
-| -------------------- | -------------------------------------------- |
-| `npm run dev`        | Angular :4200 + API :3000 (recomendado)     |
-| `npm start`          | Alias de `npm run dev`                       |
-| `npm run start:full` | `vercel dev`                                 |
-| `npm run check`      | lint + format + typecheck:api + build (CI)   |
-| `npm run build`      | `dist/pitstop-triage/browser`                |
+| Comando              | Descrição                                  |
+| -------------------- | ------------------------------------------ |
+| `npm run dev`        | Angular :4200 + API :3000 (recomendado)    |
+| `npm start`          | Alias de `npm run dev`                     |
+| `npm run start:full` | `vercel dev`                               |
+| `npm run check`      | lint + format + typecheck:api + build (CI) |
+| `npm run build`      | `dist/pitstop-triage/browser`              |
 
 ---
 
@@ -288,16 +288,16 @@ Badges/labels CDP: `src/app/constants/cdp-display.ts`.
 
 ## 13. Resiliência e comportamentos importantes
 
-| Cenário                         | Comportamento                                                         |
-| ------------------------------- | --------------------------------------------------------------------- |
-| IA timeout (90s) / erro          | Fallback local perguntas ou CDP contingência                          |
-| FIPE indisponível               | Modo manual                                                           |
-| **Regerar** perguntas (chat-ia) | Só limpa respostas da rodada ao clicar “Regerar” (`regerar: true`)    |
-| Rodada 2 refinamento            | **Acumula** perguntas da rodada 1 (não substitui)                     |
-| Sessão chat-ia                  | `perguntasAtivas` restauradas ao reabrir `/chat-ia`                   |
-| Perguntas sem `opcoes`          | `refinamento.util.ts` normaliza antes de renderizar                   |
-| PDF “Em poucas palavras”        | Altura da caixa calculada antes do desenho (texto não vaza)           |
-| Ortografia IA                   | `pt-br-ortografia.ts` / `corrigirValorProfundo` (browser + API)       |
+| Cenário                         | Comportamento                                                      |
+| ------------------------------- | ------------------------------------------------------------------ |
+| IA timeout (90s) / erro         | Fallback local perguntas ou CDP contingência                       |
+| FIPE indisponível               | Modo manual                                                        |
+| **Regerar** perguntas (chat-ia) | Só limpa respostas da rodada ao clicar “Regerar” (`regerar: true`) |
+| Rodada 2 refinamento            | **Acumula** perguntas da rodada 1 (não substitui)                  |
+| Sessão chat-ia                  | `perguntasAtivas` restauradas ao reabrir `/chat-ia`                |
+| Perguntas sem `opcoes`          | `refinamento.util.ts` normaliza antes de renderizar                |
+| PDF “Em poucas palavras”        | Altura da caixa calculada antes do desenho (texto não vaza)        |
+| Ortografia IA                   | `pt-br-ortografia.ts` / `corrigirValorProfundo` (browser + API)    |
 
 ---
 

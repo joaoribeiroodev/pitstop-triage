@@ -518,3 +518,13 @@ textarea.field {
   justify-content: space-between;
   gap: 0.75rem;
 }
+
+.transmissao-field {
+  border-top: 1px solid var(--pit-white-06);
+  padding-top: 1.25rem;
+}
+
+.transmissao-field__hint {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}

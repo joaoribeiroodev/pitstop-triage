@@ -1,5 +1,14 @@
 export type VeiculoOrigem = 'fipe' | 'manual' | '';
 
+export type TipoTransmissao =
+  | 'manual'
+  | 'automatico_conversor'
+  | 'automatico_embreagem'
+  | 'cvt'
+  | 'desconhecido';
+
+export type TipoTransmissaoOrigem = 'inferido' | 'usuario';
+
 export interface Veiculo {
   marca: string;
   modelo: string;
@@ -10,4 +19,6 @@ export interface Veiculo {
   fipeMarcaCodigo?: string;
   fipeModeloCodigo?: string;
   fipeAnoCodigo?: string;
+  tipoTransmissao?: TipoTransmissao;
+  tipoTransmissaoOrigem?: TipoTransmissaoOrigem;
 }

@@ -1,8 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, finalize, of } from 'rxjs';
+import { TipoTransmissao } from '@models/veiculo.model';
 import { FipeAno, FipeMarca, FipeModelo, FipeService } from '@services/fipe.service';
 import { TriageStateService, VeiculoOrigem } from '@services/triage-state.service';
+import {
+  OPCOES_TIPO_TRANSMISSAO,
+  inferirTipoTransmissao,
+  labelTipoTransmissao,
+  resolverOrigemTransmissao
+} from '@utils/transmissao.util';
 
 type Modo = 'fipe' | 'manual';
 
@@ -20,6 +27,7 @@ export class VeiculoPageComponent {
 
   readonly anoAtual = new Date().getFullYear() + 1;
   readonly modo = signal<Modo>(this.detectarModoInicial());
+  readonly opcoesTransmissao = OPCOES_TIPO_TRANSMISSAO;
 
   readonly marcas = signal<FipeMarca[]>([]);
   readonly modelos = signal<FipeModelo[]>([]);
@@ -36,6 +44,21 @@ export class VeiculoPageComponent {
   readonly manualVersao = signal('');
   readonly manualObservacoes = signal('');
 
+  /** Valor inferido da descrição FIPE atual (null se não inferível). */
+  readonly tipoTransmissaoInferido = signal<TipoTransmissao | null>(null);
+
+  readonly tipoTransmissaoSelecionado = computed(
+    () => this.state.veiculo().tipoTransmissao ?? 'desconhecido'
+  );
+
+  readonly hintTransmissao = computed(() => {
+    const veiculo = this.state.veiculo();
+    if (veiculo.tipoTransmissaoOrigem === 'inferido') {
+      return 'Detectado automaticamente pela descrição FIPE — confirme se estiver correto.';
+    }
+    return '';
+  });
+
   readonly resumo = computed(() => {
     const veiculo = this.state.veiculo();
     const origemLabel = veiculo.origem === 'fipe' ? 'FIPE' : veiculo.origem === 'manual' ? 'Manual' : '—';
@@ -44,6 +67,7 @@ export class VeiculoPageComponent {
       { label: 'Modelo', value: veiculo.modelo },
       { label: 'Ano', value: veiculo.ano },
       { label: 'Código FIPE', value: veiculo.codigoFipe },
+      { label: 'Câmbio', value: labelTipoTransmissao(veiculo.tipoTransmissao) },
       { label: 'Origem', value: origemLabel }
     ];
   });
@@ -57,6 +81,10 @@ export class VeiculoPageComponent {
       this.manualObservacoes.set(v.observacoes ?? '');
     } else if (v.origem === 'fipe' && v.fipeMarcaCodigo) {
       this.restaurarFipe(v.fipeMarcaCodigo, v.fipeModeloCodigo, v.fipeAnoCodigo);
+      if (v.modelo) {
+        const inferido = inferirTipoTransmissao(v.modelo);
+        this.tipoTransmissaoInferido.set(inferido === 'desconhecido' ? null : inferido);
+      }
     }
     this.carregarMarcas();
   }
@@ -117,7 +145,9 @@ export class VeiculoPageComponent {
     this.anoSelecionado.set('');
     this.modelos.set([]);
     this.anos.set([]);
+    this.tipoTransmissaoInferido.set(null);
     const marca = this.marcas().find((item) => item.codigo === codigo);
+    const veiculo = this.state.veiculo();
     this.atualizarFipe({
       marca: marca?.nome ?? '',
       modelo: '',
@@ -125,7 +155,10 @@ export class VeiculoPageComponent {
       codigoFipe: '',
       fipeMarcaCodigo: codigo,
       fipeModeloCodigo: '',
-      fipeAnoCodigo: ''
+      fipeAnoCodigo: '',
+      ...(veiculo.tipoTransmissaoOrigem !== 'usuario'
+        ? { tipoTransmissao: 'desconhecido' as TipoTransmissao, tipoTransmissaoOrigem: undefined }
+        : {})
     });
     if (!codigo) return;
     this.carregando.set(true);
@@ -146,8 +179,10 @@ export class VeiculoPageComponent {
     this.anoSelecionado.set('');
     this.anos.set([]);
     const modelo = this.modelos().find((item) => String(item.codigo) === String(codigo));
+    const nomeModelo = modelo?.nome ?? '';
+    this.aplicarTransmissaoInferida(nomeModelo);
     this.atualizarFipe({
-      modelo: modelo?.nome ?? '',
+      modelo: nomeModelo,
       ano: '',
       codigoFipe: '',
       fipeModeloCodigo: codigo,
@@ -182,6 +217,7 @@ export class VeiculoPageComponent {
       )
       .subscribe((valor) => {
         if (!valor) return;
+        this.aplicarTransmissaoInferida(valor.Modelo);
         this.atualizarFipe({
           marca: valor.Marca,
           modelo: valor.Modelo,
@@ -190,6 +226,32 @@ export class VeiculoPageComponent {
           fipeAnoCodigo: codigo
         });
       });
+  }
+
+  selecionarTransmissao(valor: TipoTransmissao): void {
+    const inferido = this.tipoTransmissaoInferido();
+    this.state.atualizarVeiculo({
+      tipoTransmissao: valor,
+      tipoTransmissaoOrigem: resolverOrigemTransmissao(valor, inferido)
+    });
+  }
+
+  private aplicarTransmissaoInferida(modeloTexto: string): void {
+    const inferido = inferirTipoTransmissao(modeloTexto);
+    this.tipoTransmissaoInferido.set(inferido === 'desconhecido' ? null : inferido);
+
+    const veiculo = this.state.veiculo();
+    if (veiculo.tipoTransmissaoOrigem === 'usuario') return;
+
+    if (inferido === 'desconhecido') {
+      this.state.atualizarVeiculo({ tipoTransmissao: 'desconhecido', tipoTransmissaoOrigem: undefined });
+      return;
+    }
+
+    this.state.atualizarVeiculo({
+      tipoTransmissao: inferido,
+      tipoTransmissaoOrigem: 'inferido'
+    });
   }
 
   setManual(patch: {
@@ -246,11 +308,16 @@ export class VeiculoPageComponent {
     this.manualAno.set('');
     this.manualVersao.set('');
     this.manualObservacoes.set('');
+    this.tipoTransmissaoInferido.set(null);
     this.erro.set('');
     this.state.reiniciar();
   }
 
   avancar(): void {
+    const veiculo = this.state.veiculo();
+    if (!veiculo.tipoTransmissao) {
+      this.state.atualizarVeiculo({ tipoTransmissao: 'desconhecido' });
+    }
     void this.router.navigateByUrl('/mapa');
   }
 

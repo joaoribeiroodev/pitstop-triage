@@ -156,6 +156,20 @@
         </div>
       }
 
+      <div class="transmissao-field mt-5">
+        <label class="label">
+          Tipo de câmbio
+          <select class="field" [ngModel]="tipoTransmissaoSelecionado()" (ngModelChange)="selecionarTransmissao($event)">
+            @for (opcao of opcoesTransmissao; track opcao.valor) {
+              <option [value]="opcao.valor">{{ opcao.label }}</option>
+            }
+          </select>
+        </label>
+        @if (hintTransmissao()) {
+          <p class="transmissao-field__hint text-muted mt-2">{{ hintTransmissao() }}</p>
+        }
+      </div>
+
       <div class="page-actions">
         <button class="secondary-button" type="button" (click)="limpar()"><span aria-hidden="true">↺</span> Limpar tudo</button>
         <button class="primary-button" [disabled]="!state.podeIrParaMapa()" (click)="avancar()">

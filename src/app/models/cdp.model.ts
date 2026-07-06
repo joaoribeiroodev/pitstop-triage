@@ -1,3 +1,5 @@
+export type { TipoTransmissao, TipoTransmissaoOrigem } from './veiculo.model';
+
 export type UrgenciaGeral = 'baixa' | 'media' | 'alta' | 'critica';
 export type PodeDirigir = 'sim_normal' | 'sim_com_cautela' | 'apenas_curtas_distancias' | 'nao_dirigir';
 export type Prioridade = 'alta' | 'media' | 'baixa';

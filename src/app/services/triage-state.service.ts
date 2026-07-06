@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { TriageStepPath } from '@constants/triage-steps';
-import { ZonaId, zonasCatalogo } from '@data/sintomas.catalog';
+import { ZonaId, sintomaAplicavelAoVeiculo, zonasCatalogo } from '@data/sintomas.catalog';
 import { DiagnosticoCdp } from '@models/cdp.model';
 import { PerguntaRefinamentoNaSessao } from '@models/refinamento.model';
 import { DiagnosticoFonte, PersistedTriageState, TriageSnapshot } from '@models/triage.model';
@@ -154,6 +154,17 @@ export class TriageStateService {
 
   atualizarVeiculo(partial: Partial<Veiculo>): void {
     this.veiculo.update((current) => ({ ...current, ...partial }));
+    if ('tipoTransmissao' in partial) {
+      this.prunarSintomasInaplicaveis();
+    }
+  }
+
+  private prunarSintomasInaplicaveis(): void {
+    const zona = this.zonaSelecionada();
+    if (zona !== 'transmissao') return;
+    const tipo = this.veiculo().tipoTransmissao ?? 'desconhecido';
+    if (tipo === 'desconhecido') return;
+    this.sintomas.update((items) => items.filter((s) => sintomaAplicavelAoVeiculo(s, zona, tipo)));
   }
 
   selecionarZona(zona: ZonaId): void {

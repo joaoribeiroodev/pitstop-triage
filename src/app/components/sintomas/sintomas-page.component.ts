@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { rotulosZona, sintomasPorZona } from '@data/sintomas.catalog';
+import { listarSintomasPorZona, rotulosZona } from '@data/sintomas.catalog';
 import { TriageStateService } from '@services/triage-state.service';
 
 @Component({
@@ -16,7 +16,9 @@ export class SintomasPageComponent {
 
   readonly sintomas = computed(() => {
     const zona = this.state.zonaSelecionada();
-    return zona ? sintomasPorZona[zona] : [];
+    if (!zona) return [];
+    const tipo = this.state.veiculo().tipoTransmissao;
+    return listarSintomasPorZona(zona, tipo);
   });
   readonly zonaLabel = computed(() => rotulosZona[this.state.zonaSelecionada()] ?? 'não selecionada');
 
