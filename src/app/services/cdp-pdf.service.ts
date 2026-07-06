@@ -165,14 +165,21 @@ export class CdpPdfService {
     const pad = 4;
     const textX = this.margin + pad + 2;
     const textW = contentW - pad * 2 - 3;
-
-    this.setFont(doc, 'normal', 11);
-    const bodyLines = this.wrapText(doc, resumo, textW);
     const labelH = this.lineHeight(8) + 2;
-    const bodyH = bodyLines.length * this.lineHeight(11);
+    const safeResumo = this.pdfText(resumo);
+
+    let fontSize = 11;
+    let bodyLines = this.wrapText(doc, safeResumo, textW, 'normal', fontSize);
+    while (bodyLines.length > 14 && fontSize > 9) {
+      fontSize -= 0.5;
+      bodyLines = this.wrapText(doc, safeResumo, textW, 'normal', fontSize);
+    }
+
+    const lineGap = 0.25;
+    const bodyH = bodyLines.length * (this.lineHeight(fontSize) + lineGap);
     const boxH = pad * 2 + labelH + bodyH + 2;
 
-    y = this.ensureSpace(doc, y, boxH + 4);
+    y = this.ensureSpace(doc, y, boxH + 6);
     doc.setFillColor(255, 247, 237);
     doc.setDrawColor(...C.signal);
     doc.roundedRect(this.margin, y, contentW, boxH, 2, 2, 'FD');
@@ -181,11 +188,16 @@ export class CdpPdfService {
 
     this.setFont(doc, 'bold', 8);
     doc.setTextColor(...C.signal);
-    doc.text('EM POUCAS PALAVRAS', textX, y + 5);
+    doc.text('EM POUCAS PALAVRAS', textX, y + pad + 1);
 
-    this.setFont(doc, 'normal', 11);
+    this.setFont(doc, 'normal', fontSize);
     doc.setTextColor(...C.ink);
-    this.drawLines(doc, bodyLines, textX, y + 5 + labelH, 11, 0.2);
+    let ty = y + pad + labelH + 1;
+    const lh = this.lineHeight(fontSize);
+    for (const line of bodyLines) {
+      doc.text(line, textX, ty);
+      ty += lh + lineGap;
+    }
 
     return y + boxH + 6;
   }
@@ -226,16 +238,19 @@ export class CdpPdfService {
     const padX = 4;
     const textW = contentW - padX * 2;
     const labelH = this.lineHeight(8) + 3;
+    const safeRisco = this.pdfText(risco);
+    const safeObs = obs.trim() ? this.pdfText(obs) : '';
 
     this.setFont(doc, 'normal', 9.5);
-    const riscoLines = this.wrapText(doc, risco, textW);
-    const obsLines = obs.trim() ? this.wrapText(doc, obs, textW) : [];
+    const riscoLines = this.wrapText(doc, safeRisco, textW, 'normal', 9.5);
+    const obsLines = safeObs ? this.wrapText(doc, safeObs, textW, 'normal', 9.5) : [];
+    const lineGap = 0.2;
     const bodyH =
-      riscoLines.length * this.lineHeight(9.5) +
-      (obsLines.length ? obsLines.length * this.lineHeight(9.5) + 1 : 0);
+      riscoLines.length * (this.lineHeight(9.5) + lineGap) +
+      (obsLines.length ? obsLines.length * (this.lineHeight(9.5) + lineGap) + 1 : 0);
     const boxH = 4 + labelH + bodyH + 3;
 
-    y = this.ensureSpace(doc, y, boxH);
+    y = this.ensureSpace(doc, y, boxH + 4);
     doc.setFillColor(254, 252, 232);
     doc.setDrawColor(...C.warn);
     doc.roundedRect(this.margin, y, contentW, boxH, 2, 2, 'FD');
@@ -247,10 +262,17 @@ export class CdpPdfService {
     this.setFont(doc, 'normal', 9.5);
     doc.setTextColor(...C.ink);
     let ty = y + 5 + labelH;
-    ty = this.drawLines(doc, riscoLines, this.margin + padX, ty, 9.5, 0.2);
+    const lh = this.lineHeight(9.5);
+    for (const line of riscoLines) {
+      doc.text(line, this.margin + padX, ty);
+      ty += lh + lineGap;
+    }
     if (obsLines.length) {
       ty += 1;
-      this.drawLines(doc, obsLines, this.margin + padX, ty, 9.5, 0.2);
+      for (const line of obsLines) {
+        doc.text(line, this.margin + padX, ty);
+        ty += lh + lineGap;
+      }
     }
 
     return y + boxH + 6;

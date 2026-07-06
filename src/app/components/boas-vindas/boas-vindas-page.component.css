@@ -380,23 +380,20 @@
 
 .icon-circle--signal {
   position: relative;
-  display: grid;
-  place-items: center;
-  height: 3.5rem;
-  width: 3.5rem;
   overflow: hidden;
   border-radius: var(--radius-xl);
   border: 1px solid var(--pit-signal-30);
   background: var(--pit-surface);
-  font-family: var(--font-space);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--pit-signal);
 }
 
-.icon-circle--signal > .bg-checker {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 2px;
+.icon-circle--logo {
+  height: 3.5rem;
+  width: 3.5rem;
+}
+
+.icon-circle--logo .pit-logo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

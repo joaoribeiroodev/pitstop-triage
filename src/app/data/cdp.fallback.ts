@@ -16,7 +16,7 @@ export function diagnosticoCdpFallback(zonaId: ZonaId | '', sintomas: string[]):
       'Verificar nível de fluidos e vazamentos aparentes'
     ],
     resumo_para_cliente:
-      'A IA está indisponível agora. Recomendamos avaliação presencial breve antes de seguir usando o veículo.',
+      'A IA está indisponível no momento. Pelo que você informou, o carro precisa de uma avaliação presencial antes de uso prolongado. Se possível, evite viagens longas até um mecânico confirmar a causa. Se aparecer superaquecimento, fumaça, cheiro forte ou perda de freio, pare o carro e chame guincho.',
     hipoteses: [
       {
         titulo: `Falha provável em ${zona}`,

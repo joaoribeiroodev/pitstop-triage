@@ -50,9 +50,9 @@
       <div class="stripes-divider"></div>
 
       <p class="text-mono-label text-dim">Em poucas palavras</p>
-      <p class="text-strong mt-3 text-balance">
-        {{ diagnostico()!.resumo_para_cliente }}
-      </p>
+      <div class="client-summary mt-3">
+        <p class="client-summary__text">{{ diagnostico()!.resumo_para_cliente }}</p>
+      </div>
 
       <div class="badge-row mt-6">
         <span [attr.class]="'badge-urgencia ' + podeDirigirClass()">

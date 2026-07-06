@@ -321,6 +321,29 @@
   text-wrap: balance;
 }
 
+.client-summary {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--pit-signal-20);
+  background: linear-gradient(160deg, var(--pit-signal-05), rgba(251, 146, 60, 0.02));
+  padding: 1.25rem 1.5rem;
+}
+
+.client-summary__text {
+  margin: 0;
+  font-family: var(--font-inter);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.65;
+  color: var(--pit-white-90);
+  text-wrap: pretty;
+}
+
+@media (min-width: 640px) {
+  .client-summary__text {
+    font-size: 1.0625rem;
+  }
+}
+
 .text-pretty {
   text-wrap: pretty;
 }
