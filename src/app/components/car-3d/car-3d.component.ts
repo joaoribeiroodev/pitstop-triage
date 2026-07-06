@@ -29,14 +29,14 @@ interface ZonaHotspot {
   cameraPosition: THREE.Vector3;
 }
 
-// Paleta racing
-const COLOR_BODY = 0x111b30;
-const COLOR_BODY_TRIM = 0x1f2a44;
-const COLOR_GLASS = 0x0d1424;
-const COLOR_WHEEL = 0x070b14;
-const COLOR_TIRE = 0x0a0f1c;
-const COLOR_RIM = 0x94a3b8;
-const COLOR_HEADLIGHT = 0xfdba74;
+// Paleta pit lane — tons mais claros para leitura em fundo escuro
+const COLOR_BODY = 0x3d5270;
+const COLOR_BODY_TRIM = 0x4a6585;
+const COLOR_GLASS = 0x6b8cad;
+const COLOR_WHEEL = 0x2a3548;
+const COLOR_TIRE = 0x1a2233;
+const COLOR_RIM = 0xc8d4e4;
+const COLOR_HEADLIGHT = 0xffe4c4;
 const COLOR_ACCENT = 0xfb923c;
 
 const COLOR_ZONE_IDLE = 0xfb923c;
@@ -166,7 +166,8 @@ export class Car3dComponent implements AfterViewInit, OnDestroy {
     const host = this.hostRef.nativeElement;
 
     this.scene = new T.Scene();
-    this.scene.fog = new T.Fog(0x050810, 14, 30);
+    this.scene.background = new T.Color(0x1a2438);
+    this.scene.fog = new T.Fog(0x1a2438, 18, 32);
 
     const { clientWidth: w, clientHeight: h } = host;
     this.camera = new T.PerspectiveCamera(38, Math.max(w / Math.max(h, 1), 0.01), 0.1, 100);
@@ -183,7 +184,8 @@ export class Car3dComponent implements AfterViewInit, OnDestroy {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = T.PCFSoftShadowMap;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.28;
+    this.renderer.outputColorSpace = T.SRGBColorSpace;
 
     this.setupLights();
     this.buildGround();
@@ -216,11 +218,14 @@ export class Car3dComponent implements AfterViewInit, OnDestroy {
 
   private setupLights(): void {
     const T = this.THREE;
-    const ambient = new T.AmbientLight(0xffffff, 0.45);
+    const hemi = new T.HemisphereLight(0xb8cce8, 0x2a3548, 0.55);
+    this.scene.add(hemi);
+
+    const ambient = new T.AmbientLight(0xffffff, 0.5);
     this.scene.add(ambient);
 
-    const key = new T.DirectionalLight(0xffffff, 1.2);
-    key.position.set(6, 8, 6);
+    const key = new T.DirectionalLight(0xfff5eb, 1.45);
+    key.position.set(6, 9, 6);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
     key.shadow.camera.near = 1;
@@ -231,22 +236,26 @@ export class Car3dComponent implements AfterViewInit, OnDestroy {
     key.shadow.camera.bottom = -8;
     this.scene.add(key);
 
-    const rim = new T.DirectionalLight(0xfb923c, 0.6);
-    rim.position.set(-6, 4, -5);
+    const rim = new T.DirectionalLight(0xfb923c, 0.75);
+    rim.position.set(-6, 5, -5);
     this.scene.add(rim);
 
-    const fill = new T.DirectionalLight(0x22d3ee, 0.3);
-    fill.position.set(0, 3, -8);
+    const fill = new T.DirectionalLight(0x7dd3fc, 0.45);
+    fill.position.set(0, 4, -8);
     this.scene.add(fill);
+
+    const top = new T.PointLight(0xffffff, 0.35, 20);
+    top.position.set(0, 6, 0);
+    this.scene.add(top);
   }
 
   private buildGround(): void {
     const T = this.THREE;
     const geo = new T.CircleGeometry(8, 64);
     const mat = new T.MeshStandardMaterial({
-      color: 0x0a0f1c,
-      metalness: 0.5,
-      roughness: 0.55
+      color: 0x243044,
+      metalness: 0.25,
+      roughness: 0.72
     });
     const mesh = new T.Mesh(geo, mat);
     mesh.rotation.x = -Math.PI / 2;
@@ -254,8 +263,8 @@ export class Car3dComponent implements AfterViewInit, OnDestroy {
     this.scene.add(mesh);
 
     // grid sutil
-    const grid = new T.GridHelper(16, 32, 0x1f2a44, 0x111b30);
-    (grid.material as THREE.Material).opacity = 0.35;
+    const grid = new T.GridHelper(16, 32, 0x4a6585, 0x334155);
+    (grid.material as THREE.Material).opacity = 0.5;
     (grid.material as THREE.Material).transparent = true;
     grid.position.y = 0.001;
     this.scene.add(grid);
@@ -266,14 +275,14 @@ export class Car3dComponent implements AfterViewInit, OnDestroy {
     const car = new T.Group();
     car.name = 'car';
 
-    const matBody = new T.MeshStandardMaterial({ color: COLOR_BODY, metalness: 0.55, roughness: 0.45 });
-    const matTrim = new T.MeshStandardMaterial({ color: COLOR_BODY_TRIM, metalness: 0.7, roughness: 0.4 });
+    const matBody = new T.MeshStandardMaterial({ color: COLOR_BODY, metalness: 0.35, roughness: 0.52 });
+    const matTrim = new T.MeshStandardMaterial({ color: COLOR_BODY_TRIM, metalness: 0.45, roughness: 0.48 });
     const matGlass = new T.MeshStandardMaterial({
       color: COLOR_GLASS,
-      metalness: 0.9,
-      roughness: 0.1,
+      metalness: 0.65,
+      roughness: 0.15,
       transparent: true,
-      opacity: 0.85
+      opacity: 0.72
     });
     const matWheel = new T.MeshStandardMaterial({ color: COLOR_WHEEL, metalness: 0.2, roughness: 0.8 });
     const matTire = new T.MeshStandardMaterial({ color: COLOR_TIRE, metalness: 0.05, roughness: 0.95 });
@@ -281,16 +290,16 @@ export class Car3dComponent implements AfterViewInit, OnDestroy {
     const matHead = new T.MeshStandardMaterial({
       color: COLOR_HEADLIGHT,
       emissive: COLOR_HEADLIGHT,
-      emissiveIntensity: 0.9,
-      metalness: 0.2,
-      roughness: 0.2
+      emissiveIntensity: 1.15,
+      metalness: 0.15,
+      roughness: 0.25
     });
     const matAccent = new T.MeshStandardMaterial({
       color: COLOR_ACCENT,
       emissive: COLOR_ACCENT,
-      emissiveIntensity: 0.35,
-      metalness: 0.3,
-      roughness: 0.4
+      emissiveIntensity: 0.55,
+      metalness: 0.25,
+      roughness: 0.38
     });
 
     const mkBox = (w: number, h: number, d: number, mat: THREE.Material) => {

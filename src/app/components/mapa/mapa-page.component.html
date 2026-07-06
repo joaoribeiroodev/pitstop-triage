@@ -9,9 +9,9 @@
   </header>
 
   <div class="two-column--map">
-    <article class="panel-strong">
+    <article class="panel-strong map-stage">
       <div class="stripes-divider"></div>
-      <div class="mt-3">
+      <div class="map-stage__header status-inline">
         <span class="pulse-dot" aria-hidden="true"></span>
         <span class="text-mono-label text-dim">Visualização 3D · Telemetria</span>
       </div>
@@ -20,44 +20,50 @@
       </div>
     </article>
 
-    <aside class="aside-stack">
-      <div class="aside-panel">
+    <aside class="map-sidebar aside-stack">
+      <div class="aside-panel zone-card" [class.zone-card--active]="!!zonaMeta()">
         <p class="text-mono-label text-dim">Área selecionada</p>
-        <p class="page-title text-signal mt-3">{{ zonaLabel() }}</p>
 
         @if (zonaMeta()) {
-          <p class="mt-3 text-muted text-pretty">{{ zonaMeta()!.descricao }}</p>
-          <div class="chip-row mt-4">
+          <div class="zone-card__head">
+            <span class="zone-card__icon" aria-hidden="true">{{ zonaMeta()!.icone }}</span>
+            <h2 class="zone-title">{{ zonaLabel() }}</h2>
+          </div>
+          <p class="zone-card__desc text-muted text-pretty">{{ zonaMeta()!.descricao }}</p>
+          <div class="chip-row">
             @for (s of zonaMeta()!.sistemas; track s) {
               <span class="chip">{{ s }}</span>
             }
           </div>
         } @else {
-          <p class="mt-4 text-dim">Toque em uma zona no carro 3D para liberar sintomas contextualizados.</p>
+          <div class="zone-card__empty">
+            <p class="zone-title zone-title--placeholder">Nenhuma zona</p>
+            <p class="text-dim text-pretty">
+              Toque em uma zona no carro 3D ou use os atalhos abaixo para liberar sintomas contextualizados.
+            </p>
+          </div>
         }
       </div>
 
-      <div class="aside-panel mt-5">
+      <div class="aside-panel shortcuts-card">
         <p class="text-mono-label text-dim">Atalhos rápidos</p>
-        <div class="symptom-grid mt-4">
+        <div class="shortcut-grid">
           @for (atalho of atalhos; track atalho.id) {
             <button
               type="button"
               [class]="atalhoClass(atalho.id)"
               (click)="selecionar(atalho.id)"
               [attr.aria-pressed]="state.zonaSelecionada() === atalho.id"
+              [attr.aria-label]="atalho.label + ' — ' + atalho.descricao"
             >
-              <span aria-hidden="true">{{ atalho.icone }}</span>
-              <span>
-                <span class="text-strong">{{ atalho.label }}</span>
-                <span class="text-dim">{{ atalho.descricao }}</span>
-              </span>
+              <span class="atalho-btn__icon" aria-hidden="true">{{ atalho.icone }}</span>
+              <span class="atalho-btn__label">{{ atalho.label }}</span>
             </button>
           }
         </div>
       </div>
 
-      <div class="page-actions">
+      <div class="map-actions">
         <button class="secondary-button" type="button" (click)="voltar()"><span aria-hidden="true">←</span> Veículo</button>
         <button class="primary-button" [disabled]="!state.zonaSelecionada()" (click)="avancar()">
           Sintomas <span aria-hidden="true">→</span>
