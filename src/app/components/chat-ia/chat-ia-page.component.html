@@ -49,7 +49,7 @@
               <span class="chip-signal">Aprofundamento</span>
             }
           </div>
-          <button class="ghost-button" type="button" (click)="carregarRodada(rodadaAtual())" [disabled]="carregando()">
+          <button class="ghost-button" type="button" (click)="carregarRodada(rodadaAtual(), { regerar: true })" [disabled]="carregando()">
             <span aria-hidden="true">↻</span> Regerar
           </button>
         </div>
@@ -74,6 +74,20 @@
               }
 
               @switch (pergunta.tipo) {
+                @case ('multipla_escolha') {
+                  <div class="option-grid-2 mt-5">
+                    @for (opcao of pergunta.opcoes; track opcao) {
+                      <button
+                        type="button"
+                        [class]="opcaoClass(pergunta, opcao)"
+                        [attr.aria-pressed]="resposta(pergunta.id) === opcao"
+                        (click)="responder(pergunta, opcao)"
+                      >
+                        {{ opcao }}
+                      </button>
+                    }
+                  </div>
+                }
                 @case ('escala') {
                   <div class="option-scale mt-5">
                     @for (opcao of pergunta.opcoes; track opcao; let idx = $index) {

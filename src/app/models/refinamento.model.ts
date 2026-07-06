@@ -9,6 +9,11 @@ export interface PerguntaRefinamento {
   ajuda?: string;
 }
 
+/** Pergunta exibida na sessão de refinamento, com rodada de origem. */
+export interface PerguntaRefinamentoNaSessao extends PerguntaRefinamento {
+  rodada: number;
+}
+
 export interface RefinamentoResponse {
   perguntas: PerguntaRefinamento[];
   raciocinio?: string;

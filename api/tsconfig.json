@@ -23,6 +23,7 @@
     "**/*.ts",
     "../src/app/utils/pt-br-ortografia.ts",
     "../src/app/utils/pt-br-text.util.ts",
+    "../src/app/utils/refinamento.util.ts",
     "../src/app/models/cdp.model.ts",
     "../src/app/models/refinamento.model.ts"
   ]

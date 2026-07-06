@@ -1,5 +1,6 @@
 import { ZonaId } from '@data/sintomas.catalog';
 import { DiagnosticoCdp } from '@models/cdp.model';
+import { PerguntaRefinamentoNaSessao } from '@models/refinamento.model';
 import { Veiculo } from '@models/veiculo.model';
 
 export type DiagnosticoFonte = 'ia' | 'contingencia';
@@ -24,6 +25,8 @@ export interface PersistedTriageState {
   sintomas: string[];
   respostasRefinamento: Record<string, string>;
   perguntasRefinamento: Record<string, string>;
+  perguntasAtivas?: PerguntaRefinamentoNaSessao[];
+  rodadaRefinamentoMax?: number;
   diagnostico: DiagnosticoCdp | null;
   diagnosticoFonte: DiagnosticoFonte | null;
   triagemConcluida?: boolean;

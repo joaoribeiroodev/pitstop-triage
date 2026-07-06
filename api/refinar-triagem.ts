@@ -4,6 +4,7 @@ import { buildRespostasDetalhadas } from './cdp-validation';
 import { completeStructuredJson } from './openai';
 import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
 import { corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
+import { normalizarRefinamentoResponse } from '@utils/refinamento.util';
 
 const SYSTEM_INSTRUCTION = `
 Você é um consultor técnico automotivo sênior, especialista em primeira escuta de cliente em oficina de bairro brasileira.
@@ -96,7 +97,16 @@ ${JSON.stringify(
       return;
     }
 
-    res.status(200).json(corrigirRefinamentoResposta(parsed));
+    const normalizado = normalizarRefinamentoResponse(
+      corrigirRefinamentoResposta(parsed) as { perguntas?: unknown[]; raciocinio?: string },
+      rodada
+    );
+    if (normalizado.perguntas.length === 0) {
+      res.status(502).json({ error: 'IA retornou perguntas sem opcoes validas' });
+      return;
+    }
+
+    res.status(200).json(normalizado);
   } catch (error) {
     res.status(500).json({ error: 'Falha ao gerar perguntas', detail: String(error) });
   }

@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   OnDestroy,
+  OnInit,
   signal
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -12,8 +13,9 @@ import { catchError, finalize, map, of, Subscription, TimeoutError } from 'rxjs'
 import { perguntasRefinamentoFallback } from '@data/refinamento.fallback';
 import { AI_REQUEST_TIMEOUT_S, DiagnosticoApiService } from '@services/diagnostico-api.service';
 import { TriageStateService } from '@services/triage-state.service';
-import { PerguntaRefinamento } from '@models/refinamento.model';
+import { PerguntaRefinamento, PerguntaRefinamentoNaSessao } from '@models/refinamento.model';
 import { corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
+import { normalizarPerguntasRefinamento } from '@utils/refinamento.util';
 
 @Component({
   selector: 'app-chat-ia-page',
@@ -22,14 +24,14 @@ import { corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
   styleUrl: './chat-ia-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ChatIaPageComponent implements OnDestroy {
+export class ChatIaPageComponent implements OnInit, OnDestroy {
   readonly state = inject(TriageStateService);
   private readonly api = inject(DiagnosticoApiService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly timeoutSegundos = AI_REQUEST_TIMEOUT_S;
-  readonly perguntas = signal<PerguntaRefinamento[]>([]);
+  readonly perguntas = signal<PerguntaRefinamentoNaSessao[]>([]);
   readonly carregando = signal(false);
   readonly carregandoSegundos = signal(0);
   readonly erro = signal('');
@@ -56,6 +58,20 @@ export class ChatIaPageComponent implements OnDestroy {
     }));
   });
 
+  ngOnInit(): void {
+    const salvas = normalizarPerguntasRefinamento(
+      this.state.perguntasAtivas() as unknown[],
+      this.state.rodadaRefinamentoMax() || 1
+    );
+    if (salvas.length > 0) {
+      this.perguntas.set(salvas);
+      this.rodadaAtual.set(this.state.rodadaRefinamentoMax() || 1);
+      if (salvas.length !== this.state.perguntasAtivas().length) {
+        this.state.salvarSessaoRefinamento(salvas, this.state.rodadaRefinamentoMax() || 1);
+      }
+    }
+  }
+
   tipoLabel(tipo: PerguntaRefinamento['tipo']): string {
     if (tipo === 'sim_nao') return 'Sim / Não';
     if (tipo === 'escala') return 'Escala';
@@ -72,16 +88,17 @@ export class ChatIaPageComponent implements OnDestroy {
     return `${base} option-btn--selected`;
   }
 
-  carregarRodada(rodada: number): void {
-    const idsAtuais = this.perguntas().map((p) => p.id);
-    if (idsAtuais.length > 0 && this.rodadaAtual() === rodada) {
-      this.state.limparRespostas(idsAtuais);
-    }
+  carregarRodada(rodada: number, opts?: { regerar?: boolean }): void {
+    const regerar = opts?.regerar ?? false;
+    const idsRodada = this.perguntas()
+      .filter((p) => p.rodada === rodada)
+      .map((p) => p.id);
 
     this.requestSub?.unsubscribe();
     this.iniciarCarregamento();
     this.erro.set('');
     this.rodadaAtual.set(rodada);
+
     this.requestSub = this.api
       .gerarPerguntas(this.state.snapshot(), rodada)
       .pipe(
@@ -101,8 +118,24 @@ export class ChatIaPageComponent implements OnDestroy {
       )
       .subscribe(({ res }) => {
         const corrigido = corrigirRefinamentoResposta(res);
-        this.perguntas.set(corrigido.perguntas);
-        this.state.registrarPerguntas(corrigido.perguntas);
+        const novas = normalizarPerguntasRefinamento(corrigido.perguntas ?? [], rodada).map((p) => ({
+          ...p,
+          rodada
+        }));
+
+        if (novas.length === 0) {
+          this.erro.set('As perguntas retornadas estavam incompletas. Tente regerar.');
+          return;
+        }
+
+        if (regerar && idsRodada.length > 0) {
+          this.state.limparRespostas(idsRodada);
+        }
+
+        const lista = this.mesclarPerguntas(this.perguntas(), novas, rodada, regerar);
+        this.perguntas.set(lista);
+        this.state.registrarPerguntas(novas);
+        this.state.salvarSessaoRefinamento(lista, Math.max(this.state.rodadaRefinamentoMax() ?? 0, rodada));
         this.cdr.markForCheck();
       });
   }
@@ -114,6 +147,7 @@ export class ChatIaPageComponent implements OnDestroy {
 
   responder(pergunta: PerguntaRefinamento, opcao: string): void {
     this.state.responderPergunta(pergunta.id, opcao, pergunta.pergunta);
+    this.cdr.markForCheck();
   }
 
   resposta(id: string): string {
@@ -130,6 +164,22 @@ export class ChatIaPageComponent implements OnDestroy {
 
   avancar(): void {
     void this.router.navigateByUrl('/resultado');
+  }
+
+  private mesclarPerguntas(
+    atuais: PerguntaRefinamentoNaSessao[],
+    novas: PerguntaRefinamentoNaSessao[],
+    rodada: number,
+    regerar: boolean
+  ): PerguntaRefinamentoNaSessao[] {
+    if (rodada === 1 && !regerar && atuais.length === 0) {
+      return novas;
+    }
+
+    const manter = regerar
+      ? atuais.filter((p) => p.rodada !== rodada)
+      : atuais.filter((p) => p.rodada < rodada);
+    return [...manter, ...novas].sort((a, b) => a.rodada - b.rodada);
   }
 
   private iniciarCarregamento(): void {

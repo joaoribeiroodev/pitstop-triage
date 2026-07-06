@@ -2,6 +2,7 @@ import { Injectable, computed, effect, signal } from '@angular/core';
 import { TriageStepPath } from '@constants/triage-steps';
 import { ZonaId, zonasCatalogo } from '@data/sintomas.catalog';
 import { DiagnosticoCdp } from '@models/cdp.model';
+import { PerguntaRefinamentoNaSessao } from '@models/refinamento.model';
 import { DiagnosticoFonte, PersistedTriageState, TriageSnapshot } from '@models/triage.model';
 import { Veiculo } from '@models/veiculo.model';
 import { isDiagnosticoContingencia } from '@utils/cdp-contingencia.util';
@@ -33,6 +34,8 @@ function loadInitial(): PersistedTriageState {
     sintomas: [] as string[],
     respostasRefinamento: {} as Record<string, string>,
     perguntasRefinamento: {} as Record<string, string>,
+    perguntasAtivas: [] as PerguntaRefinamentoNaSessao[],
+    rodadaRefinamentoMax: 0,
     diagnostico: null as DiagnosticoCdp | null,
     diagnosticoFonte: null as DiagnosticoFonte | null,
     triagemConcluida: false
@@ -51,6 +54,8 @@ function loadInitial(): PersistedTriageState {
       sintomas: parsed.sintomas ?? [],
       respostasRefinamento: parsed.respostasRefinamento ?? {},
       perguntasRefinamento: parsed.perguntasRefinamento ?? {},
+      perguntasAtivas: parsed.perguntasAtivas ?? [],
+      rodadaRefinamentoMax: parsed.rodadaRefinamentoMax ?? 0,
       diagnostico,
       diagnosticoFonte: inferirFonte(diagnostico, parsed.diagnosticoFonte),
       triagemConcluida: parsed.triagemConcluida ?? false
@@ -69,6 +74,8 @@ export class TriageStateService {
   readonly sintomas = signal<string[]>(this.initial.sintomas);
   readonly respostasRefinamento = signal<Record<string, string>>(this.initial.respostasRefinamento);
   readonly perguntasRefinamento = signal<Record<string, string>>(this.initial.perguntasRefinamento);
+  readonly perguntasAtivas = signal<PerguntaRefinamentoNaSessao[]>(this.initial.perguntasAtivas ?? []);
+  readonly rodadaRefinamentoMax = signal(this.initial.rodadaRefinamentoMax ?? 0);
   readonly diagnostico = signal<DiagnosticoCdp | null>(this.initial.diagnostico);
   readonly diagnosticoFonte = signal<DiagnosticoFonte | null>(this.initial.diagnosticoFonte);
   readonly triagemConcluida = signal(this.initial.triagemConcluida ?? false);
@@ -114,6 +121,8 @@ export class TriageStateService {
         sintomas: this.sintomas(),
         respostasRefinamento: this.respostasRefinamento(),
         perguntasRefinamento: this.perguntasRefinamento(),
+        perguntasAtivas: this.perguntasAtivas(),
+        rodadaRefinamentoMax: this.rodadaRefinamentoMax(),
         diagnostico: this.diagnostico(),
         diagnosticoFonte: this.diagnosticoFonte(),
         triagemConcluida: this.triagemConcluida()
@@ -154,6 +163,8 @@ export class TriageStateService {
     this.sintomas.set([]);
     this.respostasRefinamento.set({});
     this.perguntasRefinamento.set({});
+    this.perguntasAtivas.set([]);
+    this.rodadaRefinamentoMax.set(0);
     this.diagnostico.set(null);
     this.diagnosticoFonte.set(null);
   }
@@ -173,6 +184,11 @@ export class TriageStateService {
       for (const p of perguntas) next[p.id] = p.pergunta;
       return next;
     });
+  }
+
+  salvarSessaoRefinamento(perguntas: PerguntaRefinamentoNaSessao[], rodadaMax: number): void {
+    this.perguntasAtivas.set(perguntas);
+    this.rodadaRefinamentoMax.set(rodadaMax);
   }
 
   responderPergunta(perguntaId: string, resposta: string, perguntaTexto?: string): void {
@@ -212,6 +228,8 @@ export class TriageStateService {
     this.sintomas.set([]);
     this.respostasRefinamento.set({});
     this.perguntasRefinamento.set({});
+    this.perguntasAtivas.set([]);
+    this.rodadaRefinamentoMax.set(0);
     this.diagnostico.set(null);
     this.diagnosticoFonte.set(null);
     this.triagemConcluida.set(false);
