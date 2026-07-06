@@ -61,6 +61,17 @@ export class ChatIaPageComponent implements OnDestroy {
     return 'Múltipla escolha';
   }
 
+  opcaoClass(pergunta: PerguntaRefinamento, opcao: string): string {
+    const selected = this.resposta(pergunta.id) === opcao;
+    if (!selected) return 'option-btn';
+    if (pergunta.tipo === 'sim_nao') {
+      return opcao.toLowerCase().startsWith('s')
+        ? 'option-btn option-btn--safe'
+        : 'option-btn option-btn--danger';
+    }
+    return 'option-btn option-btn--selected';
+  }
+
   carregarRodada(rodada: number): void {
     const idsAtuais = this.perguntas().map((p) => p.id);
     if (idsAtuais.length > 0 && this.rodadaAtual() === rodada) {

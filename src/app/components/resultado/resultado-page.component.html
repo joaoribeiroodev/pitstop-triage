@@ -1,75 +1,67 @@
-<section class="page-shell mx-auto max-w-2xl gap-8 animate-fade-up">
-  <header class="flex flex-col gap-3">
-    <span class="chip-signal w-fit">Etapa 05 · Resultado</span>
-    <h1 class="font-space text-3xl font-bold leading-tight text-white/90 sm:text-4xl">
-      O que pode estar acontecendo com seu <span class="text-pit-signal">carro</span>
-    </h1>
-    <p class="font-inter text-sm text-white/60 sm:text-base">
-      Um resumo claro para você entender a situação e levar na oficina, concessionária ou mecânico de confiança.
-    </p>
+<section class="page-shell page-shell--narrow animate-fade-up">
+  <header class="page-header">
+    <span class="chip-signal">Etapa 05 · Resultado</span>
+    <h1 class="page-title">O que pode estar acontecendo com seu <span class="page-title__accent">carro</span></h1>
+    <p class="page-lead">Um resumo claro para você entender a situação e levar na oficina, concessionária ou mecânico de confiança.</p>
   </header>
 
   @if (!state.podeEmitirCdp()) {
-    <div class="panel-strong p-8">
-      <div class="flex items-center gap-2">
-        <span class="h-2 w-2 rounded-full bg-pit-warn"></span>
-        <span class="font-mono text-[10px] font-bold uppercase tracking-widest text-pit-warn">Triagem incompleta</span>
+    <div class="panel-strong">
+      <div>
+        <span class="status-dot status-dot--warn" aria-hidden="true"></span>
+        <span class="text-mono-label text-warn">Triagem incompleta</span>
       </div>
-      <p class="mt-4 font-space text-lg font-semibold text-white/90">Complete todas as etapas antes de ver o resultado.</p>
-      <p class="mt-1 font-inter text-sm text-white/60">Veículo, mapa, sintomas e refinamento IA são obrigatórios.</p>
+      <p class="text-strong mt-4">Complete todas as etapas antes de ver o resultado.</p>
+      <p class="text-muted mt-1">Veículo, mapa, sintomas e refinamento IA são obrigatórios.</p>
       <button class="primary-button mt-6" type="button" (click)="reiniciar()">Recomeçar triagem</button>
     </div>
   } @else if (!diagnostico()) {
-    <div class="panel-strong p-8">
-      <div class="grid min-h-64 place-items-center text-center">
-        <div class="max-w-sm px-4">
-          <h2 class="font-space text-2xl font-bold text-white/90">Pronto para o resultado</h2>
-          <p class="mt-3 font-inter text-sm text-white/60">
-            Vamos organizar o que você contou em um resumo fácil de entender e levar na oficina.
-          </p>
-          <button class="primary-button mt-8 w-full justify-center" [disabled]="carregando()" (click)="gerar()">
-            @if (carregando()) {
-              <span class="h-2 w-2 animate-pulse rounded-full bg-pit-bg"></span>
-              Analisando...
-            } @else {
-              Gerar meu diagnóstico
-            }
-          </button>
-          <app-lgpd-notice
-            class="mt-5 block text-left"
-            mensagem="Seus dados serão enviados à IA para gerar o resumo. O PDF é criado localmente no seu navegador."
-          />
-        </div>
+    <div class="panel-strong">
+      <div class="empty-state">
+        <h2 class="text-strong">Pronto para o resultado</h2>
+        <p class="mt-3 text-muted">Vamos organizar o que você contou em um resumo fácil de entender e levar na oficina.</p>
+        <button class="primary-button primary-button--block mt-8" [disabled]="carregando()" (click)="gerar()">
+          @if (carregando()) {
+            <span class="pulse-dot" aria-hidden="true"></span>
+            Analisando...
+          } @else {
+            Gerar meu diagnóstico
+          }
+        </button>
+        <app-lgpd-notice
+          class="mt-5"
+          mensagem="Seus dados serão enviados à IA para gerar o resumo. O PDF é criado localmente no seu navegador."
+        />
       </div>
     </div>
   } @else {
     @if (isContingencia()) {
-      <div class="rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-4">
-        <p class="font-inter text-sm font-semibold text-pit-warn">Diagnóstico de contingência</p>
-        <p class="mt-2 font-inter text-sm text-white/60">
-          Este resumo foi gerado localmente porque a IA não respondeu. Use o botão <strong class="text-white/90">Atualizar</strong> para
+      <div class="alert-warn">
+        <p class="text-warn text-strong">Diagnóstico de contingência</p>
+        <p class="mt-2 text-muted">
+          Este resumo foi gerado localmente porque a IA não respondeu. Use o botão <strong class="text-strong">Atualizar</strong> para
           tentar novamente com a IA.
         </p>
       </div>
     }
 
     <!-- ── 1. Resumo principal (cliente) ── -->
-    <article class="panel-strong relative overflow-hidden p-6 sm:p-8">
-      <div class="absolute inset-x-0 top-0 stripes-divider"></div>
+    <article class="panel-strong">
+      <div class="stripes-divider"></div>
 
-      <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Em poucas palavras</p>
-      <p class="mt-3 font-space text-xl font-semibold leading-snug text-white/90 sm:text-2xl">
+      <p class="text-mono-label text-dim">Em poucas palavras</p>
+      <p class="text-strong mt-3 text-balance">
         {{ diagnostico()!.resumo_para_cliente }}
       </p>
 
-      <div class="mt-6 flex flex-wrap gap-2">
+      <div class="mt-6">
         <span [attr.class]="'badge-urgencia ' + podeDirigirClass()">
           <span aria-hidden="true">{{ podeDirigirMeta().icone }}</span>
           {{ podeDirigirMeta().label }}
         </span>
         <span [attr.class]="'badge-urgencia ' + urgenciaClass()">
           <span
-            class="h-2 w-2 rounded-full"
+            class="status-dot"
             [class.animate-blink]="diagnostico()!.urgencia_geral === 'critica' || diagnostico()!.urgencia_geral === 'alta'"
             [style.background]="urgenciaDot()"
           ></span>
@@ -78,36 +70,31 @@
       </div>
 
       @if (exibirAlertaSeguranca()) {
-        <div class="mt-5 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-4">
-          <p class="font-inter text-sm font-semibold text-white/90">{{ diagnostico()!.risco_principal }}</p>
-          <p class="mt-2 font-inter text-sm text-white/60">{{ diagnostico()!.observacoes_seguranca }}</p>
+        <div class="alert-warn mt-5">
+          <p class="text-strong">{{ diagnostico()!.risco_principal }}</p>
+          <p class="mt-2 text-muted">{{ diagnostico()!.observacoes_seguranca }}</p>
         </div>
       }
     </article>
 
     <!-- ── 2. Possíveis causas (simplificado) ── -->
     @if (hipotesesResumo().length > 0) {
-      <article class="panel p-6 sm:p-8">
-        <h2 class="font-space text-lg font-bold text-white/90">Possíveis causas</h2>
-        <p class="mt-1 font-inter text-sm text-white/60">Hipóteses mais prováveis — a oficina vai confirmar com inspeção.</p>
+      <article class="panel">
+        <h2 class="text-strong">Possíveis causas</h2>
+        <p class="text-muted mt-1">Hipóteses mais prováveis — a oficina vai confirmar com inspeção.</p>
 
-        <ol class="mt-5 grid gap-3">
+        <ol class="mt-5">
           @for (hipotese of hipotesesResumo(); track hipotese.titulo; let i = $index) {
-            <li class="rounded-xl border border-white/10 bg-pit-surface p-5">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                  <span
-                    class="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-pit-signal/30 bg-pit-signal/10 font-mono text-sm font-bold text-pit-signal"
-                    >{{ i + 1 }}</span
-                  >
-                  <div>
-                    <h3 class="font-space text-base font-semibold text-white/90">{{ hipotese.titulo }}</h3>
-                    <p class="mt-1.5 font-inter text-sm leading-relaxed text-white/60">{{ hipotese.justificativa_tecnica }}</p>
-                  </div>
+            <li class="data-card" [class.mt-3]="!$first">
+              <div>
+                <span class="question-index">{{ i + 1 }}</span>
+                <div>
+                  <h3 class="text-strong">{{ hipotese.titulo }}</h3>
+                  <p class="mt-1 text-muted text-pretty">{{ hipotese.justificativa_tecnica }}</p>
                 </div>
               </div>
-              <p class="mt-3 font-mono text-xs text-white/40">
-                Estimativa de reparo: <span class="font-bold text-pit-signal">{{ formatarCusto(hipotese) }}</span>
+              <p class="mt-3 text-dim">
+                Estimativa de reparo: <span class="text-signal text-strong">{{ formatarCusto(hipotese) }}</span>
               </p>
             </li>
           }
@@ -116,36 +103,34 @@
     }
 
     <!-- ── 3. Leve na oficina ── -->
-    <article class="panel-strong p-6 sm:p-8">
-      <h2 class="font-space text-lg font-bold text-white/90">Leve isso na oficina</h2>
-      <p class="mt-1 font-inter text-sm text-white/60">
-        Mostre este resumo na recepção — ajuda o mecânico a entender o caso antes mesmo de abrir o capô.
-      </p>
+    <article class="panel-strong">
+      <h2 class="text-strong">Leve isso na oficina</h2>
+      <p class="text-muted mt-1">Mostre este resumo na recepção — ajuda o mecânico a entender o caso antes mesmo de abrir o capô.</p>
 
-      <ul class="mt-5 grid gap-2">
+      <ul class="mt-5">
         @for (linha of roteiroOficina(); track linha) {
-          <li class="flex items-start gap-2 rounded-xl border border-white/10 bg-pit-surface px-4 py-3 font-inter text-sm text-white/90">
-            <span class="mt-0.5 font-mono text-pit-signal" aria-hidden="true">▸</span>
+          <li class="list-row" [class.mt-2]="!$first">
+            <span class="text-signal" aria-hidden="true">▸</span>
             {{ linha }}
           </li>
         }
       </ul>
 
       @if (diagnostico()!.acoes_imediatas.length > 0) {
-        <div class="mt-5 border-t border-white/10 pt-5">
-          <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Enquanto isso</p>
-          <ul class="mt-3 grid gap-2">
+        <div class="mt-5">
+          <p class="text-mono-label text-dim">Enquanto isso</p>
+          <ul class="mt-3">
             @for (acao of diagnostico()!.acoes_imediatas; track acao) {
-              <li class="font-inter text-sm text-white/60">· {{ acao }}</li>
+              <li class="text-muted" [class.mt-2]="!$first">· {{ acao }}</li>
             }
           </ul>
         </div>
       }
 
-      <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-        <button class="primary-button flex-1 justify-center" type="button" (click)="baixarPdf()" [disabled]="baixandoPdf()">
+      <div class="page-actions">
+        <button class="primary-button primary-button--flex" type="button" (click)="baixarPdf()" [disabled]="baixandoPdf()">
           @if (baixandoPdf()) {
-            <span class="h-2 w-2 animate-pulse rounded-full bg-pit-bg"></span>
+            <span class="pulse-dot" aria-hidden="true"></span>
             Gerando PDF...
           } @else {
             Baixar PDF para levar na oficina
@@ -157,50 +142,41 @@
       </div>
 
       @if (erro()) {
-        <p class="mt-4 rounded-xl border border-pit-warn/30 bg-pit-warn/5 p-3 font-inter text-sm text-pit-warn">{{ erro() }}</p>
+        <p class="alert-warn mt-4">{{ erro() }}</p>
       }
     </article>
 
     <!-- ── 4. Detalhes técnicos (colapsável — mecânico) ── -->
-    <article class="panel overflow-hidden">
-      <button
-        type="button"
-        class="flex w-full items-center justify-between gap-4 p-6 text-left transition-all duration-300 hover:bg-pit-surface active:scale-[0.99] sm:p-8"
-        [attr.aria-expanded]="detalhesTecnicosAberto()"
-        (click)="alternarDetalhesTecnicos()"
-      >
+    <article class="panel">
+      <button type="button" class="collapse-toggle" [attr.aria-expanded]="detalhesTecnicosAberto()" (click)="alternarDetalhesTecnicos()">
         <div>
-          <h2 class="font-space text-base font-bold text-white/90">Detalhes técnicos</h2>
-          <p class="mt-0.5 font-inter text-xs text-white/40">Para o mecânico — componentes, OBD, descartes e preventiva</p>
+          <h2 class="text-strong">Detalhes técnicos</h2>
+          <p class="text-dim mt-1">Para o mecânico — componentes, OBD, descartes e preventiva</p>
         </div>
-        <span class="font-mono text-lg text-pit-signal transition-transform duration-300" [class.rotate-180]="detalhesTecnicosAberto()"
-          >⌄</span
-        >
+        <span [class]="collapseChevronClass(detalhesTecnicosAberto())">⌄</span>
       </button>
 
       @if (detalhesTecnicosAberto()) {
-        <div class="border-t border-white/10 px-6 pb-6 sm:px-8 sm:pb-8">
-          <ol class="grid gap-4 pt-5">
+        <div>
+          <ol class="mt-5">
             @for (hipotese of diagnostico()!.hipoteses; track hipotese.titulo; let i = $index) {
-              <li class="rounded-xl border border-white/10 bg-pit-surface p-5">
-                <header class="flex flex-wrap items-start justify-between gap-2">
-                  <h3 class="font-space text-sm font-semibold text-white/90">{{ i + 1 }}. {{ hipotese.titulo }}</h3>
-                  <div class="flex gap-2">
-                    <span class="font-mono text-xs text-pit-signal">{{ hipotese.probabilidade }}%</span>
-                    <span
-                      [attr.class]="'rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase ' + confiancaClass(hipotese.confianca)"
-                    >
+              <li class="data-card" [class.mt-4]="!$first">
+                <header>
+                  <h3 class="text-strong">{{ i + 1 }}. {{ hipotese.titulo }}</h3>
+                  <div>
+                    <span class="text-signal">{{ hipotese.probabilidade }}%</span>
+                    <span [attr.class]="confiancaClass(hipotese.confianca)">
                       {{ hipotese.confianca }}
                     </span>
                   </div>
                 </header>
-                <p class="mt-1 font-mono text-[10px] uppercase text-white/40">{{ hipotese.sistema_afetado }}</p>
+                <p class="text-mono-label text-dim mt-1">{{ hipotese.sistema_afetado }}</p>
 
                 @if (hipotese.componentes_a_verificar.length > 0) {
-                  <ul class="mt-3 grid gap-1.5">
+                  <ul class="mt-3">
                     @for (c of hipotese.componentes_a_verificar; track c.nome) {
-                      <li class="font-inter text-xs text-white/60">
-                        <span [attr.class]="'font-mono text-[10px] uppercase ' + prioridadeClass(c.prioridade)">{{ c.prioridade }}</span>
+                      <li class="text-muted" [class.mt-1]="!$first">
+                        <span [attr.class]="prioridadeClass(c.prioridade)">{{ c.prioridade }}</span>
                         {{ c.nome }} — {{ c.teste_recomendado }}
                       </li>
                     }
@@ -208,12 +184,9 @@
                 }
 
                 @if (hipotese.codigos_obd_possiveis?.length) {
-                  <div class="mt-3 flex flex-wrap gap-1">
+                  <div class="mt-3">
                     @for (obd of hipotese.codigos_obd_possiveis!; track obd) {
-                      <span
-                        class="rounded border border-pit-signal/30 bg-pit-signal/10 px-2 py-0.5 font-mono text-[10px] text-pit-signal"
-                        >{{ obd }}</span
-                      >
+                      <span class="obd-tag">{{ obd }}</span>
                     }
                   </div>
                 }
@@ -223,10 +196,10 @@
 
           @if (diagnostico()!.diagnosticos_descartados?.length) {
             <div class="mt-6">
-              <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Descartados</p>
-              <ul class="mt-2 grid gap-2">
+              <p class="text-mono-label text-dim">Descartados</p>
+              <ul class="mt-2">
                 @for (d of diagnostico()!.diagnosticos_descartados!; track d.titulo) {
-                  <li class="font-inter text-xs text-white/40">
+                  <li class="text-dim" [class.mt-2]="!$first">
                     <span class="line-through">{{ d.titulo }}</span> — {{ d.motivo_descarte }}
                   </li>
                 }
@@ -236,10 +209,10 @@
 
           @if (diagnostico()!.manutencao_preventiva_relacionada?.length) {
             <div class="mt-6">
-              <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Preventiva sugerida</p>
-              <ul class="mt-2 grid gap-1">
+              <p class="text-mono-label text-dim">Preventiva sugerida</p>
+              <ul class="mt-2">
                 @for (m of diagnostico()!.manutencao_preventiva_relacionada!; track m) {
-                  <li class="font-inter text-xs text-white/60">+ {{ m }}</li>
+                  <li class="text-muted" [class.mt-1]="!$first">+ {{ m }}</li>
                 }
               </ul>
             </div>
@@ -249,26 +222,21 @@
     </article>
 
     <!-- ── 5. Sua triagem (colapsável) ── -->
-    <article class="panel overflow-hidden">
-      <button
-        type="button"
-        class="flex w-full items-center justify-between gap-4 p-6 text-left transition-all duration-300 hover:bg-pit-surface active:scale-[0.99] sm:px-8 sm:py-6"
-        [attr.aria-expanded]="triagemAberta()"
-        (click)="alternarTriagem()"
-      >
+    <article class="panel">
+      <button type="button" class="collapse-toggle" [attr.aria-expanded]="triagemAberta()" (click)="alternarTriagem()">
         <div>
-          <h2 class="font-space text-base font-bold text-white/90">O que você informou</h2>
-          <p class="mt-0.5 font-inter text-xs text-white/40">{{ veiculoResumo() }}</p>
+          <h2 class="text-strong">O que você informou</h2>
+          <p class="text-dim mt-1">{{ veiculoResumo() }}</p>
         </div>
-        <span class="font-mono text-lg text-pit-signal transition-transform duration-300" [class.rotate-180]="triagemAberta()">⌄</span>
+        <span [class]="collapseChevronClass(triagemAberta())">⌄</span>
       </button>
 
       @if (triagemAberta()) {
-        <dl class="grid gap-3 border-t border-white/10 px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
+        <dl>
           @for (item of resumoTriagem(); track item.label) {
-            <div class="rounded-xl border border-white/10 bg-pit-surface p-4">
-              <dt class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">{{ item.label }}</dt>
-              <dd class="mt-1 font-inter text-sm text-white/90">{{ item.value }}</dd>
+            <div class="data-card" [class.mt-3]="!$first">
+              <dt class="text-mono-label text-dim">{{ item.label }}</dt>
+              <dd class="text-strong mt-1">{{ item.value }}</dd>
             </div>
           }
         </dl>
@@ -276,38 +244,30 @@
     </article>
 
     <!-- ── 6. Encerrar triagem ── -->
-    <article class="panel-strong relative overflow-hidden p-6 sm:p-8" [ngClass]="{ 'border border-pit-safe/30': state.triagemConcluida() }">
+    <article [class]="panelConcluidaClass()">
       @if (state.triagemConcluida()) {
-        <div class="flex flex-col items-center gap-4 text-center">
-          <span
-            class="grid h-12 w-12 place-items-center rounded-full border border-pit-safe/40 bg-pit-safe/10 font-mono text-xl text-pit-safe"
-            aria-hidden="true"
-            >✓</span
-          >
+        <div class="page-header page-shell--centered">
+          <span class="icon-circle icon-circle--safe" aria-hidden="true">✓</span>
           <div>
-            <h2 class="font-space text-lg font-bold text-white/90">Triagem concluída</h2>
-            <p class="mt-2 font-inter text-sm text-white/60">
-              Seu resumo e PDF continuam salvos neste navegador. Leve o CDP na oficina quando for o momento.
-            </p>
+            <h2 class="text-strong">Triagem concluída</h2>
+            <p class="mt-2 text-muted">Seu resumo e PDF continuam salvos neste navegador. Leve o CDP na oficina quando for o momento.</p>
           </div>
-          <a routerLink="/inicio" class="secondary-button w-full justify-center sm:w-auto">Voltar ao início</a>
+          <a routerLink="/inicio" class="secondary-button">Voltar ao início</a>
         </div>
       } @else {
-        <h2 class="font-space text-lg font-bold text-white/90">Pronto para encerrar?</h2>
-        <p class="mt-2 font-inter text-sm text-white/60">
+        <h2 class="text-strong">Pronto para encerrar?</h2>
+        <p class="mt-2 text-muted">
           Revise o resumo acima. Ao confirmar, a triagem fica marcada como completa — você ainda pode baixar o PDF ou voltar aqui depois.
         </p>
-        <button class="primary-button mt-6 w-full justify-center" type="button" (click)="confirmarTriagem()">
+        <button class="primary-button primary-button--block mt-6" type="button" (click)="confirmarTriagem()">
           Confirmar triagem concluída
           <span aria-hidden="true">→</span>
         </button>
       }
     </article>
 
-    <p class="text-center font-inter text-xs text-white/40">Diagnóstico prévio — não substitui inspeção presencial na oficina.</p>
+    <p class="text-dim">Diagnóstico prévio — não substitui inspeção presencial na oficina.</p>
 
-    <button class="ghost-button w-full justify-center border border-white/10" type="button" (click)="reiniciar()">
-      <span aria-hidden="true">↺</span> Iniciar nova triagem
-    </button>
+    <button class="ghost-button w-full" type="button" (click)="reiniciar()"><span aria-hidden="true">↺</span> Iniciar nova triagem</button>
   }
 </section>

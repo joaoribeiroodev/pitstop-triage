@@ -40,7 +40,7 @@ O **PitStop Triage** conduz o motorista por uma triagem em cinco etapas — veí
 | Categoria | Tecnologia                  | Finalidade                               |
 | --------- | --------------------------- | ---------------------------------------- |
 | Frontend  | Angular 19 (NgModules)      | SPA com rotas, guards, Signals e OnPush  |
-| Frontend  | Tailwind CSS 3              | Tema automotivo (`pit-*`) e utilitários  |
+| Frontend  | CSS puro (`styles.css`)     | Tema automotivo (`pit-*`) e componentes  |
 | Frontend  | Three.js                    | Carro 3D na etapa de mapa                |
 | Frontend  | jsPDF                       | PDF do CDP no navegador                  |
 | Frontend  | RxJS                        | HTTP e fluxos assíncronos                |

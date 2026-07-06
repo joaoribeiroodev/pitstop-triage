@@ -164,4 +164,12 @@ export class ResultadoPageComponent {
   prioridadeClass(prioridade: string): string {
     return prioridadeBadgeClass(prioridade);
   }
+
+  collapseChevronClass(open: boolean): string {
+    return open ? 'collapse-chevron collapse-chevron--open' : 'collapse-chevron';
+  }
+
+  panelConcluidaClass(): string {
+    return this.state.triagemConcluida() ? 'panel-strong panel-strong--done' : 'panel-strong';
+  }
 }

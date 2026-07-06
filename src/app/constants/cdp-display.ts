@@ -16,17 +16,17 @@ export const PODE_DIRIGIR_LABEL: Record<PodeDirigir, PodeDirigirMeta> = {
 };
 
 const PODE_DIRIGIR_CLASS: Record<PodeDirigirMeta['cor'], string> = {
-  safe: 'bg-pit-safe/15 text-pit-safe border border-pit-safe/30',
-  warn: 'bg-pit-warn/15 text-pit-warn border border-pit-warn/30',
-  signal: 'bg-pit-signal/15 text-pit-signal border border-pit-signal/30',
-  danger: 'bg-pit-danger/15 text-pit-danger border border-pit-danger/30'
+  safe: 'badge-urgencia--safe',
+  warn: 'badge-urgencia--warn',
+  signal: 'badge-urgencia--signal',
+  danger: 'badge-urgencia--danger'
 };
 
 export function urgenciaBadgeClass(urgencia?: UrgenciaGeral): string {
-  if (urgencia === 'critica') return 'bg-pit-danger/15 text-pit-danger border border-pit-danger/30';
-  if (urgencia === 'alta') return 'bg-pit-signal/15 text-pit-signal border border-pit-signal/30';
-  if (urgencia === 'media') return 'bg-pit-warn/15 text-pit-warn border border-pit-warn/30';
-  return 'bg-pit-safe/15 text-pit-safe border border-pit-safe/30';
+  if (urgencia === 'critica') return 'badge-urgencia--danger';
+  if (urgencia === 'alta') return 'badge-urgencia--signal';
+  if (urgencia === 'media') return 'badge-urgencia--warn';
+  return 'badge-urgencia--safe';
 }
 
 export function urgenciaDotColor(urgencia?: UrgenciaGeral): string {
@@ -41,15 +41,15 @@ export function podeDirigirBadgeClass(cor: PodeDirigirMeta['cor']): string {
 }
 
 export function confiancaBadgeClass(confianca: Confianca | string): string {
-  if (confianca === 'alta') return 'border-pit-safe/40 bg-pit-safe/10 text-pit-safe';
-  if (confianca === 'media') return 'border-pit-warn/40 bg-pit-warn/10 text-pit-warn';
-  return 'border-pit-dim/40 bg-pit-dim/10 text-pit-dim';
+  if (confianca === 'alta') return 'badge-confianca--alta';
+  if (confianca === 'media') return 'badge-confianca--media';
+  return 'badge-confianca--baixa';
 }
 
 export function prioridadeBadgeClass(prioridade: Prioridade | string): string {
-  if (prioridade === 'alta') return 'bg-pit-danger/20 text-pit-danger';
-  if (prioridade === 'media') return 'bg-pit-warn/20 text-pit-warn';
-  return 'bg-white/10 text-pit-mute';
+  if (prioridade === 'alta') return 'badge-prioridade--alta';
+  if (prioridade === 'media') return 'badge-prioridade--media';
+  return 'badge-prioridade--baixa';
 }
 
 export const URGENCIA_LABEL: Record<UrgenciaGeral, string> = {

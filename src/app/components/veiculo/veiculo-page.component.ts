@@ -252,4 +252,9 @@ export class VeiculoPageComponent {
   avancar(): void {
     void this.router.navigateByUrl('/mapa');
   }
+
+  tabClass(modo: Modo): string {
+    if (this.modo() !== modo) return 'tab-btn';
+    return modo === 'fipe' ? 'tab-btn tab-btn--active' : 'tab-btn tab-btn--active-soft';
+  }
 }

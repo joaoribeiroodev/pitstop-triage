@@ -1,80 +1,61 @@
-<section class="page-shell gap-8 animate-fade-up">
-  <header class="flex flex-col gap-3">
-    <span class="chip-signal w-fit">Etapa 03 · Sintomas</span>
-    <h1 class="font-space text-3xl font-bold leading-tight text-white/90 sm:text-4xl">
-      O que está <span class="text-pit-signal">acontecendo</span>?
-    </h1>
-    <p class="max-w-2xl font-inter text-sm text-white/60 sm:text-base">
+<section class="page-shell animate-fade-up">
+  <header class="page-header">
+    <span class="chip-signal">Etapa 03 · Sintomas</span>
+    <h1 class="page-title">O que está <span class="page-title__accent">acontecendo</span>?</h1>
+    <p class="page-lead">
       Marque tudo o que o cliente descreveu sobre a área
-      <strong class="font-mono text-pit-signal">{{ zonaLabel() }}</strong
+      <strong class="text-signal">{{ zonaLabel() }}</strong
       >. Quanto mais sinais, melhor o CDP.
     </p>
   </header>
 
   @if (!state.zonaSelecionada()) {
-    <div class="panel-strong p-8">
-      <div class="flex items-center gap-2">
-        <span class="h-2 w-2 rounded-full bg-pit-warn"></span>
-        <span class="font-mono text-[10px] font-bold uppercase tracking-widest text-pit-warn">Zona não definida</span>
+    <div class="panel-strong">
+      <div>
+        <span class="status-dot status-dot--warn" aria-hidden="true"></span>
+        <span class="text-mono-label text-warn">Zona não definida</span>
       </div>
-      <p class="mt-4 font-space text-lg font-semibold text-white/90">Escolha primeiro uma área no mapa.</p>
-      <p class="mt-1 font-inter text-sm text-white/60">Sintomas mudam conforme a zona do veículo.</p>
+      <p class="text-strong mt-4">Escolha primeiro uma área no mapa.</p>
+      <p class="text-muted mt-1">Sintomas mudam conforme a zona do veículo.</p>
       <button class="primary-button mt-6" type="button" (click)="voltar()">Abrir mapa</button>
     </div>
   } @else {
-    <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <div class="grid gap-3 sm:grid-cols-2">
+    <div class="two-column">
+      <div class="symptom-grid">
         @for (sintoma of sintomas(); track sintoma) {
           <button
             type="button"
-            class="focus-ring group relative min-h-[120px] overflow-hidden rounded-xl border p-5 text-left transition-all duration-300 active:scale-[0.98]"
-            [class]="
-              selecionado(sintoma)
-                ? 'border-pit-signal/60 bg-pit-signal/10'
-                : 'border-white/10 bg-pit-card hover:border-pit-signal/40 hover:bg-pit-surface'
-            "
+            class="focus-ring"
+            [class]="sintomaCardClass(sintoma)"
             [attr.aria-pressed]="selecionado(sintoma)"
             (click)="state.alternarSintoma(sintoma)"
           >
-            <div class="flex items-start justify-between gap-3">
-              <span class="block font-mono text-[10px] font-bold uppercase tracking-widest text-pit-signal">{{ zonaLabel() }}</span>
-              <span
-                class="grid h-7 w-7 place-items-center rounded-lg border font-mono text-xs font-bold transition-all duration-300"
-                [class]="
-                  selecionado(sintoma)
-                    ? 'border-pit-signal bg-pit-signal text-pit-bg'
-                    : 'border-white/10 text-white/40 group-hover:border-pit-signal/40 group-hover:text-white/60'
-                "
-                aria-hidden="true"
-                >{{ selecionado(sintoma) ? '✓' : '+' }}</span
-              >
+            <div class="sintoma-card__header">
+              <span class="text-mono-label text-signal">{{ zonaLabel() }}</span>
+              <span [class]="sintomaMarkClass(sintoma)" aria-hidden="true">{{ selecionado(sintoma) ? '✓' : '+' }}</span>
             </div>
-            <span class="mt-4 block font-space text-base font-semibold leading-snug text-white/90 sm:text-lg">{{ sintoma }}</span>
+            <span class="text-strong mt-4">{{ sintoma }}</span>
           </button>
         }
       </div>
 
-      <aside class="panel relative overflow-hidden p-6 sm:p-8">
-        <div class="mb-1 font-mono text-[10px] font-bold uppercase tracking-widest text-pit-signal">Telemetria</div>
-        <h2 class="font-space text-xl font-bold text-white/90">Resumo da escuta</h2>
-        <p class="mt-2 font-inter text-sm text-white/60">
-          <span class="font-mono text-2xl font-bold text-pit-signal">{{ state.sintomas().length }}</span>
+      <aside class="aside-panel">
+        <div class="text-mono-label text-signal">Telemetria</div>
+        <h2 class="text-strong mt-1">Resumo da escuta</h2>
+        <p class="text-muted mt-2">
+          <span class="text-signal">{{ state.sintomas().length }}</span>
           sintoma(s) marcado(s)
         </p>
 
-        <div class="mt-5 grid gap-2">
+        <div class="mt-5">
           @if (state.sintomas().length === 0) {
-            <p class="rounded-xl border border-dashed border-white/10 p-4 font-inter text-sm text-white/40">
-              Nenhum sintoma marcado ainda.
-            </p>
+            <p class="empty-state">Nenhum sintoma marcado ainda.</p>
           }
           @for (sintoma of state.sintomas(); track sintoma) {
-            <div
-              class="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-pit-surface px-4 py-3 transition-all duration-300"
-            >
-              <span class="font-inter text-sm text-white/90">{{ sintoma }}</span>
+            <div class="list-row" [class.mt-2]="!$first">
+              <span class="text-strong">{{ sintoma }}</span>
               <button
-                class="ghost-button !min-h-0 !py-1 !text-xs"
+                class="ghost-button ghost-button--compact"
                 type="button"
                 (click)="state.alternarSintoma(sintoma)"
                 aria-label="Remover"
@@ -85,7 +66,7 @@
           }
         </div>
 
-        <div class="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div class="page-actions">
           <button class="secondary-button" type="button" (click)="voltar()"><span aria-hidden="true">←</span> Mapa</button>
           <button class="primary-button" [disabled]="state.sintomas().length === 0" (click)="avancar()">
             Refinar com IA <span aria-hidden="true">→</span>

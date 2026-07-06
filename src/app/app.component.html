@@ -1,30 +1,23 @@
-<div class="flex min-h-screen flex-col">
-  <header class="sticky top-0 z-30 border-b border-white/10 bg-pit-bg/90 backdrop-blur-xl">
-    <div class="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between gap-4">
-        <a
-          [routerLink]="exibirChromeTriagem() ? '/veiculo' : '/inicio'"
-          class="group flex items-center gap-3 transition-all duration-300 active:scale-95"
-        >
-          <span
-            class="relative grid h-10 w-10 place-items-center overflow-hidden rounded-xl border border-pit-signal/30 bg-pit-surface text-pit-signal transition-all duration-300 group-hover:border-pit-signal/60 group-hover:bg-pit-signal/10"
-          >
-            <span class="font-space text-base font-bold">PS</span>
-            <span class="absolute inset-x-0 bottom-0 h-0.5 bg-checker"></span>
+<div class="app-layout">
+  <header class="app-header">
+    <div class="app-header__inner">
+      <div class="app-header__top">
+        <a [routerLink]="exibirChromeTriagem() ? '/veiculo' : '/inicio'" class="app-brand">
+          <span class="app-brand__logo">
+            <span>PS</span>
+            <span class="bg-checker"></span>
           </span>
-          <span class="flex flex-col leading-tight">
-            <span class="font-space text-lg font-bold text-white/90">PitStop <span class="text-pit-signal">Triage</span></span>
-            <span class="hidden font-inter text-[10px] font-semibold uppercase tracking-widest text-white/40 sm:inline"
-              >Telemetria de diagnóstico · IA</span
-            >
+          <span class="app-brand__title">
+            <span>PitStop <span class="text-signal">Triage</span></span>
+            <span class="hidden-sm">Telemetria de diagnóstico · IA</span>
           </span>
         </a>
 
         @if (exibirChromeTriagem()) {
-          <div class="flex items-center gap-2">
+          <div class="app-header__actions">
             <button type="button" class="ghost-button" (click)="reiniciar()" title="Reiniciar triagem">
               <span aria-hidden="true">↺</span>
-              <span class="hidden sm:inline">Reiniciar</span>
+              <span class="hidden-sm">Reiniciar</span>
             </button>
           </div>
         }
@@ -49,20 +42,20 @@
                     {{ i + 1 }}
                   }
                 </span>
-                <span class="telemetry-step__label hidden sm:block">{{ step.label }}</span>
-                <span class="telemetry-step__label sm:hidden">{{ step.short }}</span>
+                <span class="telemetry-step__label hidden-sm">{{ step.label }}</span>
+                <span class="telemetry-step__label visible-sm">{{ step.short }}</span>
               </a>
             } @else {
               <span [class]="classeEtapa(i)" [attr.title]="'Complete a etapa anterior'">
                 <span class="telemetry-step__gauge">{{ i + 1 }}</span>
-                <span class="telemetry-step__label hidden sm:block">{{ step.label }}</span>
-                <span class="telemetry-step__label sm:hidden">{{ step.short }}</span>
+                <span class="telemetry-step__label hidden-sm">{{ step.label }}</span>
+                <span class="telemetry-step__label visible-sm">{{ step.short }}</span>
               </span>
             }
           }
         </nav>
 
-        <div class="flex items-center gap-4">
+        <div class="telemetry-bar">
           <div class="telemetry-progress flex-1">
             <div class="telemetry-progress__fill" [style.width.%]="progresso()"></div>
             <div class="telemetry-progress__ticks" aria-hidden="true">
@@ -80,26 +73,16 @@
     </div>
   </header>
 
-  <main class="flex w-full flex-1 flex-col">
+  <main class="app-main">
     <router-outlet />
   </main>
 
-  <footer class="border-t border-white/10 bg-pit-bg/80">
-    <div
-      class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-5 font-inter text-xs text-white/40 sm:flex-row sm:px-6 lg:px-8"
-    >
+  <footer class="app-footer">
+    <div class="app-footer__inner">
       <span>Diagnóstico prévio — não substitui inspeção presencial.</span>
-      <div class="flex flex-wrap items-center justify-center gap-3">
-        <a routerLink="/privacidade" class="text-pit-signal/80 transition-all duration-300 hover:text-pit-signal active:scale-95"
-          >Privacidade (LGPD)</a
-        >
-        <button
-          type="button"
-          class="text-pit-warn/80 transition-all duration-300 hover:text-pit-warn active:scale-95"
-          (click)="excluirDados()"
-        >
-          Excluir meus dados
-        </button>
+      <div class="app-footer__links">
+        <a routerLink="/privacidade" class="link-signal">Privacidade (LGPD)</a>
+        <button type="button" class="link-warn" (click)="excluirDados()">Excluir meus dados</button>
         @if (urgencia() && exibirChromeTriagem()) {
           <span class="chip-signal">Urgência: {{ urgencia() }}</span>
         }

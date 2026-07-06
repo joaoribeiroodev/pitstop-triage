@@ -33,4 +33,8 @@ export class MapaPageComponent {
   avancar(): void {
     void this.router.navigateByUrl('/sintomas');
   }
+
+  atalhoClass(id: ZonaId): string {
+    return this.state.zonaSelecionada() === id ? 'atalho-btn atalho-btn--selected' : 'atalho-btn';
+  }
 }

@@ -23,6 +23,16 @@ export class SintomasPageComponent {
     return this.state.sintomas().includes(sintoma);
   }
 
+  sintomaCardClass(sintoma: string): string {
+    return this.selecionado(sintoma) ? 'sintoma-card sintoma-card--selected' : 'sintoma-card';
+  }
+
+  sintomaMarkClass(sintoma: string): string {
+    return this.selecionado(sintoma)
+      ? 'sintoma-card__mark sintoma-card__mark--selected'
+      : 'sintoma-card__mark';
+  }
+
   voltar(): void {
     void this.router.navigateByUrl('/mapa');
   }

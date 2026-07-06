@@ -1,99 +1,74 @@
-<section class="page-shell mx-auto max-w-lg gap-8 animate-fade-up py-8 sm:py-12">
+<section class="page-shell page-shell--narrow page-shell--centered page-shell--spaced animate-fade-up">
   @if (triagemConcluida()) {
-    <header class="flex flex-col items-center gap-4 text-center">
-      <span
-        class="grid h-14 w-14 place-items-center rounded-full border border-pit-safe/40 bg-pit-safe/10 font-mono text-2xl text-pit-safe"
-        aria-hidden="true"
-        >✓</span
-      >
-      <div class="flex flex-col gap-2">
-        <span class="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-pit-safe">Triagem completa</span>
-        <h1 class="font-space text-2xl font-bold text-white/90 sm:text-3xl">Tudo certo com seu <span class="text-pit-signal">CDP</span></h1>
-        <p class="font-inter text-sm leading-relaxed text-white/60">
-          @if (veiculoResumo()) {
-            {{ veiculoResumo() }} — resumo salvo neste navegador.
-          } @else {
-            Seu diagnóstico prévio está salvo neste navegador.
-          }
-        </p>
-      </div>
+    <header class="page-header">
+      <span class="icon-circle icon-circle--safe" aria-hidden="true">✓</span>
+      <span class="text-mono-kicker text-safe">Triagem completa</span>
+      <h1 class="page-title">Tudo certo com seu <span class="page-title__accent">CDP</span></h1>
+      <p class="page-lead">
+        @if (veiculoResumo()) {
+          {{ veiculoResumo() }} — resumo salvo neste navegador.
+        } @else {
+          Seu diagnóstico prévio está salvo neste navegador.
+        }
+      </p>
     </header>
 
-    <article class="panel-strong p-6 sm:p-8">
-      <p class="font-inter text-sm leading-relaxed text-white/60">
+    <article class="panel-strong">
+      <p class="text-muted text-pretty">
         Baixe o PDF ou volte ao resultado quando for levar o carro na oficina. Para outro veículo ou novos sintomas, inicie uma nova
         triagem.
       </p>
-      <div class="mt-6 flex flex-col gap-3">
-        <a routerLink="/resultado" class="primary-button w-full justify-center">Ver meu CDP</a>
-        <button class="secondary-button w-full justify-center" type="button" (click)="novaTriagem()">Iniciar nova triagem</button>
+      <div class="mt-6">
+        <a routerLink="/resultado" class="primary-button primary-button--block">Ver meu CDP</a>
+        <button class="secondary-button secondary-button--block mt-3" type="button" (click)="novaTriagem()">Iniciar nova triagem</button>
       </div>
     </article>
   } @else {
-    <header class="flex flex-col items-center gap-4 text-center">
-      <span
-        class="relative grid h-14 w-14 place-items-center overflow-hidden rounded-xl border border-pit-signal/30 bg-pit-surface text-pit-signal"
-      >
-        <span class="font-space text-2xl font-bold">PS</span>
-        <span class="absolute inset-x-0 bottom-0 h-0.5 bg-checker"></span>
+    <header class="page-header">
+      <span class="icon-circle icon-circle--signal">
+        <span>PS</span>
+        <span class="bg-checker"></span>
       </span>
-      <div class="flex flex-col gap-2">
-        <span class="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-pit-signal">Sistema de triagem</span>
-        <h1 class="font-space text-2xl font-bold text-white/90 sm:text-3xl">
-          Bem-vindo ao <span class="text-pit-signal">PitStop Triage</span>
-        </h1>
-        <p class="font-inter text-sm leading-relaxed text-white/60">
-          Triagem do veículo em 5 etapas — do sintoma ao diagnóstico prévio (CDP) com apoio de IA.
-        </p>
-      </div>
+      <span class="text-mono-kicker text-signal">Sistema de triagem</span>
+      <h1 class="page-title">Bem-vindo ao <span class="page-title__accent">PitStop Triage</span></h1>
+      <p class="page-lead">Triagem do veículo em 5 etapas — do sintoma ao diagnóstico prévio (CDP) com apoio de IA.</p>
     </header>
 
-    <article class="panel p-6 sm:p-8">
-      <div class="flex items-center gap-2 border-b border-white/10 pb-4">
-        <span class="h-2 w-2 animate-pulse rounded-full bg-pit-signal"></span>
-        <span class="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">Briefing inicial</span>
+    <article class="panel">
+      <div>
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span class="text-mono-label text-dim">Briefing inicial</span>
       </div>
 
-      <p class="mt-5 font-inter text-sm leading-relaxed text-white/60">
+      <p class="mt-5 text-muted text-pretty">
         Coletamos apenas dados do veículo e dos sintomas para gerar o CDP. As informações ficam salvas no seu navegador; consultamos a API
         FIPE e a OpenAI somente quando necessário.
       </p>
 
-      <ul class="mt-4 space-y-2 font-inter text-xs text-white/40">
-        <li class="flex items-start gap-2">
-          <span class="font-mono text-pit-safe" aria-hidden="true">✓</span>
+      <ul class="mt-4 text-dim">
+        <li>
+          <span class="text-safe" aria-hidden="true">✓</span>
           Não solicitamos nome, documento ou placa.
         </li>
-        <li class="flex items-start gap-2">
-          <span class="font-mono text-pit-safe" aria-hidden="true">✓</span>
+        <li class="mt-2">
+          <span class="text-safe" aria-hidden="true">✓</span>
           Você pode excluir seus dados a qualquer momento no rodapé.
         </li>
       </ul>
 
-      <p class="mt-4 font-inter text-xs text-white/40">
-        <a routerLink="/privacidade" class="text-pit-signal transition-all duration-300 hover:text-pit-signalHi active:scale-95"
-          >Política de Privacidade (LGPD)</a
-        >
+      <p class="mt-4 text-dim">
+        <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>
       </p>
 
-      <label
-        class="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-pit-surface p-4 transition-all duration-300 hover:border-pit-signal/30 hover:bg-pit-card active:scale-[0.99]"
-      >
-        <input
-          type="checkbox"
-          class="mt-0.5 h-4 w-4 shrink-0 accent-pit-signal"
-          [checked]="aceitouPolitica()"
-          (change)="alternarAceite()"
-        />
-        <span class="font-inter text-xs leading-relaxed text-white/60">
+      <label class="checkbox-label mt-6">
+        <input type="checkbox" class="checkbox-input" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
+        <span>
           Li e aceito o tratamento dos meus dados conforme a
-          <a routerLink="/privacidade" class="text-pit-signal transition-all duration-300 hover:text-pit-signalHi"
-            >Política de Privacidade</a
-          >.
+          <a routerLink="/privacidade" class="link-signal">Política de Privacidade</a>.
         </span>
       </label>
 
-      <button class="primary-button mt-6 w-full justify-center" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
+      <button class="primary-button primary-button--block mt-6" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
         Começar triagem
         <span aria-hidden="true">→</span>
       </button>
