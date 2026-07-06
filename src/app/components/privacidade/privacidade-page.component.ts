@@ -9,6 +9,7 @@ import {
   selector: 'app-privacidade-page',
   standalone: false,
   templateUrl: './privacidade-page.component.html',
+  styleUrl: './privacidade-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PrivacidadePageComponent {

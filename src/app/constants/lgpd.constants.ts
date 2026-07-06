@@ -7,51 +7,6 @@ export const CONTROLADOR_DADOS = {
   contato: 'pitstop.triage@gmail.com'
 } as const;
 
-export const RESUMO_TRATAMENTO_DADOS = [
-  {
-    titulo: 'Dados coletados',
-    itens: [
-      'Identificação do veículo (marca, modelo, ano, código FIPE ou dados manuais)',
-      'Zona e sintomas relatados sobre o automóvel',
-      'Respostas ao refinamento com IA',
-      'Observações opcionais que você digitar'
-    ]
-  },
-  {
-    titulo: 'Finalidade',
-    itens: [
-      'Gerar diagnóstico prévio (CDP) para apoio à oficina',
-      'Refinar hipóteses técnicas com perguntas contextualizadas',
-      'Manter sua triagem salva localmente no navegador entre etapas'
-    ]
-  },
-  {
-    titulo: 'Compartilhamento',
-    itens: [
-      'API pública FIPE (Parallelum) — apenas consulta de marca/modelo/ano',
-      'OpenAI — processamento das etapas de IA (refinamento e CDP)',
-      'Não vendemos nem compartilhamos dados com terceiros para marketing'
-    ]
-  },
-  {
-    titulo: 'Armazenamento',
-    itens: [
-      'Dados da triagem ficam no localStorage do seu navegador',
-      'Requisições à IA trafegam pelo servidor da aplicação e não são persistidas em banco',
-      'Você pode excluir tudo a qualquer momento pelo rodapé'
-    ]
-  },
-  {
-    titulo: 'Seus direitos (LGPD)',
-    itens: [
-      'Confirmar se tratamos seus dados e acessá-los',
-      'Corrigir dados incompletos ou desatualizados',
-      'Revogar consentimento e solicitar exclusão',
-      'Informação sobre compartilhamento e finalidade'
-    ]
-  }
-] as const;
-
 export const POLITICA_PRIVACIDADE_SECOES = [
   {
     titulo: '1. Controlador e contato',

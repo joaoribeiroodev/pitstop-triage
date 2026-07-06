@@ -35,6 +35,8 @@ export class MapaPageComponent {
   }
 
   atalhoClass(id: ZonaId): string {
-    return this.state.zonaSelecionada() === id ? 'atalho-btn atalho-btn--selected' : 'atalho-btn';
+    return this.state.zonaSelecionada() === id
+      ? 'atalho-btn atalho-btn--selected focus-ring'
+      : 'atalho-btn focus-ring';
   }
 }

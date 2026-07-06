@@ -20,14 +20,14 @@
       </div>
     </article>
 
-    <aside>
+    <aside class="aside-stack">
       <div class="aside-panel">
         <p class="text-mono-label text-dim">Área selecionada</p>
         <p class="page-title text-signal mt-3">{{ zonaLabel() }}</p>
 
         @if (zonaMeta()) {
           <p class="mt-3 text-muted text-pretty">{{ zonaMeta()!.descricao }}</p>
-          <div class="mt-4">
+          <div class="chip-row mt-4">
             @for (s of zonaMeta()!.sistemas; track s) {
               <span class="chip">{{ s }}</span>
             }
@@ -43,7 +43,6 @@
           @for (atalho of atalhos; track atalho.id) {
             <button
               type="button"
-              class="focus-ring"
               [class]="atalhoClass(atalho.id)"
               (click)="selecionar(atalho.id)"
               [attr.aria-pressed]="state.zonaSelecionada() === atalho.id"

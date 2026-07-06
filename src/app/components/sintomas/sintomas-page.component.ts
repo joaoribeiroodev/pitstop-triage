@@ -7,6 +7,7 @@ import { TriageStateService } from '@services/triage-state.service';
   selector: 'app-sintomas-page',
   standalone: false,
   templateUrl: './sintomas-page.component.html',
+  styleUrl: './sintomas-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SintomasPageComponent {
@@ -24,7 +25,9 @@ export class SintomasPageComponent {
   }
 
   sintomaCardClass(sintoma: string): string {
-    return this.selecionado(sintoma) ? 'sintoma-card sintoma-card--selected' : 'sintoma-card';
+    return this.selecionado(sintoma)
+      ? 'sintoma-card sintoma-card--selected focus-ring'
+      : 'sintoma-card focus-ring';
   }
 
   sintomaMarkClass(sintoma: string): string {

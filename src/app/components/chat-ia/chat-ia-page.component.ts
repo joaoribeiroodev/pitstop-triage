@@ -19,6 +19,7 @@ import { corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
   selector: 'app-chat-ia-page',
   standalone: false,
   templateUrl: './chat-ia-page.component.html',
+  styleUrl: './chat-ia-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatIaPageComponent implements OnDestroy {
@@ -62,14 +63,13 @@ export class ChatIaPageComponent implements OnDestroy {
   }
 
   opcaoClass(pergunta: PerguntaRefinamento, opcao: string): string {
+    const base = 'option-btn focus-ring';
     const selected = this.resposta(pergunta.id) === opcao;
-    if (!selected) return 'option-btn';
+    if (!selected) return base;
     if (pergunta.tipo === 'sim_nao') {
-      return opcao.toLowerCase().startsWith('s')
-        ? 'option-btn option-btn--safe'
-        : 'option-btn option-btn--danger';
+      return opcao.toLowerCase().startsWith('s') ? `${base} option-btn--safe` : `${base} option-btn--danger`;
     }
-    return 'option-btn option-btn--selected';
+    return `${base} option-btn--selected`;
   }
 
   carregarRodada(rodada: number): void {

@@ -8,6 +8,7 @@ import { TriageStateService } from '@services/triage-state.service';
   selector: 'app-boas-vindas-page',
   standalone: false,
   templateUrl: './boas-vindas-page.component.html',
+  styleUrl: './boas-vindas-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BoasVindasPageComponent {

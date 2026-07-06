@@ -25,6 +25,7 @@ import { TriageStateService } from '@services/triage-state.service';
   selector: 'app-resultado-page',
   standalone: false,
   templateUrl: './resultado-page.component.html',
+  styleUrl: './resultado-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ResultadoPageComponent {

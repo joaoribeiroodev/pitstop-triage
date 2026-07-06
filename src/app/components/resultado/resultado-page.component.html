@@ -7,7 +7,7 @@
 
   @if (!state.podeEmitirCdp()) {
     <div class="panel-strong">
-      <div>
+      <div class="status-inline">
         <span class="status-dot status-dot--warn" aria-hidden="true"></span>
         <span class="text-mono-label text-warn">Triagem incompleta</span>
       </div>
@@ -17,7 +17,7 @@
     </div>
   } @else if (!diagnostico()) {
     <div class="panel-strong">
-      <div class="empty-state">
+      <div class="empty-state empty-state--center">
         <h2 class="text-strong">Pronto para o resultado</h2>
         <p class="mt-3 text-muted">Vamos organizar o que você contou em um resumo fácil de entender e levar na oficina.</p>
         <button class="primary-button primary-button--block mt-8" [disabled]="carregando()" (click)="gerar()">
@@ -54,7 +54,7 @@
         {{ diagnostico()!.resumo_para_cliente }}
       </p>
 
-      <div class="mt-6">
+      <div class="badge-row mt-6">
         <span [attr.class]="'badge-urgencia ' + podeDirigirClass()">
           <span aria-hidden="true">{{ podeDirigirMeta().icone }}</span>
           {{ podeDirigirMeta().label }}
@@ -86,7 +86,7 @@
         <ol class="mt-5">
           @for (hipotese of hipotesesResumo(); track hipotese.titulo; let i = $index) {
             <li class="data-card" [class.mt-3]="!$first">
-              <div>
+              <div class="hipotesis-row">
                 <span class="question-index">{{ i + 1 }}</span>
                 <div>
                   <h3 class="text-strong">{{ hipotese.titulo }}</h3>
@@ -109,9 +109,9 @@
 
       <ul class="mt-5">
         @for (linha of roteiroOficina(); track linha) {
-          <li class="list-row" [class.mt-2]="!$first">
+          <li class="icon-row" [class.mt-2]="!$first">
             <span class="text-signal" aria-hidden="true">▸</span>
-            {{ linha }}
+            <span>{{ linha }}</span>
           </li>
         }
       </ul>
@@ -147,7 +147,7 @@
     </article>
 
     <!-- ── 4. Detalhes técnicos (colapsável — mecânico) ── -->
-    <article class="panel">
+    <article class="panel panel--collapsible">
       <button type="button" class="collapse-toggle" [attr.aria-expanded]="detalhesTecnicosAberto()" (click)="alternarDetalhesTecnicos()">
         <div>
           <h2 class="text-strong">Detalhes técnicos</h2>
@@ -157,7 +157,7 @@
       </button>
 
       @if (detalhesTecnicosAberto()) {
-        <div>
+        <div class="collapse-body">
           <ol class="mt-5">
             @for (hipotese of diagnostico()!.hipoteses; track hipotese.titulo; let i = $index) {
               <li class="data-card" [class.mt-4]="!$first">
@@ -222,7 +222,7 @@
     </article>
 
     <!-- ── 5. Sua triagem (colapsável) ── -->
-    <article class="panel">
+    <article class="panel panel--collapsible">
       <button type="button" class="collapse-toggle" [attr.aria-expanded]="triagemAberta()" (click)="alternarTriagem()">
         <div>
           <h2 class="text-strong">O que você informou</h2>
@@ -232,7 +232,7 @@
       </button>
 
       @if (triagemAberta()) {
-        <dl>
+        <dl class="collapse-body">
           @for (item of resumoTriagem(); track item.label) {
             <div class="data-card" [class.mt-3]="!$first">
               <dt class="text-mono-label text-dim">{{ item.label }}</dt>
@@ -246,9 +246,9 @@
     <!-- ── 6. Encerrar triagem ── -->
     <article [class]="panelConcluidaClass()">
       @if (state.triagemConcluida()) {
-        <div class="page-header page-shell--centered">
+        <div class="panel-completion">
           <span class="icon-circle icon-circle--safe" aria-hidden="true">✓</span>
-          <div>
+          <div class="panel-completion__text">
             <h2 class="text-strong">Triagem concluída</h2>
             <p class="mt-2 text-muted">Seu resumo e PDF continuam salvos neste navegador. Leve o CDP na oficina quando for o momento.</p>
           </div>
@@ -268,6 +268,8 @@
 
     <p class="text-dim">Diagnóstico prévio — não substitui inspeção presencial na oficina.</p>
 
-    <button class="ghost-button w-full" type="button" (click)="reiniciar()"><span aria-hidden="true">↺</span> Iniciar nova triagem</button>
+    <button class="ghost-button ghost-button--wide" type="button" (click)="reiniciar()">
+      <span aria-hidden="true">↺</span> Iniciar nova triagem
+    </button>
   }
 </section>

@@ -1,4 +1,4 @@
-<section class="page-shell page-shell--narrow page-shell--centered page-shell--spaced animate-fade-up">
+<section class="page-shell page-shell--narrow page-shell--spaced animate-fade-up">
   @if (triagemConcluida()) {
     <header class="page-header">
       <span class="icon-circle icon-circle--safe" aria-hidden="true">✓</span>
@@ -13,19 +13,19 @@
       </p>
     </header>
 
-    <article class="panel-strong">
+    <article class="panel-strong welcome-panel">
       <p class="text-muted text-pretty">
         Baixe o PDF ou volte ao resultado quando for levar o carro na oficina. Para outro veículo ou novos sintomas, inicie uma nova
         triagem.
       </p>
-      <div class="mt-6">
+      <div class="welcome-actions mt-6">
         <a routerLink="/resultado" class="primary-button primary-button--block">Ver meu CDP</a>
         <button class="secondary-button secondary-button--block mt-3" type="button" (click)="novaTriagem()">Iniciar nova triagem</button>
       </div>
     </article>
   } @else {
     <header class="page-header">
-      <span class="icon-circle icon-circle--signal">
+      <span class="icon-circle icon-circle--signal" aria-hidden="true">
         <span>PS</span>
         <span class="bg-checker"></span>
       </span>
@@ -34,37 +34,33 @@
       <p class="page-lead">Triagem do veículo em 5 etapas — do sintoma ao diagnóstico prévio (CDP) com apoio de IA.</p>
     </header>
 
-    <article class="panel">
-      <div>
+    <article class="panel welcome-panel">
+      <div class="status-inline">
         <span class="pulse-dot" aria-hidden="true"></span>
         <span class="text-mono-label text-dim">Briefing inicial</span>
       </div>
 
-      <p class="mt-5 text-muted text-pretty">
-        Coletamos apenas dados do veículo e dos sintomas para gerar o CDP. As informações ficam salvas no seu navegador; consultamos a API
+      <p class="mt-5 text-muted text-pretty welcome-copy">
+        Coletamos apenas dados do veículo e dos sintomas para gerar o CDP. As informações ficam salvas no seu navegador. Consultamos a API
         FIPE e a OpenAI somente quando necessário.
       </p>
 
-      <ul class="mt-4 text-dim">
+      <ul class="check-list mt-4 text-dim">
         <li>
           <span class="text-safe" aria-hidden="true">✓</span>
-          Não solicitamos nome, documento ou placa.
+          <span>Não solicitamos nome, documento ou placa.</span>
         </li>
-        <li class="mt-2">
+        <li>
           <span class="text-safe" aria-hidden="true">✓</span>
-          Você pode excluir seus dados a qualquer momento no rodapé.
+          <span>Você pode excluir seus dados a qualquer momento no rodapé.</span>
         </li>
       </ul>
-
-      <p class="mt-4 text-dim">
-        <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>
-      </p>
 
       <label class="checkbox-label mt-6">
         <input type="checkbox" class="checkbox-input" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
         <span>
           Li e aceito o tratamento dos meus dados conforme a
-          <a routerLink="/privacidade" class="link-signal">Política de Privacidade</a>.
+          <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
         </span>
       </label>
 

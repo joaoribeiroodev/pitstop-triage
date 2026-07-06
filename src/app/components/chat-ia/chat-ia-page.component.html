@@ -15,7 +15,7 @@
       <div class="stripes-divider"></div>
 
       @if (perguntas().length === 0) {
-        <div class="empty-state">
+        <div class="empty-state empty-state--center">
           <div class="icon-circle icon-circle--signal">
             <span class="text-mono-label">AI</span>
           </div>
@@ -40,8 +40,8 @@
           }
         </div>
       } @else {
-        <div class="list-row">
-          <div>
+        <div class="toolbar-row">
+          <div class="chip-row">
             <span class="chip">Rodada {{ rodadaAtual() }}</span>
             @if (rodadaAtual() === 1) {
               <span class="chip">Investigação inicial</span>
@@ -75,15 +75,10 @@
 
               @switch (pergunta.tipo) {
                 @case ('escala') {
-                  <div
-                    class="mt-5"
-                    [style.grid-template-columns]="'repeat(' + pergunta.opcoes.length + ', minmax(0, 1fr))'"
-                    style="display: grid; gap: 0.5rem"
-                  >
+                  <div class="option-scale mt-5">
                     @for (opcao of pergunta.opcoes; track opcao; let idx = $index) {
                       <button
                         type="button"
-                        class="focus-ring"
                         [class]="opcaoClass(pergunta, opcao)"
                         [attr.aria-pressed]="resposta(pergunta.id) === opcao"
                         (click)="responder(pergunta, opcao)"
@@ -95,11 +90,10 @@
                   </div>
                 }
                 @case ('sim_nao') {
-                  <div class="symptom-grid mt-5">
+                  <div class="option-grid-2 mt-5">
                     @for (opcao of pergunta.opcoes; track opcao) {
                       <button
                         type="button"
-                        class="focus-ring"
                         [class]="opcaoClass(pergunta, opcao)"
                         [attr.aria-pressed]="resposta(pergunta.id) === opcao"
                         (click)="responder(pergunta, opcao)"
@@ -110,11 +104,10 @@
                   </div>
                 }
                 @default {
-                  <div class="symptom-grid mt-5">
+                  <div class="option-grid-2 mt-5">
                     @for (opcao of pergunta.opcoes; track opcao) {
                       <button
                         type="button"
-                        class="focus-ring"
                         [class]="opcaoClass(pergunta, opcao)"
                         [attr.aria-pressed]="resposta(pergunta.id) === opcao"
                         (click)="responder(pergunta, opcao)"

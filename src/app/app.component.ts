@@ -14,6 +14,7 @@ type StepStatus = 'active' | 'done' | 'pending' | 'locked';
   selector: 'app-root',
   standalone: false,
   templateUrl: './app.component.html',
+  styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent {

@@ -15,20 +15,12 @@
       <div class="stripes-divider"></div>
 
       <div role="tablist" aria-label="Forma de identificação" class="tab-list">
-        <button
-          role="tab"
-          type="button"
-          class="focus-ring"
-          [class]="tabClass('fipe')"
-          [attr.aria-selected]="modo() === 'fipe'"
-          (click)="setModo('fipe')"
-        >
+        <button role="tab" type="button" [class]="tabClass('fipe')" [attr.aria-selected]="modo() === 'fipe'" (click)="setModo('fipe')">
           Tabela FIPE
         </button>
         <button
           role="tab"
           type="button"
-          class="focus-ring"
           [class]="tabClass('manual')"
           [attr.aria-selected]="modo() === 'manual'"
           (click)="setModo('manual')"

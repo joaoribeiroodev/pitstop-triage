@@ -11,7 +11,7 @@
 
   @if (!state.zonaSelecionada()) {
     <div class="panel-strong">
-      <div>
+      <div class="status-inline">
         <span class="status-dot status-dot--warn" aria-hidden="true"></span>
         <span class="text-mono-label text-warn">Zona não definida</span>
       </div>
@@ -25,7 +25,6 @@
         @for (sintoma of sintomas(); track sintoma) {
           <button
             type="button"
-            class="focus-ring"
             [class]="sintomaCardClass(sintoma)"
             [attr.aria-pressed]="selecionado(sintoma)"
             (click)="state.alternarSintoma(sintoma)"

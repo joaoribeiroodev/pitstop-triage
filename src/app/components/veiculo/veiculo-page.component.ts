@@ -10,6 +10,7 @@ type Modo = 'fipe' | 'manual';
   selector: 'app-veiculo-page',
   standalone: false,
   templateUrl: './veiculo-page.component.html',
+  styleUrl: './veiculo-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VeiculoPageComponent {
@@ -254,7 +255,7 @@ export class VeiculoPageComponent {
   }
 
   tabClass(modo: Modo): string {
-    if (this.modo() !== modo) return 'tab-btn';
-    return modo === 'fipe' ? 'tab-btn tab-btn--active' : 'tab-btn tab-btn--active-soft';
+    if (this.modo() !== modo) return 'tab-btn focus-ring';
+    return modo === 'fipe' ? 'tab-btn tab-btn--active focus-ring' : 'tab-btn tab-btn--active-soft focus-ring';
   }
 }
