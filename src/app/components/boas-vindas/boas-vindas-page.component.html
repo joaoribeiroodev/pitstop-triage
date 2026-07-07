@@ -1,4 +1,4 @@
-<section class="page-shell page-shell--narrow page-shell--spaced animate-fade-up">
+<section class="page-shell page-shell--welcome page-shell--spaced animate-fade-up">
   @if (triagemConcluida()) {
     <header class="page-header">
       <span class="icon-circle icon-circle--safe" aria-hidden="true">✓</span>
@@ -33,40 +33,88 @@
       <p class="page-lead">Triagem do veículo em 5 etapas — do sintoma ao diagnóstico prévio (CDP) com apoio de IA.</p>
     </header>
 
-    <article class="panel welcome-panel">
-      <div class="status-inline">
-        <span class="pulse-dot" aria-hidden="true"></span>
-        <span class="text-mono-label text-dim">Briefing inicial</span>
-      </div>
+    <div class="welcome-grid">
+      <article class="panel welcome-panel">
+        <div class="status-inline">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          <span class="text-mono-label text-dim">Briefing inicial</span>
+        </div>
 
-      <p class="mt-5 text-muted text-pretty welcome-copy">
-        Coletamos apenas dados do veículo e dos sintomas para gerar o CDP. As informações ficam salvas no seu navegador. Consultamos a API
-        FIPE e a OpenAI somente quando necessário.
-      </p>
+        <p class="mt-5 text-muted text-pretty welcome-copy">
+          Coletamos apenas dados do veículo e dos sintomas para gerar o CDP. As informações ficam salvas no seu navegador. Consultamos a API
+          FIPE e a OpenAI somente quando necessário.
+        </p>
 
-      <ul class="check-list mt-4 text-dim">
-        <li>
-          <span class="text-safe" aria-hidden="true">✓</span>
-          <span>Não solicitamos nome, documento ou placa.</span>
-        </li>
-        <li>
-          <span class="text-safe" aria-hidden="true">✓</span>
-          <span>Você pode excluir seus dados a qualquer momento no rodapé.</span>
-        </li>
-      </ul>
+        <ul class="check-list mt-4 text-dim">
+          <li>
+            <span class="text-safe" aria-hidden="true">✓</span>
+            <span>Não solicitamos nome, documento ou placa.</span>
+          </li>
+          <li>
+            <span class="text-safe" aria-hidden="true">✓</span>
+            <span>Você pode excluir seus dados a qualquer momento no rodapé.</span>
+          </li>
+        </ul>
 
-      <label class="checkbox-label mt-6">
-        <input type="checkbox" class="checkbox-input" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
-        <span>
-          Li e aceito o tratamento dos meus dados conforme a
-          <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
-        </span>
-      </label>
+        <label class="checkbox-label mt-6">
+          <input type="checkbox" class="checkbox-input" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
+          <span>
+            Li e aceito o tratamento dos meus dados conforme a
+            <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
+          </span>
+        </label>
 
-      <button class="primary-button primary-button--block mt-6" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
-        Começar triagem
-        <span aria-hidden="true">→</span>
-      </button>
-    </article>
+        <button class="primary-button primary-button--block mt-6" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
+          Começar triagem
+          <span aria-hidden="true">→</span>
+        </button>
+      </article>
+
+      <aside class="showcase" aria-label="Prévia das etapas da triagem">
+        <div class="showcase__header">
+          <span class="text-mono-label text-signal">Tour rápido</span>
+          <p class="showcase__caption text-strong">{{ slideAtivo().titulo }}</p>
+        </div>
+
+        <div class="showcase__frame">
+          <div class="showcase__chrome" aria-hidden="true">
+            <span class="showcase__dot"></span>
+            <span class="showcase__dot"></span>
+            <span class="showcase__dot"></span>
+            <span class="showcase__url">pitstop-triage / {{ slideAtivo().rota }}</span>
+          </div>
+          <div class="showcase__viewport">
+            @for (slide of showcaseSlides; track slide.src; let i = $index) {
+              <img
+                class="showcase__img"
+                [class.showcase__img--active]="slideAtivoIndex() === i"
+                [src]="slide.src"
+                [alt]="slide.titulo"
+                width="800"
+                height="500"
+                loading="lazy"
+                decoding="async"
+              />
+            }
+          </div>
+        </div>
+
+        <div class="showcase__steps" role="tablist" aria-label="Etapas da triagem">
+          @for (slide of showcaseSlides; track slide.src; let i = $index) {
+            <button
+              type="button"
+              role="tab"
+              class="showcase__step focus-ring"
+              [class.showcase__step--active]="slideAtivoIndex() === i"
+              [attr.aria-selected]="slideAtivoIndex() === i"
+              (click)="irParaSlide(i)"
+            >
+              <span class="showcase__step-num">{{ slide.numero }}</span>
+              <span class="showcase__step-label">{{ slide.rotuloCurto }}</span>
+            </button>
+          }
+        </div>
+      </aside>
+    </div>
   }
 </section>
