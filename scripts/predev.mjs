@@ -5,7 +5,7 @@
 import { execSync } from 'node:child_process';
 import { platform } from 'node:os';
 
-const PORTS = [Number(process.env.API_DEV_PORT ?? 3000), 4200];
+const PORTS = [Number(process.env.API_DEV_PORT ?? 3001), 4200];
 
 function ansi(c, t) {
   return `\x1b[${c}m${t}\x1b[0m`;

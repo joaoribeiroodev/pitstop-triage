@@ -115,7 +115,7 @@ api/
 └── tsconfig.json
 ```
 
-**Dev:** `scripts/dev-api.mjs` emula functions na porta 3000; Angular usa `proxy.conf.json` (`/api/*` → localhost:3000). `scripts/predev.mjs` libera portas 3000/4200.
+**Dev:** `scripts/dev-api.mjs` emula functions na porta 3001; Angular usa `proxy.conf.json` (`/api/*` → localhost:3001). `scripts/predev.mjs` libera portas 3001/4200.
 
 **Assets estáticos:** `public/` (ex.: `logo.png`) servido na raiz do build.
 
@@ -244,7 +244,7 @@ Normalização: `src/app/utils/refinamento.util.ts` (garante `opcoes`, aliases `
 ```env
 OPENAI_API_KEY=sua_chave_aqui      # Obrigatória para IA
 OPENAI_MODEL=gpt-4o-mini           # Opcional
-API_DEV_PORT=3000                  # Opcional
+API_DEV_PORT=3001                  # Opcional
 ```
 
 Sem chave: APIs retornam 500; frontend usa fallbacks locais.
@@ -255,7 +255,7 @@ Sem chave: APIs retornam 500; frontend usa fallbacks locais.
 
 | Comando              | Descrição                                  |
 | -------------------- | ------------------------------------------ |
-| `npm run dev`        | Angular :4200 + API :3000 (recomendado)    |
+| `npm run dev`        | Angular :4200 + API :3001 (recomendado)    |
 | `npm start`          | Alias de `npm run dev`                     |
 | `npm run start:full` | `vercel dev`                               |
 | `npm run check`      | lint + format + typecheck:api + build (CI) |
@@ -418,7 +418,7 @@ pitstop-triage/
 ```bash
 cp .env.example .env   # OPENAI_API_KEY=...
 npm run dev
-# http://localhost:4200  |  API http://localhost:3000
+# http://localhost:4200  |  API http://localhost:3001
 ```
 
 ### Trocar logo

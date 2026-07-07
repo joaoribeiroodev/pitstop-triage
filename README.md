@@ -91,7 +91,7 @@ Crie `.env` na raiz (use `.env.example` como referência):
 ```env
 OPENAI_API_KEY=sua_chave_aqui
 OPENAI_MODEL=gpt-4o-mini
-API_DEV_PORT=3000
+API_DEV_PORT=3001
 ```
 
 > Chave em [OpenAI Platform](https://platform.openai.com/api-keys).
@@ -100,7 +100,7 @@ API_DEV_PORT=3000
 
 | Comando                 | Descrição                                             |
 | ----------------------- | ----------------------------------------------------- |
-| `npm run dev`           | Angular (`:4200`) + API local (`:3000`) em paralelo   |
+| `npm run dev`           | Angular (`:4200`) + API local (`:3001`) em paralelo   |
 | `npm start`             | Só frontend (IA indisponível — fallbacks locais)      |
 | `npm run start:full`    | `vercel dev` — runtime unificado                      |
 | `npm run check`         | Mesmo pipeline do CI (lint, format, typecheck, build) |
@@ -109,7 +109,7 @@ API_DEV_PORT=3000
 | `npm run format`        | Prettier                                              |
 | `npm run typecheck:api` | Typecheck das Vercel Functions                        |
 
-**Dev completo:** `npm run dev` — proxy `/api` → `localhost:3000` (`proxy.conf.json` + `scripts/dev-api.mjs`).
+**Dev completo:** `npm run dev` — proxy `/api` → `localhost:3001` (`proxy.conf.json` + `scripts/dev-api.mjs`).
 
 ---
 
@@ -128,7 +128,7 @@ pitstop-triage/
 │   └── tsconfig.json
 ├── scripts/
 │   ├── dev-api.mjs                   # Emula as functions localmente
-│   └── predev.mjs                    # Libera portas 3000/4200
+│   └── predev.mjs                    # Libera portas 3001/4200
 └── src/
     ├── app/
     │   ├── components/               # Componentes Angular

@@ -14,7 +14,7 @@ import { config as loadEnv } from 'dotenv';
 
 loadEnv();
 
-const PORT = Number(process.env.API_DEV_PORT ?? 3000);
+const PORT = Number(process.env.API_DEV_PORT ?? 3001);
 const cwd = process.cwd();
 const apiDir = join(cwd, 'api');
 
@@ -135,7 +135,7 @@ server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`${tag} ${ansi('31', '✗')} porta ${ansi('33', String(PORT))} ja esta em uso.`);
     console.error(`${tag}   Solucao 1: feche o processo que esta usando a porta.`);
-    console.error(`${tag}   Solucao 2: rode com outra porta -> API_DEV_PORT=3001 npm run dev:api`);
+    console.error(`${tag}   Solucao 2: rode com outra porta -> API_DEV_PORT=3002 npm run dev:api`);
     console.error(`${tag}   No Windows: Get-NetTCPConnection -LocalPort ${PORT} | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`);
     process.exit(1);
   }
