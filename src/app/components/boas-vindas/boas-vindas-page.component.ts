@@ -61,6 +61,44 @@ export class BoasVindasPageComponent {
   readonly authModal = signal<AuthModal | null>(null);
   readonly usuarioDemo = signal<UsuarioDemo | null>(carregarUsuarioDemo());
 
+  // Novo Simulador e FAQ
+  readonly simuladorEstado = signal<'idle' | 'scanning' | 'analyzing' | 'done'>('idle');
+  readonly simuladorProgresso = signal(0);
+  readonly simuladorEtapaTexto = signal('');
+  readonly simuladorResultado = signal<{
+    veiculo: string;
+    sistema: string;
+    urgencia: string;
+    hipotese: string;
+    cor: string;
+  } | null>(null);
+  readonly faqAtivoIndex = signal<number | null>(null);
+
+  readonly faqs = [
+    {
+      pergunta: 'Como a Inteligência Artificial sabe o que meu carro tem?',
+      resposta:
+        'O PitStop Triage cruza os sintomas mecânicos que você seleciona com um modelo avançado de inteligência artificial treinado em diagnósticos automotivos. A IA faz perguntas específicas adicionais para eliminar hipóteses incorretas antes de gerar o diagnóstico final.'
+    },
+    {
+      pergunta: 'Os diagnósticos do PitStop Triage substituem uma oficina mecânica?',
+      resposta:
+        'Não. O CDP (Código de Diagnóstico Prévio) é uma análise preliminar para que você não vá às cegas até a oficina. Ele ajuda você a entender a gravidade do problema, evitar orçamentos abusivos e se comunicar melhor com o mecânico.'
+    },
+    {
+      pergunta: 'Meus dados pessoais são compartilhados?',
+      resposta:
+        'Sua privacidade é nossa prioridade absoluta. Não solicitamos dados pessoais como seu nome, e-mail real, placa do carro ou CPF. Os dados de triagem são processados temporariamente para gerar o diagnóstico e ficam guardados apenas no armazenamento local do seu próprio navegador.'
+    },
+    {
+      pergunta: 'O PDF gerado tem algum custo?',
+      resposta:
+        'Absolutamente nenhum. O download do relatório técnico em PDF é 100% gratuito e formatado especificamente para ser de fácil leitura para o mecânico responsável pela manutenção do seu carro.'
+    }
+  ];
+
+  private simuladorTimer?: ReturnType<typeof setInterval>;
+
   loginEmail = '';
   loginSenha = '';
   cadastroNome = '';
@@ -139,6 +177,12 @@ export class BoasVindasPageComponent {
           this.slideAtivoIndex.update((i) => (i + 1) % this.showcaseSlides.length);
         });
     }
+
+    this.destroyRef.onDestroy(() => {
+      if (this.simuladorTimer) {
+        clearInterval(this.simuladorTimer);
+      }
+    });
   }
 
   irParaSlide(index: number): void {
@@ -213,5 +257,50 @@ export class BoasVindasPageComponent {
 
   alternarAceite(): void {
     this.aceitouPolitica.update((v) => !v);
+  }
+
+  alternarFaq(index: number): void {
+    this.faqAtivoIndex.update((current) => (current === index ? null : index));
+  }
+
+  iniciarSimulacao(): void {
+    if (this.simuladorEstado() !== 'idle' && this.simuladorEstado() !== 'done') {
+      return;
+    }
+
+    if (this.simuladorTimer) {
+      clearInterval(this.simuladorTimer);
+    }
+
+    this.simuladorEstado.set('scanning');
+    this.simuladorProgresso.set(0);
+    this.simuladorEtapaTexto.set('Varrendo sensores OBD-II virtuais...');
+    this.simuladorResultado.set(null);
+
+    let progress = 0;
+    this.simuladorTimer = setInterval(() => {
+      progress += 5;
+      this.simuladorProgresso.set(progress);
+
+      if (progress === 40) {
+        this.simuladorEstado.set('analyzing');
+        this.simuladorEtapaTexto.set('Analisando histórico de sintomas com IA...');
+      } else if (progress === 75) {
+        this.simuladorEtapaTexto.set('Cruzando dados com tabela FIPE e catálogos...');
+      } else if (progress >= 100) {
+        clearInterval(this.simuladorTimer);
+        this.simuladorTimer = undefined;
+        this.simuladorEstado.set('done');
+        this.simuladorProgresso.set(100);
+        this.simuladorEtapaTexto.set('Diagnóstico virtual gerado!');
+        this.simuladorResultado.set({
+          veiculo: 'Golf 1.4 TSI 2017',
+          sistema: 'Arrefecimento / Motor',
+          urgencia: 'CRÍTICA (Evitar dirigir)',
+          hipotese: 'Vazamento na carcaça da válvula termostática',
+          cor: 'danger'
+        });
+      }
+    }, 100);
   }
 }

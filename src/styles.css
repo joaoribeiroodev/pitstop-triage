@@ -267,7 +267,7 @@ svg {
 /* ── 5. Utilitários globais (usados em vários componentes) ─────────────── */
 
 .animate-fade-up {
-  animation: fade-up 0.45s ease-out both;
+  animation: fade-up 0.45s ease-out;
 }
 
 .animate-pulse {

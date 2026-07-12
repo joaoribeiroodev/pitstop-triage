@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { FipeAno, FipeMarca, FipeModelo, FipeValor } from '@models/fipe.model';
+import { formatarAnoFipe } from '@utils/fipe.util';
 
 @Injectable({ providedIn: 'root' })
 export class FipeService {
@@ -19,7 +20,9 @@ export class FipeService {
   }
 
   listarAnos(marcaCodigo: string, modeloCodigo: string): Observable<FipeAno[]> {
-    return this.http.get<FipeAno[]>(`${this.baseUrl}/marcas/${marcaCodigo}/modelos/${modeloCodigo}/anos`);
+    return this.http
+      .get<FipeAno[]>(`${this.baseUrl}/marcas/${marcaCodigo}/modelos/${modeloCodigo}/anos`)
+      .pipe(map((anos) => anos.map((ano) => ({ ...ano, nome: formatarAnoFipe(ano.nome) }))));
   }
 
   consultarValor(marcaCodigo: string, modeloCodigo: string, anoCodigo: string): Observable<FipeValor> {

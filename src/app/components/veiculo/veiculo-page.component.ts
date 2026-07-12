@@ -10,6 +10,7 @@ import {
   labelTipoTransmissao,
   resolverOrigemTransmissao
 } from '@utils/transmissao.util';
+import { formatarAnoFipe } from '@utils/fipe.util';
 
 type Modo = 'fipe' | 'manual';
 
@@ -205,6 +206,10 @@ export class VeiculoPageComponent {
   selecionarAno(codigo: string): void {
     this.anoSelecionado.set(codigo);
     if (!codigo || !this.marcaSelecionada() || !this.modeloSelecionado()) return;
+
+    const anoSelecionado = this.anos().find((item) => item.codigo === codigo);
+    const anoLabel = formatarAnoFipe(anoSelecionado?.nome ?? '');
+
     this.carregando.set(true);
     this.fipe
       .consultarValor(this.marcaSelecionada(), this.modeloSelecionado(), codigo)
@@ -221,7 +226,7 @@ export class VeiculoPageComponent {
         this.atualizarFipe({
           marca: valor.Marca,
           modelo: valor.Modelo,
-          ano: String(valor.AnoModelo),
+          ano: anoLabel || formatarAnoFipe(valor.AnoModelo),
           codigoFipe: valor.CodigoFipe,
           fipeAnoCodigo: codigo
         });

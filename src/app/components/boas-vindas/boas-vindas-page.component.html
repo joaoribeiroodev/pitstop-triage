@@ -1,206 +1,363 @@
 @if (triagemConcluida()) {
-  <section class="page-shell page-shell--narrow page-shell--spaced animate-fade-up">
-    <header class="page-header">
-      <span class="icon-circle icon-circle--safe" aria-hidden="true">✓</span>
-      <span class="text-mono-kicker text-safe">Triagem completa</span>
-      <h1 class="page-title">Tudo certo com seu <span class="page-title__accent">CDP</span></h1>
+<section class="page-shell page-shell--narrow page-shell--spaced animate-fade-up">
+  <header class="page-header">
+    <span class="icon-circle icon-circle--safe" aria-hidden="true">✓</span>
+    <span class="text-mono-kicker text-safe">Triagem completa</span>
+    <h1 class="page-title">Tudo certo com seu <span class="page-title__accent">CDP</span></h1>
+    <p class="page-lead">
+      @if (veiculoResumo()) {
+      {{ veiculoResumo() }} — resumo salvo neste navegador.
+      } @else {
+      Seu diagnóstico prévio está salvo neste navegador.
+      }
+    </p>
+  </header>
+
+  <article class="panel-strong welcome-panel">
+    <p class="text-muted text-pretty">
+      Baixe o PDF ou volte ao resultado quando for levar o carro na oficina. Para outro veículo ou novos sintomas,
+      inicie uma nova
+      triagem.
+    </p>
+    <div class="welcome-actions mt-6">
+      <a routerLink="/resultado" class="primary-button primary-button--block">Ver meu CDP</a>
+      <button class="secondary-button secondary-button--block mt-3" type="button" (click)="novaTriagem()">Iniciar nova
+        triagem</button>
+    </div>
+  </article>
+</section>
+} @else {
+<section class="page-shell page-shell--home animate-fade-up">
+  <div class="home-topbar">
+    <span class="text-mono-kicker text-signal">Diagnóstico prévio · IA</span>
+    <nav class="home-auth" aria-label="Acesso à conta">
+      @if (usuarioDemo()) {
+      <span class="auth-user text-muted">Olá, {{ usuarioDemo()!.nome }}</span>
+      <button type="button" class="auth-link focus-ring" (click)="sairDemo()">Sair</button>
+      } @else {
+      <button type="button" class="auth-link focus-ring" (click)="abrirAuth('login')">Entrar</button>
+      <button type="button" class="auth-link focus-ring" (click)="abrirAuth('signup')">Cadastre-se</button>
+      }
+    </nav>
+  </div>
+
+  <!-- Hero Section -->
+  <div class="home-hero">
+    <div class="home-hero__copy">
+      <h1 class="home-title">Descubra o problema do carro <span class="page-title__accent">antes</span> de ir à oficina
+      </h1>
       <p class="page-lead">
-        @if (veiculoResumo()) {
-          {{ veiculoResumo() }} — resumo salvo neste navegador.
-        } @else {
-          Seu diagnóstico prévio está salvo neste navegador.
-        }
+        Triagem guiada em 5 etapas — do sintoma ao <strong class="text-strong">CDP</strong> (Código de Diagnóstico
+        Prévio) com apoio de
+        IA. No fim, você leva um relatório técnico em PDF pronto para o mecânico.
       </p>
+
+      <div class="home-cta">
+        @if (usuarioDemo()) {
+        <button class="primary-button primary-button--lg" type="button" [disabled]="!aceitouPolitica()"
+          (click)="comecar()">
+          Começar triagem gratuita
+          <span aria-hidden="true">→</span>
+        </button>
+        } @else {
+        <button class="primary-button primary-button--lg" type="button" (click)="abrirAuth('login')">
+          Entrar
+          <span aria-hidden="true">→</span>
+        </button>
+        <button class="secondary-button" type="button" (click)="abrirAuth('signup')">
+          Cadastre-se
+        </button>
+        }
+        <a href="#como-funciona" class="secondary-button">Como funciona</a>
+      </div>
+
+      @if (usuarioDemo()) {
+      <label class="checkbox-label mt-4">
+        <input type="checkbox" class="checkbox-input" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
+        <span>
+          Li e aceito o tratamento dos meus dados conforme a
+          <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
+        </span>
+      </label>
+      }
+
+      <ul class="home-trust">
+        <li><span class="text-safe" aria-hidden="true">✓</span> Sem nome, CPF ou placa</li>
+        <li><span class="text-safe" aria-hidden="true">✓</span> Dados salvos localmente</li>
+      </ul>
+    </div>
+
+    @if (!usuarioDemo()) {
+    <!-- Quick Tour / Showcase Section (Etapas da Triagem na parte superior) -->
+    <aside class="showcase" aria-label="Prévia das etapas da triagem">
+      <div class="showcase__header">
+        <span class="text-mono-label text-signal">Etapa em foco</span>
+        <p class="showcase__caption text-strong">{{ slideAtivo().titulo }}</p>
+      </div>
+
+      <div class="showcase__frame">
+        <div class="showcase__chrome" aria-hidden="true">
+          <span class="showcase__dot"></span>
+          <span class="showcase__dot"></span>
+          <span class="showcase__dot"></span>
+          <span class="showcase__url">pitstop-triage / {{ slideAtivo().rota }}</span>
+        </div>
+        <div class="showcase__viewport">
+          @for (slide of showcaseSlides; track slide.src; let i = $index) {
+          <img class="showcase__img" [class.showcase__img--active]="slideAtivoIndex() === i" [src]="slide.src"
+            [alt]="slide.titulo" width="800" height="500" loading="lazy" decoding="async" />
+          }
+        </div>
+      </div>
+
+      <div class="showcase__steps" role="tablist" aria-label="Etapas da triagem">
+        @for (slide of showcaseSlides; track slide.src; let i = $index) {
+        <button type="button" role="tab" class="showcase__step focus-ring"
+          [class.showcase__step--active]="slideAtivoIndex() === i" [attr.aria-selected]="slideAtivoIndex() === i"
+          (click)="irParaSlide(i)">
+          <span class="showcase__step-num">{{ slide.numero }}</span>
+          <span class="showcase__step-label">{{ slide.rotuloCurto }}</span>
+        </button>
+        }
+      </div>
+    </aside>
+    }
+  </div>
+
+  @if (!usuarioDemo()) {
+  <!-- Simulator Section (Como Funciona / Diagnóstico Virtual) -->
+  <div id="como-funciona" class="section-divider">
+    <div class="divider-line"></div>
+    <span class="divider-text text-mono-label">Simulador Interativo</span>
+  </div>
+
+  <div class="home-simulator-section">
+    <header class="section-header">
+      <h2 class="section-title">Experimente o <span class="page-title__accent">Diagnóstico Virtual</span></h2>
+      <p class="section-subtitle">Simule um escaneamento em tempo real para ver a IA em ação antes do fluxo completo</p>
     </header>
 
-    <article class="panel-strong welcome-panel">
-      <p class="text-muted text-pretty">
-        Baixe o PDF ou volte ao resultado quando for levar o carro na oficina. Para outro veículo ou novos sintomas, inicie uma nova
-        triagem.
-      </p>
-      <div class="welcome-actions mt-6">
-        <a routerLink="/resultado" class="primary-button primary-button--block">Ver meu CDP</a>
-        <button class="secondary-button secondary-button--block mt-3" type="button" (click)="novaTriagem()">Iniciar nova triagem</button>
-      </div>
-    </article>
-  </section>
-} @else {
-  <section class="page-shell page-shell--home animate-fade-up">
-    <div class="home-topbar">
-      <span class="text-mono-kicker text-signal">Diagnóstico prévio · IA</span>
-      <nav class="home-auth" aria-label="Acesso à conta">
-        @if (usuarioDemo()) {
-          <span class="auth-user text-muted">{{ usuarioDemo()!.nome }}</span>
-          <button type="button" class="auth-link focus-ring" (click)="sairDemo()">Sair</button>
-        } @else {
-          <button type="button" class="auth-link focus-ring" (click)="abrirAuth('login')">Entrar</button>
-          <button type="button" class="auth-signup focus-ring" (click)="abrirAuth('signup')">Cadastro</button>
-        }
-      </nav>
-    </div>
-
-    <div class="home-hero">
-      <div class="home-hero__copy">
-        <span class="text-mono-kicker text-signal">Sistema de triagem</span>
-        <h1 class="home-title">Descubra o problema do carro <span class="page-title__accent">antes</span> de ir à oficina</h1>
-        <p class="page-lead">
-          Triagem guiada em 5 etapas — do sintoma ao <strong class="text-strong">CDP</strong> (Código de Diagnóstico Prévio) com apoio de
-          IA. No fim, você leva um relatório técnico em PDF para o mecânico.
-        </p>
-
-        <div class="home-cta">
-          <button class="primary-button primary-button--lg" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
-            Começar triagem
-            <span aria-hidden="true">→</span>
-          </button>
-          <a href="#como-funciona" class="secondary-button">Ver como funciona</a>
+    <!-- Simulador de Telemetria Interativo -->
+    <aside class="telemetry-simulator panel-strong" style="max-width: 44rem; margin-inline: auto"
+      aria-label="Simulador de telemetria automotiva">
+      <div class="simulator-header">
+        <div class="simulator-title-group">
+          <span class="scanner-laser"></span>
+          <span class="text-mono-label text-signal">Telemetry Scan v2.0</span>
+          <h3 class="simulator-title">Simulador de Diagnóstico</h3>
         </div>
-
-        <label class="checkbox-label mt-4">
-          <input type="checkbox" class="checkbox-input" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
-          <span>
-            Li e aceito o tratamento dos meus dados conforme a
-            <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
-          </span>
-        </label>
-
-        <ul class="home-trust">
-          <li><span class="text-safe" aria-hidden="true">✓</span> Sem nome, CPF ou placa</li>
-          <li><span class="text-safe" aria-hidden="true">✓</span> Dados salvos só no seu navegador</li>
-        </ul>
-      </div>
-
-      <aside class="showcase" aria-label="Prévia das etapas da triagem">
-        <div class="showcase__header">
-          <span class="text-mono-label text-signal">Tour rápido</span>
-          <p class="showcase__caption text-strong">{{ slideAtivo().titulo }}</p>
-        </div>
-
-        <div class="showcase__frame">
-          <div class="showcase__chrome" aria-hidden="true">
-            <span class="showcase__dot"></span>
-            <span class="showcase__dot"></span>
-            <span class="showcase__dot"></span>
-            <span class="showcase__url">pitstop-triage / {{ slideAtivo().rota }}</span>
-          </div>
-          <div class="showcase__viewport">
-            @for (slide of showcaseSlides; track slide.src; let i = $index) {
-              <img
-                class="showcase__img"
-                [class.showcase__img--active]="slideAtivoIndex() === i"
-                [src]="slide.src"
-                [alt]="slide.titulo"
-                width="800"
-                height="500"
-                loading="lazy"
-                decoding="async"
-              />
-            }
-          </div>
-        </div>
-
-        <div class="showcase__steps" role="tablist" aria-label="Etapas da triagem">
-          @for (slide of showcaseSlides; track slide.src; let i = $index) {
-            <button
-              type="button"
-              role="tab"
-              class="showcase__step focus-ring"
-              [class.showcase__step--active]="slideAtivoIndex() === i"
-              [attr.aria-selected]="slideAtivoIndex() === i"
-              (click)="irParaSlide(i)"
-            >
-              <span class="showcase__step-num">{{ slide.numero }}</span>
-              <span class="showcase__step-label">{{ slide.rotuloCurto }}</span>
-            </button>
+        <button type="button" class="sim-btn focus-ring" (click)="iniciarSimulacao()"
+          [disabled]="simuladorEstado() === 'scanning' || simuladorEstado() === 'analyzing'">
+          @if (simuladorEstado() === 'idle') {
+          Escanear veículo
+          } @else if (simuladorEstado() === 'scanning' || simuladorEstado() === 'analyzing') {
+          Analisando...
+          } @else {
+          Re-escanear
           }
-        </div>
-      </aside>
-    </div>
+        </button>
+      </div>
 
-    <div id="como-funciona" class="home-features">
+      <div class="simulator-screen">
+        @if (simuladorEstado() === 'idle') {
+        <div class="sim-idle-state">
+          <div class="sim-car-icon animate-pulse">🚗</div>
+          <p class="sim-placeholder-text">Clique em <strong>Escanear veículo</strong> para testar a triagem virtual
+            rápida.</p>
+        </div>
+        } @else if (simuladorEstado() === 'scanning' || simuladorEstado() === 'analyzing') {
+        <div class="sim-active-state">
+          <div class="radar-scan"></div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" [style.width.%]="simuladorProgresso()"></div>
+          </div>
+          <div class="sim-console-output">
+            <span class="console-line text-mono">> {{ simuladorEtapaTexto() }}</span>
+            <span class="console-line text-mono text-dim">> Sinal OBD-II: Ativo</span>
+            <span class="console-line text-mono text-dim">> Processando telemetria: {{ simuladorProgresso() }}%</span>
+          </div>
+        </div>
+        } @else if (simuladorEstado() === 'done' && simuladorResultado()) {
+        <div class="sim-done-state animate-fade-up">
+          <div class="sim-result-card border-danger">
+            <div class="result-badge badge-danger">SISTEMA COMPROMETIDO</div>
+            <div class="result-row">
+              <span class="label">Veículo:</span>
+              <span class="val">{{ simuladorResultado()!.veiculo }}</span>
+            </div>
+            <div class="result-row">
+              <span class="label">Área Crítica:</span>
+              <span class="val text-signal">{{ simuladorResultado()!.sistema }}</span>
+            </div>
+            <div class="result-row">
+              <span class="label">Urgência:</span>
+              <span class="val text-danger font-bold">{{ simuladorResultado()!.urgencia }}</span>
+            </div>
+            <div class="result-row">
+              <span class="label">Diagnóstico IA:</span>
+              <span class="val text-white text-pretty text-sm">{{ simuladorResultado()!.hipotese }}</span>
+            </div>
+          </div>
+          <p class="sim-tip-text">Isso é uma simulação. Faça a triagem real completa para o seu carro!</p>
+        </div>
+        }
+      </div>
+    </aside>
+  </div>
+  }
+
+  @if (!usuarioDemo()) {
+  <!-- Features Section -->
+  <div class="home-features-section">
+    <header class="section-header">
+      <h2 class="section-title">Por que usar o <span class="page-title__accent">PitStop Triage</span>?</h2>
+      <p class="section-subtitle">Tecnologia avançada para simplificar a manutenção do seu carro</p>
+    </header>
+
+    <div class="home-features">
       @for (feature of features; track feature.titulo) {
-        <article class="feature-card">
-          <span class="feature-card__icon" aria-hidden="true">{{ feature.icone }}</span>
-          <h2 class="feature-card__title">{{ feature.titulo }}</h2>
-          <p class="feature-card__text">{{ feature.descricao }}</p>
-        </article>
+      <article class="feature-card">
+        <span class="feature-card__icon" aria-hidden="true">{{ feature.icone }}</span>
+        <h3 class="feature-card__title">{{ feature.titulo }}</h3>
+        <p class="feature-card__text">{{ feature.descricao }}</p>
+      </article>
       }
     </div>
+  </div>
+  }
 
-    @if (authModal()) {
-      <div class="auth-overlay-wrap">
-        <button type="button" class="auth-overlay__backdrop" aria-label="Fechar janela" (click)="fecharAuth()"></button>
-        <div
-          class="auth-modal panel-strong"
-          role="dialog"
-          [attr.aria-labelledby]="authModal() === 'login' ? 'auth-login-title' : 'auth-signup-title'"
-          aria-modal="true"
-        >
-          <button type="button" class="auth-modal__close focus-ring" aria-label="Fechar" (click)="fecharAuth()">×</button>
+  @if (!usuarioDemo()) {
+  <!-- Depoimentos (Testimonials) Section -->
+  <div class="home-testimonials-section">
+    <header class="section-header">
+      <h2 class="section-title">O que dizem os <span class="page-title__accent">motoristas e mecânicos</span></h2>
+      <p class="section-subtitle">Economia de tempo e clareza nos orçamentos de manutenção</p>
+    </header>
 
-          @if (authModal() === 'login') {
-            <h2 id="auth-login-title" class="auth-modal__title">Entrar na conta</h2>
-            <p class="auth-modal__lead text-muted">Demonstração visual — dados ficam só neste navegador, sem servidor.</p>
+    <div class="testimonials-grid">
+      <article class="testimonial-card panel-strong">
+        <div class="testimonial-rating">★★★★★</div>
+        <p class="testimonial-quote">
+          "Usei o PitStop Triage após acender a luz da injeção. Cheguei no mecânico já sabendo que era a bobina de
+          ignição e evitei
+          orçamentos abusivos!"
+        </p>
+        <footer class="testimonial-author">
+          <strong class="author-name">Marcos Souza</strong>
+          <span class="author-title">Proprietário de Honda Civic</span>
+        </footer>
+      </article>
 
-            <form class="auth-form" (submit)="enviarLogin($event)">
-              <label class="label">
-                E-mail
-                <input class="field" type="email" name="email" autocomplete="email" required [(ngModel)]="loginEmail" />
-              </label>
-              <label class="label mt-4">
-                Senha
-                <input
-                  class="field"
-                  type="password"
-                  name="senha"
-                  autocomplete="current-password"
-                  required
-                  minlength="6"
-                  [(ngModel)]="loginSenha"
-                />
-              </label>
-              <button class="primary-button primary-button--block mt-6" type="submit">Entrar</button>
-            </form>
+      <article class="testimonial-card panel-strong">
+        <div class="testimonial-rating">★★★★★</div>
+        <p class="testimonial-quote">
+          "Como mecânico, adorei receber o relatório em PDF. O cliente chega com as informações de sintomas organizadas,
+          o que agiliza
+          muito o diagnóstico na oficina."
+        </p>
+        <footer class="testimonial-author">
+          <strong class="author-name">Danilo N.</strong>
+          <span class="author-title">Mecânico Chefe na DM Autocenter</span>
+        </footer>
+      </article>
+    </div>
+  </div>
+  }
 
-            <p class="auth-modal__switch text-muted mt-4">
-              Ainda não tem conta?
-              <button type="button" class="link-signal auth-inline-link" (click)="abrirAuth('signup')">Cadastre-se</button>
-            </p>
-          } @else {
-            <h2 id="auth-signup-title" class="auth-modal__title">Criar conta</h2>
-            <p class="auth-modal__lead text-muted">Demonstração visual — nada é enviado a um servidor.</p>
+  @if (!usuarioDemo()) {
+  <!-- FAQ Section -->
+  <div class="home-faq-section">
+    <header class="section-header">
+      <h2 class="section-title">Perguntas <span class="page-title__accent">Frequentes</span></h2>
+      <p class="section-subtitle">Esclareça suas dúvidas rápidas sobre o funcionamento da plataforma</p>
+    </header>
 
-            <form class="auth-form" (submit)="enviarCadastro($event)">
-              <label class="label">
-                Nome
-                <input class="field" type="text" name="nome" autocomplete="name" required [(ngModel)]="cadastroNome" />
-              </label>
-              <label class="label mt-4">
-                E-mail
-                <input class="field" type="email" name="email" autocomplete="email" required [(ngModel)]="cadastroEmail" />
-              </label>
-              <label class="label mt-4">
-                Senha
-                <input
-                  class="field"
-                  type="password"
-                  name="senha"
-                  autocomplete="new-password"
-                  required
-                  minlength="6"
-                  [(ngModel)]="cadastroSenha"
-                />
-              </label>
-              <button class="primary-button primary-button--block mt-6" type="submit">Criar conta</button>
-            </form>
-
-            <p class="auth-modal__switch text-muted mt-4">
-              Já tem conta?
-              <button type="button" class="link-signal auth-inline-link" (click)="abrirAuth('login')">Entrar</button>
-            </p>
-          }
+    <div class="faq-accordion">
+      @for (item of faqs; track item.pergunta; let i = $index) {
+      <div class="faq-item panel" [class.faq-item--active]="faqAtivoIndex() === i">
+        <button type="button" class="faq-question-btn" (click)="alternarFaq(i)">
+          <span class="faq-question-text">{{ item.pergunta }}</span>
+          <span class="faq-icon-arrow"></span>
+        </button>
+        <div class="faq-answer-pane" [class.faq-answer-pane--visible]="faqAtivoIndex() === i">
+          <p class="faq-answer-text text-muted text-pretty">{{ item.resposta }}</p>
         </div>
       </div>
-    }
-  </section>
+      }
+    </div>
+  </div>
+  }
+
+  @if (!usuarioDemo()) {
+  <!-- Footer CTA Section -->
+  <div class="footer-cta-banner panel-strong">
+    <h2 class="cta-title">Pronto para entender os sintomas do seu carro?</h2>
+    <p class="cta-lead text-muted">
+      Acesse a plataforma para iniciar a sua triagem guiada.
+    </p>
+    <div class="cta-actions">
+      <button class="primary-button primary-button--lg" type="button" (click)="abrirAuth('login')">Entrar</button>
+      <button class="secondary-button" type="button" (click)="abrirAuth('signup')">Cadastre-se</button>
+    </div>
+  </div>
+  }
+
+  @if (authModal()) {
+  <div class="auth-overlay-wrap" (click)="fecharAuth()">
+    <button type="button" class="auth-overlay__backdrop" aria-label="Fechar janela" (click)="$event.stopPropagation(); fecharAuth()"></button>
+    <div class="auth-modal panel-strong" role="dialog" (click)="$event.stopPropagation()"
+      [attr.aria-labelledby]="authModal() === 'login' ? 'auth-login-title' : 'auth-signup-title'" aria-modal="true">
+      <button type="button" class="auth-modal__close focus-ring" aria-label="Fechar" (click)="fecharAuth()">×</button>
+
+      @if (authModal() === 'login') {
+      <h2 id="auth-login-title" class="auth-modal__title">Entrar na conta</h2>
+      <p class="auth-modal__lead text-muted">Demonstração visual — dados ficam só neste navegador, sem servidor.</p>
+
+      <form class="auth-form" (submit)="enviarLogin($event)">
+        <label class="label">
+          E-mail
+          <input class="field" type="email" name="email" autocomplete="email" required [(ngModel)]="loginEmail" />
+        </label>
+        <label class="label mt-4">
+          Senha
+          <input class="field" type="password" name="senha" autocomplete="current-password" required minlength="6"
+            [(ngModel)]="loginSenha" />
+        </label>
+        <button class="primary-button primary-button--block mt-6" type="submit">Entrar</button>
+      </form>
+
+      <p class="auth-modal__switch text-muted mt-4">
+        Ainda não tem conta?
+        <button type="button" class="link-signal auth-inline-link" (click)="abrirAuth('signup')">Cadastre-se</button>
+      </p>
+      } @else {
+      <h2 id="auth-signup-title" class="auth-modal__title">Criar conta</h2>
+      <p class="auth-modal__lead text-muted">Demonstração visual — nada é enviado a um servidor.</p>
+
+      <form class="auth-form" (submit)="enviarCadastro($event)">
+        <label class="label">
+          Nome
+          <input class="field" type="text" name="nome" autocomplete="name" required [(ngModel)]="cadastroNome" />
+        </label>
+        <label class="label mt-4">
+          E-mail
+          <input class="field" type="email" name="email" autocomplete="email" required [(ngModel)]="cadastroEmail" />
+        </label>
+        <label class="label mt-4">
+          Senha
+          <input class="field" type="password" name="senha" autocomplete="new-password" required minlength="6"
+            [(ngModel)]="cadastroSenha" />
+        </label>
+        <button class="primary-button primary-button--block mt-6" type="submit">Criar conta</button>
+      </form>
+
+      <p class="auth-modal__switch text-muted mt-4">
+        Já tem conta?
+        <button type="button" class="link-signal auth-inline-link" (click)="abrirAuth('login')">Entrar</button>
+      </p>
+      }
+    </div>
+  </div>
+  }
+</section>
 }
