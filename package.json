@@ -11,7 +11,7 @@
     "start": "npm run dev",
     "start:full": "vercel dev",
     "build": "ng build",
-    "vercel-build": "ng build",
+    "vercel-build": "ng build && tsc -p api/tsconfig.json",
     "watch": "ng build --watch --configuration development",
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
