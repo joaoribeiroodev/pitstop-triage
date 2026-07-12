@@ -21,6 +21,7 @@
     "check": "npm run lint && npm run format:check && npm run typecheck:api && npm run build"
   },
   "private": true,
+  "type": "module",
   "packageManager": "npm@10.9.2",
   "engines": {
     "node": ">=22"

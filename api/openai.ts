@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { OPENAI_MODEL } from './_shared';
+import { OPENAI_MODEL } from './_shared.js';
 
 export interface StructuredJsonRequest {
   apiKey: string;

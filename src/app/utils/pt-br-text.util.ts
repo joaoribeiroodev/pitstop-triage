@@ -1,6 +1,6 @@
 import { DiagnosticoCdp } from '@models/cdp.model';
 import { RefinamentoResponse } from '@models/refinamento.model';
-import { corrigirOrtografiaPtBr, corrigirValorProfundo, normalizarTextoPdf } from './pt-br-ortografia';
+import { corrigirOrtografiaPtBr, corrigirValorProfundo, normalizarTextoPdf } from './pt-br-ortografia.js';
 
 export { corrigirOrtografiaPtBr, corrigirValorProfundo, normalizarTextoPdf };
 

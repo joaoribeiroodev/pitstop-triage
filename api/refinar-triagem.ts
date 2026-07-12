@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { refinamentoJsonSchema } from './ai-schemas';
-import { buildRespostasDetalhadas } from './cdp-validation';
-import { completeStructuredJson } from './openai';
-import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
-import { corrigirRefinamentoResposta } from '@utils/pt-br-text.util';
-import { normalizarRefinamentoResponse } from '@utils/refinamento.util';
+import { refinamentoJsonSchema } from './ai-schemas.js';
+import { buildRespostasDetalhadas } from './cdp-validation.js';
+import { completeStructuredJson } from './openai.js';
+import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared.js';
+import { corrigirRefinamentoResposta } from '../src/app/utils/pt-br-text.util.js';
+import { normalizarRefinamentoResponse } from '../src/app/utils/refinamento.util.js';
 
 const SYSTEM_INSTRUCTION = `
 Você é um consultor técnico automotivo sênior, especialista em primeira escuta de cliente em oficina de bairro brasileira.

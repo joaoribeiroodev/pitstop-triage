@@ -1,14 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { diagnosticoJsonSchema } from './ai-schemas';
+import { diagnosticoJsonSchema } from './ai-schemas.js';
 import {
   buildRespostasDetalhadas,
   buildInstrucaoTransmissao,
   isDiagnosticoCdpValid,
   sanitizarCdpPorTransmissao
-} from './cdp-validation';
-import { completeStructuredJson } from './openai';
-import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared';
-import { corrigirDiagnosticoCdp } from '@utils/pt-br-text.util';
+} from './cdp-validation.js';
+import { completeStructuredJson } from './openai.js';
+import { applyCors, isTriagemValida, requireApiKey, requirePost, safeParse } from './_shared.js';
+import { corrigirDiagnosticoCdp } from '../src/app/utils/pt-br-text.util.js';
 
 const SYSTEM_INSTRUCTION = `
 Você é um diagnóstico automotivo sênior (20+ anos de oficina e bancada), especialista em CDP (Código de Diagnóstico Prévio) para mecânicos brasileiros.
