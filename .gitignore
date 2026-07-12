@@ -6,3 +6,5 @@ dist
 *.log
 .cursor/
 CONTEXTO_PROJETO_GEMINI.md
+api/**/*.js
+src/app/**/*.js
