@@ -1,5 +1,5 @@
-<section class="page-shell page-shell--welcome page-shell--spaced animate-fade-up">
-  @if (triagemConcluida()) {
+@if (triagemConcluida()) {
+  <section class="page-shell page-shell--narrow page-shell--spaced animate-fade-up">
     <header class="page-header">
       <span class="icon-circle icon-circle--safe" aria-hidden="true">✓</span>
       <span class="text-mono-kicker text-safe">Triagem completa</span>
@@ -23,40 +23,40 @@
         <button class="secondary-button secondary-button--block mt-3" type="button" (click)="novaTriagem()">Iniciar nova triagem</button>
       </div>
     </article>
-  } @else {
-    <header class="page-header">
-      <span class="icon-circle icon-circle--signal icon-circle--logo" aria-hidden="true">
-        <img class="pit-logo-img" src="/logo.png" width="56" height="56" alt="" />
-      </span>
-      <span class="text-mono-kicker text-signal">Sistema de triagem</span>
-      <h1 class="page-title">Bem-vindo ao <span class="page-title__accent">PitStop Triage</span></h1>
-      <p class="page-lead">Triagem do veículo em 5 etapas — do sintoma ao diagnóstico prévio (CDP) com apoio de IA.</p>
-    </header>
+  </section>
+} @else {
+  <section class="page-shell page-shell--home animate-fade-up">
+    <div class="home-topbar">
+      <span class="text-mono-kicker text-signal">Diagnóstico prévio · IA</span>
+      <nav class="home-auth" aria-label="Acesso à conta">
+        @if (usuarioDemo()) {
+          <span class="auth-user text-muted">{{ usuarioDemo()!.nome }}</span>
+          <button type="button" class="auth-link focus-ring" (click)="sairDemo()">Sair</button>
+        } @else {
+          <button type="button" class="auth-link focus-ring" (click)="abrirAuth('login')">Entrar</button>
+          <button type="button" class="auth-signup focus-ring" (click)="abrirAuth('signup')">Cadastro</button>
+        }
+      </nav>
+    </div>
 
-    <div class="welcome-grid">
-      <article class="panel welcome-panel">
-        <div class="status-inline">
-          <span class="pulse-dot" aria-hidden="true"></span>
-          <span class="text-mono-label text-dim">Briefing inicial</span>
-        </div>
-
-        <p class="mt-5 text-muted text-pretty welcome-copy">
-          Coletamos apenas dados do veículo e dos sintomas para gerar o CDP. As informações ficam salvas no seu navegador. Consultamos a API
-          FIPE e a OpenAI somente quando necessário.
+    <div class="home-hero">
+      <div class="home-hero__copy">
+        <span class="text-mono-kicker text-signal">Sistema de triagem</span>
+        <h1 class="home-title">Descubra o problema do carro <span class="page-title__accent">antes</span> de ir à oficina</h1>
+        <p class="page-lead">
+          Triagem guiada em 5 etapas — do sintoma ao <strong class="text-strong">CDP</strong> (Código de Diagnóstico Prévio) com apoio de
+          IA. No fim, você leva um relatório técnico em PDF para o mecânico.
         </p>
 
-        <ul class="check-list mt-4 text-dim">
-          <li>
-            <span class="text-safe" aria-hidden="true">✓</span>
-            <span>Não solicitamos nome, documento ou placa.</span>
-          </li>
-          <li>
-            <span class="text-safe" aria-hidden="true">✓</span>
-            <span>Você pode excluir seus dados a qualquer momento no rodapé.</span>
-          </li>
-        </ul>
+        <div class="home-cta">
+          <button class="primary-button primary-button--lg" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
+            Começar triagem
+            <span aria-hidden="true">→</span>
+          </button>
+          <a href="#como-funciona" class="secondary-button">Ver como funciona</a>
+        </div>
 
-        <label class="checkbox-label mt-6">
+        <label class="checkbox-label mt-4">
           <input type="checkbox" class="checkbox-input" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
           <span>
             Li e aceito o tratamento dos meus dados conforme a
@@ -64,11 +64,11 @@
           </span>
         </label>
 
-        <button class="primary-button primary-button--block mt-6" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
-          Começar triagem
-          <span aria-hidden="true">→</span>
-        </button>
-      </article>
+        <ul class="home-trust">
+          <li><span class="text-safe" aria-hidden="true">✓</span> Sem nome, CPF ou placa</li>
+          <li><span class="text-safe" aria-hidden="true">✓</span> Dados salvos só no seu navegador</li>
+        </ul>
+      </div>
 
       <aside class="showcase" aria-label="Prévia das etapas da triagem">
         <div class="showcase__header">
@@ -116,5 +116,91 @@
         </div>
       </aside>
     </div>
-  }
-</section>
+
+    <div id="como-funciona" class="home-features">
+      @for (feature of features; track feature.titulo) {
+        <article class="feature-card">
+          <span class="feature-card__icon" aria-hidden="true">{{ feature.icone }}</span>
+          <h2 class="feature-card__title">{{ feature.titulo }}</h2>
+          <p class="feature-card__text">{{ feature.descricao }}</p>
+        </article>
+      }
+    </div>
+
+    @if (authModal()) {
+      <div class="auth-overlay-wrap">
+        <button type="button" class="auth-overlay__backdrop" aria-label="Fechar janela" (click)="fecharAuth()"></button>
+        <div
+          class="auth-modal panel-strong"
+          role="dialog"
+          [attr.aria-labelledby]="authModal() === 'login' ? 'auth-login-title' : 'auth-signup-title'"
+          aria-modal="true"
+        >
+          <button type="button" class="auth-modal__close focus-ring" aria-label="Fechar" (click)="fecharAuth()">×</button>
+
+          @if (authModal() === 'login') {
+            <h2 id="auth-login-title" class="auth-modal__title">Entrar na conta</h2>
+            <p class="auth-modal__lead text-muted">Demonstração visual — dados ficam só neste navegador, sem servidor.</p>
+
+            <form class="auth-form" (submit)="enviarLogin($event)">
+              <label class="label">
+                E-mail
+                <input class="field" type="email" name="email" autocomplete="email" required [(ngModel)]="loginEmail" />
+              </label>
+              <label class="label mt-4">
+                Senha
+                <input
+                  class="field"
+                  type="password"
+                  name="senha"
+                  autocomplete="current-password"
+                  required
+                  minlength="6"
+                  [(ngModel)]="loginSenha"
+                />
+              </label>
+              <button class="primary-button primary-button--block mt-6" type="submit">Entrar</button>
+            </form>
+
+            <p class="auth-modal__switch text-muted mt-4">
+              Ainda não tem conta?
+              <button type="button" class="link-signal auth-inline-link" (click)="abrirAuth('signup')">Cadastre-se</button>
+            </p>
+          } @else {
+            <h2 id="auth-signup-title" class="auth-modal__title">Criar conta</h2>
+            <p class="auth-modal__lead text-muted">Demonstração visual — nada é enviado a um servidor.</p>
+
+            <form class="auth-form" (submit)="enviarCadastro($event)">
+              <label class="label">
+                Nome
+                <input class="field" type="text" name="nome" autocomplete="name" required [(ngModel)]="cadastroNome" />
+              </label>
+              <label class="label mt-4">
+                E-mail
+                <input class="field" type="email" name="email" autocomplete="email" required [(ngModel)]="cadastroEmail" />
+              </label>
+              <label class="label mt-4">
+                Senha
+                <input
+                  class="field"
+                  type="password"
+                  name="senha"
+                  autocomplete="new-password"
+                  required
+                  minlength="6"
+                  [(ngModel)]="cadastroSenha"
+                />
+              </label>
+              <button class="primary-button primary-button--block mt-6" type="submit">Criar conta</button>
+            </form>
+
+            <p class="auth-modal__switch text-muted mt-4">
+              Já tem conta?
+              <button type="button" class="link-signal auth-inline-link" (click)="abrirAuth('login')">Entrar</button>
+            </p>
+          }
+        </div>
+      </div>
+    }
+  </section>
+}
