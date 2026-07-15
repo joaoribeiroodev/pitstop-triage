@@ -340,21 +340,13 @@
                 />
               </label>
               <label class="checkbox-label mt-4">
-                <input
-                  type="checkbox"
-                  class="checkbox-input"
-                  name="aceite-lgpd-login"
-                  required
-                  [(ngModel)]="loginAceitouPolitica"
-                />
+                <input type="checkbox" class="checkbox-input" name="aceite-lgpd-login" required [(ngModel)]="loginAceitouPolitica" />
                 <span>
                   Li e aceito o tratamento dos meus dados conforme a
                   <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
                 </span>
               </label>
-              <button class="primary-button primary-button--block mt-6" type="submit" [disabled]="!loginAceitouPolitica">
-                Entrar
-              </button>
+              <button class="primary-button primary-button--block mt-6" type="submit" [disabled]="!loginAceitouPolitica">Entrar</button>
             </form>
 
             <p class="auth-modal__switch text-muted mt-4">
@@ -387,13 +379,7 @@
                 />
               </label>
               <label class="checkbox-label mt-4">
-                <input
-                  type="checkbox"
-                  class="checkbox-input"
-                  name="aceite-lgpd-cadastro"
-                  required
-                  [(ngModel)]="cadastroAceitouPolitica"
-                />
+                <input type="checkbox" class="checkbox-input" name="aceite-lgpd-cadastro" required [(ngModel)]="cadastroAceitouPolitica" />
                 <span>
                   Li e aceito o tratamento dos meus dados conforme a
                   <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
