@@ -50,7 +50,7 @@
 
         <div class="home-cta">
           @if (usuarioDemo()) {
-            <button class="primary-button primary-button--lg" type="button" [disabled]="!aceitouPolitica()" (click)="comecar()">
+            <button class="primary-button primary-button--lg" type="button" (click)="comecar()">
               Começar triagem gratuita
               <span aria-hidden="true">→</span>
             </button>
@@ -62,16 +62,6 @@
             <button class="secondary-button" type="button" (click)="abrirAuth('signup')">Cadastre-se</button>
           }
         </div>
-
-        @if (usuarioDemo()) {
-          <label class="checkbox-label mt-4">
-            <input type="checkbox" class="checkbox-input" [checked]="aceitouPolitica()" (change)="alternarAceite()" />
-            <span>
-              Li e aceito o tratamento dos meus dados conforme a
-              <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
-            </span>
-          </label>
-        }
 
         <ul class="home-trust">
           <li><span class="text-safe" aria-hidden="true">✓</span> Sem nome, CPF ou placa</li>
@@ -349,7 +339,22 @@
                   [(ngModel)]="loginSenha"
                 />
               </label>
-              <button class="primary-button primary-button--block mt-6" type="submit">Entrar</button>
+              <label class="checkbox-label mt-4">
+                <input
+                  type="checkbox"
+                  class="checkbox-input"
+                  name="aceite-lgpd-login"
+                  required
+                  [(ngModel)]="loginAceitouPolitica"
+                />
+                <span>
+                  Li e aceito o tratamento dos meus dados conforme a
+                  <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
+                </span>
+              </label>
+              <button class="primary-button primary-button--block mt-6" type="submit" [disabled]="!loginAceitouPolitica">
+                Entrar
+              </button>
             </form>
 
             <p class="auth-modal__switch text-muted mt-4">
@@ -381,7 +386,22 @@
                   [(ngModel)]="cadastroSenha"
                 />
               </label>
-              <button class="primary-button primary-button--block mt-6" type="submit">Criar conta</button>
+              <label class="checkbox-label mt-4">
+                <input
+                  type="checkbox"
+                  class="checkbox-input"
+                  name="aceite-lgpd-cadastro"
+                  required
+                  [(ngModel)]="cadastroAceitouPolitica"
+                />
+                <span>
+                  Li e aceito o tratamento dos meus dados conforme a
+                  <a routerLink="/privacidade" class="link-signal">Política de Privacidade (LGPD)</a>.
+                </span>
+              </label>
+              <button class="primary-button primary-button--block mt-6" type="submit" [disabled]="!cadastroAceitouPolitica">
+                Criar conta
+              </button>
             </form>
 
             <p class="auth-modal__switch text-muted mt-4">

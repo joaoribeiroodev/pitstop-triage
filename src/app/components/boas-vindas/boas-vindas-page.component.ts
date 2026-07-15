@@ -55,7 +55,6 @@ export class BoasVindasPageComponent {
   private readonly state = inject(TriageStateService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly aceitouPolitica = signal(false);
   readonly triagemConcluida = this.state.triagemConcluida;
   readonly slideAtivoIndex = signal(0);
   readonly authModal = signal<AuthModal | null>(null);
@@ -101,9 +100,11 @@ export class BoasVindasPageComponent {
 
   loginEmail = '';
   loginSenha = '';
+  loginAceitouPolitica = false;
   cadastroNome = '';
   cadastroEmail = '';
   cadastroSenha = '';
+  cadastroAceitouPolitica = false;
 
   readonly showcaseSlides: readonly ShowcaseSlide[] = [
     {
@@ -200,21 +201,27 @@ export class BoasVindasPageComponent {
   enviarLogin(event: Event): void {
     event.preventDefault();
     const email = this.loginEmail.trim();
-    if (!email) return;
+    if (!email || !this.loginAceitouPolitica) return;
     const nome = email.split('@')[0]?.replace(/\./g, ' ') || 'Motorista';
     this.persistirDemo({ nome, email });
+    this.lgpd.registrarAceite();
     this.loginSenha = '';
+    this.loginAceitouPolitica = false;
     this.fecharAuth();
+    void this.router.navigateByUrl('/veiculo');
   }
 
   enviarCadastro(event: Event): void {
     event.preventDefault();
     const nome = this.cadastroNome.trim();
     const email = this.cadastroEmail.trim();
-    if (!nome || !email) return;
+    if (!nome || !email || !this.cadastroAceitouPolitica) return;
     this.persistirDemo({ nome, email });
+    this.lgpd.registrarAceite();
     this.cadastroSenha = '';
+    this.cadastroAceitouPolitica = false;
     this.fecharAuth();
+    void this.router.navigateByUrl('/veiculo');
   }
 
   sairDemo(): void {
@@ -240,8 +247,6 @@ export class BoasVindasPageComponent {
   }
 
   comecar(): void {
-    if (!this.aceitouPolitica()) return;
-    this.lgpd.registrarAceite();
     void this.router.navigateByUrl('/veiculo');
   }
 
@@ -253,10 +258,6 @@ export class BoasVindasPageComponent {
       return;
     this.state.reiniciar();
     void this.router.navigateByUrl('/veiculo');
-  }
-
-  alternarAceite(): void {
-    this.aceitouPolitica.update((v) => !v);
   }
 
   alternarFaq(index: number): void {
