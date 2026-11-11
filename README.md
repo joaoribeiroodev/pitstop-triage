@@ -64,12 +64,14 @@ Usuários do seed (senha `pitstop-dev-123`):
 npm run lint            # ESLint (TypeScript + Angular + templates)
 npm run format:check    # Prettier
 npm run typecheck
-npm test                # backend: unitários do motor, integração e isolamento RLS (precisa do Postgres)
-npm run test:web        # frontends: Karma/Jasmine
+npm test                # backend: unitários, integração e isolamento RLS (precisa do Postgres)
+npm run test:cov        # o mesmo, exigindo as metas de cobertura
+npm run test:web        # frontends: Karma/Jasmine, com cobertura do app da oficina
 npm run test:e2e        # aceite do MVP no navegador (API, web e admin rodando com o seed)
 npm run check           # tudo acima, menos o E2E, mais os builds
 ```
 
+- Metas de cobertura da especificação, verificadas no CI: backend com 70% de linhas no geral e 100% nos fluxos críticos (guards de autenticação, tokens, transição de status e portal); app da oficina com 50% de linhas. Hoje estão em cerca de 95% e 97%.
 - Os testes de integração recriam o banco `pitstop_test` e aplicam as migrations reais. Para outro Postgres: `TEST_DATABASE_URL=postgres://...`.
 - O E2E (`e2e/acceptance.mjs`) percorre o checklist da seção 18 da especificação: cadastro, triagem, OS, diagnóstico ignorando as sugestões, orçamento, aprovação pelo portal, entrega, histórico do veículo e suspensão/reativação pelo admin. Na primeira vez: `npx playwright install chromium`. Com `E2E_SCREENSHOTS=pasta` ele salva capturas de cada etapa.
 - O CI (`.github/workflows/ci.yml`) roda lint, formato, tipos, testes do backend, testes e builds dos frontends, o E2E e o build da imagem Docker em todo PR e em push para `main` e `develop`.

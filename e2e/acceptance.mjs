@@ -26,6 +26,8 @@ const SECRET_DIAGNOSIS = `Diagnóstico interno ${PLATE}: pastilhas no fim`;
 
 const browser = await chromium.launch();
 let step = 0;
+/** Página do admin enquanto a oficina demo está suspensa pelo teste. */
+let suspendedOn = null;
 
 async function shot(page, name) {
   if (!SHOTS) return;
@@ -167,6 +169,7 @@ try {
   await admin.getByRole('link', { name: 'Oficina Demo' }).click();
   await admin.getByLabel(/Para confirmar, digite o slug/).fill(SLUG);
   await shot(admin, 'admin-oficina');
+  suspendedOn = admin;
   await admin.getByRole('button', { name: 'Suspender oficina' }).click();
   await admin.getByRole('button', { name: 'Reativar oficina' }).waitFor();
 
@@ -176,6 +179,7 @@ try {
 
   await admin.getByRole('button', { name: 'Reativar oficina' }).click();
   await admin.getByRole('heading', { name: 'Suspender oficina' }).waitFor();
+  suspendedOn = null;
   await reception.goto(`${WEB}/dashboard`);
   await reception.getByRole('heading', { name: 'Painel' }).waitFor();
   await admin.goto(`${ADMIN}/audit`);
@@ -185,5 +189,12 @@ try {
 
   console.log('\nAceite do MVP: aprovado.');
 } finally {
+  // Se o teste quebrar com a oficina demo suspensa, devolve o acesso para não envenenar a próxima execução.
+  if (suspendedOn) {
+    await suspendedOn
+      .getByRole('button', { name: 'Reativar oficina' })
+      .click({ timeout: 5000 })
+      .catch(() => console.error('Atenção: a oficina demo ficou suspensa. Reative pelo painel admin antes de rodar de novo.'));
+  }
   await browser.close();
 }
