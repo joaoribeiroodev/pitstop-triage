@@ -19,12 +19,15 @@ import { blankToNull, buildUpdate, rls } from '../common/rls';
 import { sanitizeSymptoms } from '../common/symptoms';
 import { DatabaseService, Db } from '../database/database.service';
 import { DiagnosticsService } from '../diagnostics/diagnostics.module';
+import { FinancialService } from '../financial/financial.module';
+import { InventoryService } from '../inventory/inventory.module';
+import { NotificationsService } from '../notifications/notifications.module';
 import { normalizeBrand } from '../diagnostics/engine';
 import { ORDER_SUMMARY_SQL } from './order-sql';
 import { Actor, OrderWorkflowService } from './order-workflow.service';
 import { BoardQuery, ChangeStatusDto, CreateOrderDto, ItemDto, NoteDto, OrderListQuery, UpdateItemDto, UpdateOrderDto } from './service-orders.dto';
 
-const ITEM_COLUMNS = 'id, type, description, quantity, unit_price, total, sort_order';
+const ITEM_COLUMNS = 'id, type, description, quantity, unit_price, total, sort_order, inventory_item_id';
 /** Itens só são editáveis enquanto não existe compromisso de preço com o cliente. */
 const ITEMS_EDITABLE: OrderStatus[] = ['draft', 'diagnosis', 'rejected'];
 const CLOSED: OrderStatus[] = ['delivered', 'cancelled'];
@@ -49,7 +52,10 @@ export class ServiceOrdersService {
   constructor(
     private readonly db: DatabaseService,
     private readonly workflow: OrderWorkflowService,
-    private readonly diagnostics: DiagnosticsService
+    private readonly diagnostics: DiagnosticsService,
+    private readonly inventory: InventoryService,
+    private readonly financial: FinancialService,
+    private readonly notifications: NotificationsService
   ) {}
 
   /** Mecânico vê apenas as próprias OS, a menos que a oficina libere a fila inteira. */
@@ -287,14 +293,23 @@ export class ServiceOrdersService {
     }
   }
 
+  /** Só peças apontam para o estoque, e o item precisa existir na oficina (a RLS esconde os de outras). */
+  private async stockLink(db: Db, type: string | undefined, inventoryItemId: string | null | undefined): Promise<string | null> {
+    if (!inventoryItemId || type !== 'part') return null;
+    const found = await db.maybeOne('select 1 from public.inventory_items where id = $1', [inventoryItemId]);
+    if (!found) throw new BadRequestException('Item de estoque não encontrado.');
+    return inventoryItemId;
+  }
+
   addItem(ctx: TenantContext, orderId: string, dto: ItemDto): Promise<ServiceOrder> {
     return this.db.tenant(rls(ctx), async (db) => {
       await this.lockForItems(db, ctx, orderId);
+      const stock = await this.stockLink(db, dto.type, dto.inventory_item_id);
       await db.exec(
-        `insert into public.service_order_items (tenant_id, service_order_id, type, description, quantity, unit_price, sort_order)
+        `insert into public.service_order_items (tenant_id, service_order_id, type, description, quantity, unit_price, sort_order, inventory_item_id)
          values ($1, $2, $3, $4, $5, $6,
-                 coalesce($7, (select coalesce(max(sort_order), 0) + 1 from public.service_order_items where service_order_id = $2)))`,
-        [ctx.tenantId, orderId, dto.type, dto.description.trim(), dto.quantity, dto.unit_price, dto.sort_order ?? null]
+                 coalesce($7, (select coalesce(max(sort_order), 0) + 1 from public.service_order_items where service_order_id = $2)), $8)`,
+        [ctx.tenantId, orderId, dto.type, dto.description.trim(), dto.quantity, dto.unit_price, dto.sort_order ?? null, stock]
       );
       await this.workflow.recalculateTotal(db, orderId);
       return this.load(db, ctx, orderId);
@@ -304,10 +319,17 @@ export class ServiceOrdersService {
   updateItem(ctx: TenantContext, orderId: string, itemId: string, dto: UpdateItemDto): Promise<ServiceOrder> {
     return this.db.tenant(rls(ctx), async (db) => {
       await this.lockForItems(db, ctx, orderId);
-      const { sets, values } = buildUpdate(
-        { type: dto.type, description: dto.description?.trim(), quantity: dto.quantity, unit_price: dto.unit_price, sort_order: dto.sort_order },
-        3
-      );
+      const fields: Record<string, unknown> = {
+        type: dto.type,
+        description: dto.description?.trim(),
+        quantity: dto.quantity,
+        unit_price: dto.unit_price,
+        sort_order: dto.sort_order
+      };
+      // O vínculo com o estoque só muda quando o campo vem no pedido; virar "serviço" sempre o desfaz.
+      if (dto.inventory_item_id !== undefined) fields.inventory_item_id = await this.stockLink(db, 'part', dto.inventory_item_id);
+      if (dto.type === 'service') fields.inventory_item_id = null;
+      const { sets, values } = buildUpdate(fields, 3);
       if (sets.length) {
         const updated = await db.exec(`update public.service_order_items set ${sets.join(', ')} where id = $1 and service_order_id = $2`, [
           itemId,
@@ -356,8 +378,16 @@ export class ServiceOrdersService {
         await db.exec(`update public.quotes set status = 'expired' where service_order_id = $1 and status in ('draft', 'sent')`, [id]);
         await db.exec(`update public.customer_access_tokens set purposes = array['view_order'] where service_order_id = $1`, [id]);
       }
+      if (dto.status === 'completed') {
+        // Na mesma transação da conclusão: ou a OS conclui com baixa de estoque e conta a receber, ou nada acontece.
+        if (ctx.tenant.feature_flags.inventory) await this.inventory.consumeForOrder(db, ctx, id);
+        if (ctx.tenant.feature_flags.financial) await this.financial.receivableForOrder(db, ctx, id);
+      }
       return this.load(db, ctx, id);
     });
+    // Aviso automático ao cliente, depois do commit e sem poder de derrubar a operação.
+    if (dto.status === 'in_progress') await this.notifications.notifyAutomatically(ctx, id, 'status_update');
+    if (dto.status === 'completed') await this.notifications.notifyAutomatically(ctx, id, 'vehicle_ready');
     // Efeito pós-commit: a base de conhecimento da oficina é alimentada depois que a conclusão já está confirmada.
     // Uma falha aqui é registrada, mas nunca desfaz nem bloqueia a conclusão da OS.
     if (dto.status === 'completed') await this.learnFromCompletedOrder(ctx, id);

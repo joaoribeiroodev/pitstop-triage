@@ -7,10 +7,11 @@ import { DatabaseService, Db } from '../database/database.service';
 import { Actor, OrderWorkflowService } from '../service-orders/order-workflow.service';
 import { ItemDto } from '../service-orders/service-orders.dto';
 import { actorOf } from '../service-orders/service-orders.service';
+import { NotificationsService } from '../notifications/notifications.module';
 import { AccessTokenService } from './access-token.service';
 
 const QUOTE_COLUMNS = 'id, service_order_id, version, total_amount, status, sent_at, responded_at, responded_via, expires_at, response_notes, created_at';
-const ITEM_COLUMNS = 'id, type, description, quantity, unit_price, total, sort_order';
+const ITEM_COLUMNS = 'id, type, description, quantity, unit_price, total, sort_order, inventory_item_id';
 
 export type QuoteDecision = 'approved' | 'rejected';
 
@@ -24,6 +25,7 @@ export class QuotesService {
     private readonly db: DatabaseService,
     private readonly workflow: OrderWorkflowService,
     private readonly tokens: AccessTokenService,
+    private readonly notifications: NotificationsService,
     @Inject(ENV) private readonly env: Env
   ) {}
 
@@ -78,8 +80,8 @@ export class QuotesService {
         [ctx.tenantId, orderId, ctx.userId]
       );
       await db.exec(
-        `insert into public.quote_items (tenant_id, quote_id, type, description, quantity, unit_price, sort_order)
-         select tenant_id, $2, type, description, quantity, unit_price, sort_order
+        `insert into public.quote_items (tenant_id, quote_id, type, description, quantity, unit_price, sort_order, inventory_item_id)
+         select tenant_id, $2, type, description, quantity, unit_price, sort_order, inventory_item_id
            from public.service_order_items where service_order_id = $1`,
         [orderId, quote.id]
       );
@@ -96,9 +98,10 @@ export class QuotesService {
       await db.exec('delete from public.quote_items where quote_id = $1', [id]);
       for (const [index, item] of items.entries()) {
         await db.exec(
-          `insert into public.quote_items (tenant_id, quote_id, type, description, quantity, unit_price, sort_order)
-           values ($1, $2, $3, $4, $5, $6, $7)`,
-          [ctx.tenantId, id, item.type, item.description.trim(), item.quantity, item.unit_price, item.sort_order ?? index + 1]
+          `insert into public.quote_items (tenant_id, quote_id, type, description, quantity, unit_price, sort_order, inventory_item_id)
+           values ($1, $2, $3, $4, $5, $6, $7,
+                   (select s.id from public.inventory_items s where s.id = $8 and $3 = 'part'))`,
+          [ctx.tenantId, id, item.type, item.description.trim(), item.quantity, item.unit_price, item.sort_order ?? index + 1, item.inventory_item_id ?? null]
         );
       }
       await this.recalculate(db, id);
@@ -107,7 +110,14 @@ export class QuotesService {
   }
 
   /** Envia ao cliente: congela o orçamento, gera o link tokenizado e coloca a OS em "aguardando aprovação". */
-  send(ctx: TenantContext, id: string): Promise<SendQuoteResponse> {
+  async send(ctx: TenantContext, id: string): Promise<SendQuoteResponse> {
+    const sent = await this.sendInTransaction(ctx, id);
+    // Envio automático (quando a oficina ligou a integração), depois do commit e com o mesmo link já emitido.
+    await this.notifications.notifyAutomatically(ctx, sent.quote.service_order_id, 'quote_pending', sent.portal_url);
+    return sent;
+  }
+
+  private sendInTransaction(ctx: TenantContext, id: string): Promise<SendQuoteResponse> {
     const days = ctx.tenant.settings.portal_token_days ?? 30;
     return this.db.tenant(rls(ctx), async (db) => {
       const quote = await this.loadQuote(db, id, true);
@@ -147,10 +157,8 @@ export class QuotesService {
         createdBy: ctx.userId
       });
       const portalUrl = `${this.env.portalBaseUrl}/portal/${issued.token}`;
-      const firstName = order.customer_name.split(' ')[0];
-      const message =
-        `Olá, ${firstName}! O orçamento do seu ${order.vehicle || 'veículo'} (placa ${order.plate}) na ${ctx.tenant.name} está pronto. ` +
-        `Total: ${formatBRL(total)}. Veja os detalhes e aprove ou recuse pelo link: ${portalUrl}`;
+      // O texto é o modelo da oficina para "orçamento pronto" (ou o padrão, se ela não personalizou).
+      const message = this.notifications.compose(ctx, 'quote_pending', { ...order, status: 'awaiting_approval' }, portalUrl, { total: formatBRL(total) });
       const phone = order.phone && /^\d{10,11}$/.test(order.phone) ? order.phone : null;
       return {
         quote: await this.withItems(db, id),
@@ -196,8 +204,8 @@ export class QuotesService {
     if (decision === 'approved') {
       await db.exec('delete from public.service_order_items where service_order_id = $1', [quote.service_order_id]);
       await db.exec(
-        `insert into public.service_order_items (tenant_id, service_order_id, type, description, quantity, unit_price, sort_order)
-         select tenant_id, $2, type, description, quantity, unit_price, sort_order from public.quote_items where quote_id = $1`,
+        `insert into public.service_order_items (tenant_id, service_order_id, type, description, quantity, unit_price, sort_order, inventory_item_id)
+         select tenant_id, $2, type, description, quantity, unit_price, sort_order, inventory_item_id from public.quote_items where quote_id = $1`,
         [quoteId, quote.service_order_id]
       );
     }

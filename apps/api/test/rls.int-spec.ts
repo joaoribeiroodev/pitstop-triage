@@ -54,6 +54,14 @@ async function seedGraph(db: Db, tenantId: string, plate: string): Promise<void>
   const item = await db.one<{ id: string }>(`insert into public.inventory_items (tenant_id, name) values ($1, 'Óleo') returning id`, [tenantId]);
   await db.exec(`insert into public.stock_movements (tenant_id, inventory_item_id, type, quantity) values ($1, $2, 'in', 5)`, [tenantId, item.id]);
   await db.exec(`insert into public.financial_entries (tenant_id, type, description, amount) values ($1, 'receivable', 'OS 1', 100)`, [tenantId]);
+  await db.exec(
+    `insert into public.appointments (tenant_id, title, starts_at, ends_at, customer_id) values ($1, 'Revisão', now(), now() + interval '1 hour', $2)`,
+    [tenantId, customer.id]
+  );
+  await db.exec(
+    `insert into public.notification_log (tenant_id, service_order_id, event, channel, status) values ($1, $2, 'status_update', 'whatsapp_link', 'sent')`,
+    [tenantId, order.id]
+  );
 }
 
 describe('RLS — isolamento entre tenants no banco', () => {
@@ -83,7 +91,7 @@ describe('RLS — isolamento entre tenants no banco', () => {
   afterAll(() => h.stop());
 
   it('toda tabela com tenant_id tem RLS ligado e as quatro políticas', async () => {
-    expect(tenantTables.length).toBeGreaterThanOrEqual(18);
+    expect(tenantTables.length).toBeGreaterThanOrEqual(20);
     const rows = await h.db.admin((db) =>
       db.many<{ name: string; rls: boolean; commands: string[] }>(
         `select c.relname as name, c.relrowsecurity as rls,

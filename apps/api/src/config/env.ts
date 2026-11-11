@@ -17,6 +17,17 @@ export interface Env {
   /** Contato do encarregado (DPO) exibido na política de privacidade. Vazio: a política manda procurar a oficina. */
   dpoContactEmail: string;
   fipePlateApiUrl: string;
+  /** Integração opcional com a API oficial do WhatsApp (Meta Cloud API). Sem token e número, o envio automático fica desligado. */
+  whatsapp: {
+    apiUrl: string;
+    token: string;
+    phoneNumberId: string;
+    templates: { quote_pending: string; status_update: string; vehicle_ready: string };
+    language: string;
+  };
+  /** Chave opcional para a camada de IA (Fase 4). Vazia: vale o NoOpEnhancer. */
+  openaiApiKey: string;
+  openaiModel: string;
   logLevel: string;
 }
 
@@ -60,6 +71,19 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     privacyPolicyVersion: source.PRIVACY_POLICY_VERSION ?? '2026-11',
     dpoContactEmail: (source.DPO_CONTACT_EMAIL ?? '').trim(),
     fipePlateApiUrl: source.FIPE_PLATE_API_URL ?? '',
+    whatsapp: {
+      apiUrl: (source.WHATSAPP_API_URL ?? 'https://graph.facebook.com/v21.0').replace(/\/$/, ''),
+      token: source.WHATSAPP_API_TOKEN ?? '',
+      phoneNumberId: source.WHATSAPP_PHONE_NUMBER_ID ?? '',
+      templates: {
+        quote_pending: source.WHATSAPP_TEMPLATE_QUOTE_PENDING ?? 'pitstop_orcamento',
+        status_update: source.WHATSAPP_TEMPLATE_STATUS_UPDATE ?? 'pitstop_status',
+        vehicle_ready: source.WHATSAPP_TEMPLATE_VEHICLE_READY ?? 'pitstop_pronto'
+      },
+      language: source.WHATSAPP_TEMPLATE_LANGUAGE ?? 'pt_BR'
+    },
+    openaiApiKey: source.OPENAI_API_KEY ?? '',
+    openaiModel: source.OPENAI_MODEL ?? 'gpt-4o-mini',
     logLevel: source.LOG_LEVEL ?? (nodeEnv === 'test' ? 'silent' : 'info')
   };
 }

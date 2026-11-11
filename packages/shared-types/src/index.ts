@@ -13,7 +13,7 @@ export type TenantStatus = (typeof TENANT_STATUSES)[number];
 export const TENANT_PLANS = ['basic', 'pro', 'enterprise'] as const;
 export type TenantPlan = (typeof TENANT_PLANS)[number];
 
-export const FEATURE_FLAGS = ['triage', 'public_triage', 'diagnostics', 'portal', 'whatsapp', 'inventory', 'financial', 'ai'] as const;
+export const FEATURE_FLAGS = ['triage', 'public_triage', 'diagnostics', 'portal', 'whatsapp', 'schedule', 'inventory', 'financial', 'ai'] as const;
 export type FeatureFlag = (typeof FEATURE_FLAGS)[number];
 export type FeatureFlags = Record<FeatureFlag, boolean>;
 
@@ -28,6 +28,47 @@ export interface TenantSettings {
   mechanics_see_all_orders?: boolean;
   /** Validade padrão (dias) do link enviado ao cliente. */
   portal_token_days?: number;
+  /** Boxes (vagas de serviço) da oficina, usados na agenda. */
+  bays?: string[];
+  /** Textos dos avisos ao cliente, por evento. Ausente: vale o texto padrão. */
+  notification_templates?: Partial<NotificationTemplates>;
+  /** Envio automático pela API oficial do WhatsApp nas mudanças de status (exige o módulo e a integração configurada). */
+  whatsapp_auto?: boolean;
+}
+
+// ───────────── notificações (Fase 2) ─────────────
+export const NOTIFICATION_EVENTS = ['quote_pending', 'status_update', 'vehicle_ready'] as const;
+export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
+export type NotificationTemplates = Record<NotificationEvent, string>;
+
+/** Marcadores aceitos nos textos: {cliente} {oficina} {veiculo} {placa} {os} {status} {total} {link}. */
+export const NOTIFICATION_PLACEHOLDERS = ['cliente', 'oficina', 'veiculo', 'placa', 'os', 'status', 'total', 'link'] as const;
+
+export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplates = {
+  quote_pending:
+    'Olá, {cliente}! O orçamento do seu {veiculo} ({placa}) está pronto. Total: {total}. Veja os itens e aprove ou recuse por aqui: {link}\n{oficina}',
+  status_update: 'Olá, {cliente}! Novidade na OS {os} do seu {veiculo}: {status}. Acompanhe por aqui: {link}\n{oficina}',
+  vehicle_ready: 'Olá, {cliente}! Seu {veiculo} ({placa}) está pronto para retirada. Detalhes do serviço: {link}\n{oficina}'
+};
+
+export function renderNotification(template: string, values: Partial<Record<(typeof NOTIFICATION_PLACEHOLDERS)[number], string>>): string {
+  return template.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? (values as Record<string, string>)[key] : whole)).trim();
+}
+
+export interface NotificationPreview {
+  event: NotificationEvent;
+  message: string;
+  whatsapp_url: string | null;
+}
+
+export interface NotificationLogEntry {
+  id: string;
+  event: NotificationEvent;
+  channel: 'whatsapp_link' | 'whatsapp_api';
+  recipient: string | null;
+  status: 'sent' | 'failed' | 'skipped';
+  detail: string | null;
+  created_at: string;
 }
 
 const MVP_FLAGS: FeatureFlags = {
@@ -36,6 +77,7 @@ const MVP_FLAGS: FeatureFlags = {
   diagnostics: true,
   portal: true,
   whatsapp: false,
+  schedule: true,
   inventory: false,
   financial: false,
   ai: false
@@ -47,11 +89,11 @@ export const PLAN_DEFAULTS: Record<TenantPlan, { feature_flags: FeatureFlags; li
     limits: { max_users: 5, max_orders_month: 150, max_storage_mb: 1024 }
   },
   pro: {
-    feature_flags: { ...MVP_FLAGS },
+    feature_flags: { ...MVP_FLAGS, whatsapp: true, inventory: true, financial: true },
     limits: { max_users: 15, max_orders_month: 600, max_storage_mb: 5120 }
   },
   enterprise: {
-    feature_flags: { ...MVP_FLAGS },
+    feature_flags: { ...MVP_FLAGS, whatsapp: true, inventory: true, financial: true },
     limits: { max_users: 100, max_orders_month: 5000, max_storage_mb: 51200 }
   }
 };
@@ -323,6 +365,8 @@ export interface OrderItem {
   unit_price: number;
   total: number;
   sort_order: number;
+  /** Item do estoque de onde a peça sai na conclusão da OS (módulo de estoque). */
+  inventory_item_id?: string | null;
 }
 
 export interface StatusHistoryEntry {
@@ -478,6 +522,8 @@ export interface DiagnosticResult {
   suggestions: SymptomSuggestion[];
   total_estimated_minutes: number;
   unknown_symptoms: string[];
+  /** Resumo em linguagem simples gerado pela camada opcional de IA (Fase 4). Nunca substitui as sugestões acima. */
+  ai_note?: string;
 }
 
 // ───────────── portal do cliente ─────────────
@@ -559,4 +605,113 @@ export interface AdminMetrics {
   orders_this_month: number;
   active_users: number;
   growth: Array<{ month: string; tenants: number; orders: number }>;
+}
+
+// ───────────── estoque (Fase 3) ─────────────
+export interface InventoryItem {
+  id: string;
+  sku: string | null;
+  name: string;
+  location: string | null;
+  quantity_on_hand: number;
+  minimum_quantity: number;
+  unit_cost: number;
+  unit_price: number;
+  is_active: boolean;
+  /** quantity_on_hand <= minimum_quantity */
+  low_stock: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export const STOCK_MOVEMENT_TYPES = ['in', 'out', 'adjustment'] as const;
+export type StockMovementType = (typeof STOCK_MOVEMENT_TYPES)[number];
+
+export interface StockMovement {
+  id: string;
+  inventory_item_id: string;
+  type: StockMovementType;
+  /** Entrada e saída: quantidade movimentada. Ajuste: o novo saldo contado. */
+  quantity: number;
+  reason: string | null;
+  service_order_id: string | null;
+  order_number?: number | null;
+  created_by_name?: string | null;
+  created_at: string;
+}
+
+// ───────────── financeiro (Fase 3) ─────────────
+export const FINANCIAL_TYPES = ['receivable', 'payable'] as const;
+export type FinancialType = (typeof FINANCIAL_TYPES)[number];
+
+export interface FinancialEntry {
+  id: string;
+  type: FinancialType;
+  description: string;
+  counterparty: string | null;
+  amount: number;
+  due_date: string | null;
+  paid_at: string | null;
+  notes: string | null;
+  service_order_id: string | null;
+  order_number?: number | null;
+  /** Em aberto e com vencimento anterior a hoje. */
+  overdue: boolean;
+  created_at: string;
+}
+
+export interface FinancialSummary {
+  receivable_open: number;
+  receivable_overdue: number;
+  payable_open: number;
+  payable_overdue: number;
+  received_this_month: number;
+  paid_this_month: number;
+}
+
+// ───────────── agenda (Fase 3) ─────────────
+export const APPOINTMENT_STATUSES = ['scheduled', 'confirmed', 'done', 'cancelled', 'no_show'] as const;
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
+
+export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  scheduled: 'Agendado',
+  confirmed: 'Confirmado',
+  done: 'Atendido',
+  cancelled: 'Cancelado',
+  no_show: 'Não compareceu'
+};
+
+export interface Appointment {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  bay: string | null;
+  mechanic_id: string | null;
+  mechanic_name?: string | null;
+  status: AppointmentStatus;
+  notes: string | null;
+  customer_id: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  vehicle_id: string | null;
+  vehicle_plate?: string | null;
+  vehicle_label?: string | null;
+  service_order_id: string | null;
+  created_at: string;
+}
+
+// ───────────── indicadores (Fase 3) ─────────────
+export interface ReportsOverview {
+  from: string;
+  to: string;
+  orders_completed: number;
+  revenue: number;
+  average_ticket: number;
+  /** Minutos entre o início e a conclusão do serviço, em média. */
+  average_execution_minutes: number | null;
+  quotes: { sent: number; approved: number; rejected: number; conversion_pct: number | null };
+  top_services: Array<{ description: string; type: ItemType; times: number; revenue: number }>;
+  by_mechanic: Array<{ mechanic_name: string; orders: number; revenue: number }>;
+  by_month: Array<{ month: string; orders: number; revenue: number }>;
 }

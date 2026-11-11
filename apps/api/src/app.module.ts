@@ -15,8 +15,13 @@ import { ENV, Env } from './config/env';
 import { DatabaseModule } from './database/database.module';
 import { DatabaseService } from './database/database.service';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
+import { FinancialModule } from './financial/financial.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PortalModule } from './portal/portal.module';
 import { QuotesModule } from './quotes/quotes.module';
+import { ReportsModule } from './reports/reports.module';
+import { ScheduleModule } from './schedule/schedule.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { TriageModule } from './triage/triage.module';
@@ -82,6 +87,11 @@ export class PrivacyController {
     QuotesModule,
     PortalModule,
     DashboardModule,
+    InventoryModule,
+    FinancialModule,
+    ScheduleModule,
+    ReportsModule,
+    NotificationsModule,
     AdminModule
   ],
   controllers: [HealthController, PrivacyController],

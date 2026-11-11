@@ -2,6 +2,9 @@ import { Body, Controller, Delete, Get, HttpCode, Module, Param, ParseUUIDPipe, 
 import type { TenantContext } from '../common/context';
 import { Ctx, RequireFeature, Roles, STAFF_WRITE } from '../common/decorators';
 import { DiagnosticsModule } from '../diagnostics/diagnostics.module';
+import { FinancialModule } from '../financial/financial.module';
+import { InventoryModule } from '../inventory/inventory.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { OrderWorkflowService } from './order-workflow.service';
 import { BoardQuery, ChangeStatusDto, CreateOrderDto, ItemDto, NoteDto, OrderListQuery, UpdateItemDto, UpdateOrderDto } from './service-orders.dto';
 import { ServiceOrdersService } from './service-orders.service';
@@ -71,7 +74,7 @@ export class ServiceOrdersController {
 }
 
 @Module({
-  imports: [DiagnosticsModule],
+  imports: [DiagnosticsModule, InventoryModule, FinancialModule, NotificationsModule],
   controllers: [ServiceOrdersController],
   providers: [ServiceOrdersService, OrderWorkflowService],
   exports: [ServiceOrdersService, OrderWorkflowService]

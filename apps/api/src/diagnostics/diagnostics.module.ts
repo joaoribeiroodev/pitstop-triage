@@ -5,7 +5,8 @@ import type { TenantContext } from '../common/context';
 import { Ctx, RequireFeature } from '../common/decorators';
 import { rls } from '../common/rls';
 import { DatabaseService, Db } from '../database/database.service';
-import { DIAGNOSTIC_ENHANCER, DiagnosticEnhancer, enhanceSafely, NoOpEnhancer } from './enhancer';
+import { AiEnhancer } from './ai-enhancer';
+import { DIAGNOSTIC_ENHANCER, DiagnosticEnhancer, enhanceSafely } from './enhancer';
 import { CatalogSymptom, computeSuggestions, ShopPartRow, ShopServiceRow, ShopStatRow } from './engine';
 
 export class SuggestQuery {
@@ -100,7 +101,7 @@ export class DiagnosticsController {
 
 @Module({
   controllers: [DiagnosticsController],
-  providers: [DiagnosticsService, { provide: DIAGNOSTIC_ENHANCER, useClass: NoOpEnhancer }],
+  providers: [DiagnosticsService, { provide: DIAGNOSTIC_ENHANCER, useClass: AiEnhancer }],
   exports: [DiagnosticsService]
 })
 export class DiagnosticsModule {}

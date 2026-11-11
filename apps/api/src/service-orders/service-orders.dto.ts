@@ -100,6 +100,11 @@ export class ItemDto {
   @Min(0)
   @Max(10_000)
   sort_order?: number;
+
+  /** Item do estoque que esta peça consome (baixa automática na conclusão da OS). */
+  @IsOptional()
+  @IsUUID()
+  inventory_item_id?: string | null;
 }
 
 export class UpdateItemDto {
@@ -130,6 +135,11 @@ export class UpdateItemDto {
   @Min(0)
   @Max(10_000)
   sort_order?: number;
+
+  /** Item do estoque que esta peça consome (baixa automática na conclusão da OS). */
+  @IsOptional()
+  @IsUUID()
+  inventory_item_id?: string | null;
 }
 
 export class ChangeStatusDto {

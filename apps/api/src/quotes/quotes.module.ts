@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import type { TenantContext } from '../common/context';
 import { Ctx, RequireFeature, Roles, STAFF_WRITE } from '../common/decorators';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ItemDto } from '../service-orders/service-orders.dto';
 import { ServiceOrdersModule } from '../service-orders/service-orders.module';
 import { AccessTokenService } from './access-token.service';
@@ -90,7 +91,7 @@ export class QuotesController {
 }
 
 @Module({
-  imports: [ServiceOrdersModule],
+  imports: [ServiceOrdersModule, NotificationsModule],
   controllers: [QuotesController],
   providers: [QuotesService, AccessTokenService],
   exports: [QuotesService, AccessTokenService]

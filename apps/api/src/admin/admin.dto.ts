@@ -26,6 +26,7 @@ export class FeatureFlagsDto {
   @IsOptional() @IsBoolean() diagnostics?: boolean;
   @IsOptional() @IsBoolean() portal?: boolean;
   @IsOptional() @IsBoolean() whatsapp?: boolean;
+  @IsOptional() @IsBoolean() schedule?: boolean;
   @IsOptional() @IsBoolean() inventory?: boolean;
   @IsOptional() @IsBoolean() financial?: boolean;
   @IsOptional() @IsBoolean() ai?: boolean;
