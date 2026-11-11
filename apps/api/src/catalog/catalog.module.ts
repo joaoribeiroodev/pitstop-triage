@@ -7,64 +7,102 @@ import { blankToNull, buildUpdate, rls } from '../common/rls';
 import { DatabaseService } from '../database/database.service';
 
 export class ShopServiceDto {
-  @IsString() @MinLength(2) @MaxLength(160)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
   name: string;
 
-  @IsOptional() @IsString() @MaxLength(1000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
   description?: string;
 
-  @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(9_999_999)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(9_999_999)
   default_price: number;
 
-  @IsOptional() @IsInt() @Min(0) @Max(100_000)
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100_000)
   duration_minutes?: number;
 
-  @IsOptional() @IsBoolean()
+  @IsOptional()
+  @IsBoolean()
   is_active?: boolean;
 }
 
 export class UpdateShopServiceDto {
-  @IsOptional() @IsString() @MinLength(2) @MaxLength(160)
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
   name?: string;
 
-  @IsOptional() @IsString() @MaxLength(1000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
   description?: string;
 
-  @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(9_999_999)
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(9_999_999)
   default_price?: number;
 
-  @IsOptional() @IsInt() @Min(0) @Max(100_000)
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100_000)
   duration_minutes?: number;
 
-  @IsOptional() @IsBoolean()
+  @IsOptional()
+  @IsBoolean()
   is_active?: boolean;
 }
 
 export class ShopPartDto {
-  @IsString() @MinLength(2) @MaxLength(160)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
   name: string;
 
-  @IsOptional() @IsString() @MaxLength(60)
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
   sku?: string;
 
-  @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(9_999_999)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(9_999_999)
   default_price: number;
 
-  @IsOptional() @IsBoolean()
+  @IsOptional()
+  @IsBoolean()
   is_active?: boolean;
 }
 
 export class UpdateShopPartDto {
-  @IsOptional() @IsString() @MinLength(2) @MaxLength(160)
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
   name?: string;
 
-  @IsOptional() @IsString() @MaxLength(60)
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
   sku?: string;
 
-  @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(9_999_999)
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(9_999_999)
   default_price?: number;
 
-  @IsOptional() @IsBoolean()
+  @IsOptional()
+  @IsBoolean()
   is_active?: boolean;
 }
 

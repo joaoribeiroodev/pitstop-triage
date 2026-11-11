@@ -14,7 +14,8 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
 
   async function newOrder(symptoms = [{ symptom_code: 'brake_grinding', answers: {} }]) {
     const { customer, vehicle } = await h.createCustomerWithVehicle(reception.token, nextPlate());
-    const order = await h.api('post', '/service-orders', reception.token)
+    const order = await h
+      .api('post', '/service-orders', reception.token)
       .send({ customer_id: customer.id, vehicle_id: vehicle.id, reported_symptoms: symptoms })
       .expect(201);
     return order.body as { id: string; order_number: number };
@@ -24,7 +25,8 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
   async function orderAwaitingApproval() {
     const order = await newOrder();
     await status(order.id, 'diagnosis').expect(200);
-    await h.api('post', `/service-orders/${order.id}/items`, shop.ownerToken)
+    await h
+      .api('post', `/service-orders/${order.id}/items`, shop.ownerToken)
       .send({ type: 'service', description: 'Troca de pastilhas', quantity: 1, unit_price: 200 })
       .expect(201);
     const quote = await h.api('post', `/service-orders/${order.id}/quotes`, reception.token).expect(201);
@@ -75,7 +77,8 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
 
     it('trava os itens depois que o orçamento é enviado', async () => {
       const { order } = await orderAwaitingApproval();
-      await h.api('post', `/service-orders/${order.id}/items`, shop.ownerToken)
+      await h
+        .api('post', `/service-orders/${order.id}/items`, shop.ownerToken)
         .send({ type: 'part', description: 'Item fora do orçamento', quantity: 1, unit_price: 999 })
         .expect(409);
     });
@@ -84,11 +87,16 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
       const { order, quoteId, token } = await orderAwaitingApproval();
       const rejected = await h.api('post', `/portal/${token}/quotes/${quoteId}/reject`).send({ reason: 'Achei caro' }).expect(200);
       expect(rejected.body.order.status).toBe('rejected');
-      expect((await h.api('get', `/quotes/${quoteId}`, reception.token)).body).toMatchObject({ status: 'rejected', response_notes: 'Achei caro', responded_via: 'portal' });
+      expect((await h.api('get', `/quotes/${quoteId}`, reception.token)).body).toMatchObject({
+        status: 'rejected',
+        response_notes: 'Achei caro',
+        responded_via: 'portal'
+      });
 
       const second = await h.api('post', `/service-orders/${order.id}/quotes`, reception.token).expect(201);
       expect(second.body.version).toBe(2);
-      await h.api('put', `/quotes/${second.body.id}/items`, reception.token)
+      await h
+        .api('put', `/quotes/${second.body.id}/items`, reception.token)
         .send({ items: [{ type: 'service', description: 'Troca de pastilhas (desconto)', quantity: 1, unit_price: 160 }] })
         .expect(200);
       const resent = await h.api('post', `/quotes/${second.body.id}/send`, reception.token).expect(200);
@@ -103,7 +111,13 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
       const final = await h.api('get', `/service-orders/${order.id}`, shop.ownerToken).expect(200);
       expect(final.body.items.map((item: { description: string }) => item.description)).toEqual(['Troca de pastilhas (desconto)']);
       expect(final.body.history.map((entry: { to_status: string }) => entry.to_status)).toEqual([
-        'draft', 'diagnosis', 'awaiting_approval', 'rejected', 'diagnosis', 'awaiting_approval', 'approved'
+        'draft',
+        'diagnosis',
+        'awaiting_approval',
+        'rejected',
+        'diagnosis',
+        'awaiting_approval',
+        'approved'
       ]);
     });
 
@@ -141,9 +155,7 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
       const { customer, vehicle } = await h.createCustomerWithVehicle(reception.token, nextPlate());
       const before = (await h.api('get', '/service-orders?pageSize=1', shop.ownerToken)).body.total;
       const created = await Promise.all(
-        Array.from({ length: 8 }, () =>
-          h.api('post', '/service-orders', reception.token).send({ customer_id: customer.id, vehicle_id: vehicle.id })
-        )
+        Array.from({ length: 8 }, () => h.api('post', '/service-orders', reception.token).send({ customer_id: customer.id, vehicle_id: vehicle.id }))
       );
       expect(created.map((response) => response.status)).toEqual(Array(8).fill(201));
       const numbers = created.map((response) => response.body.order_number).sort((x, y) => x - y);
@@ -194,7 +206,8 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
 
     it('a resposta do portal nunca contém dados internos', async () => {
       const { order, token } = await orderAwaitingApproval();
-      await h.api('patch', `/service-orders/${order.id}`, shop.ownerToken)
+      await h
+        .api('patch', `/service-orders/${order.id}`, shop.ownerToken)
         .send({ mechanic_diagnosis: 'SEGREDO-DIAGNOSTICO', confirmed_causes: [{ symptom_code: 'brake_grinding', cause_description: 'SEGREDO-CAUSA' }] })
         .expect(200);
       await h.api('post', `/service-orders/${order.id}/notes`, shop.ownerToken).send({ body: 'SEGREDO-NOTA-INTERNA' }).expect(201);
@@ -203,12 +216,31 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
       const order2 = await h.api('get', `/portal/${token}/order`).expect(200);
       const history = await h.api('get', `/portal/${token}/history`).expect(200);
       const raw = JSON.stringify([order2.body, history.body]);
-      for (const leak of ['SEGREDO', 'mechanic_diagnosis', 'mechanic_suggestions_snapshot', 'confirmed_causes', 'final_score', 'tenant_id', 'customer_id', 'changed_by', 'unit_cost']) {
+      for (const leak of [
+        'SEGREDO',
+        'mechanic_diagnosis',
+        'mechanic_suggestions_snapshot',
+        'confirmed_causes',
+        'final_score',
+        'tenant_id',
+        'customer_id',
+        'changed_by',
+        'unit_cost'
+      ]) {
         expect(raw).not.toContain(leak);
       }
       expect(order2.body.shop_messages).toEqual([expect.objectContaining({ body: 'Peça chega amanhã.' })]);
       expect(Object.keys(order2.body).sort()).toEqual([
-        'consent_required', 'customer_notes', 'order', 'privacy_policy_version', 'quote', 'reported_symptoms', 'shop', 'shop_messages', 'timeline', 'vehicle'
+        'consent_required',
+        'customer_notes',
+        'order',
+        'privacy_policy_version',
+        'quote',
+        'reported_symptoms',
+        'shop',
+        'shop_messages',
+        'timeline',
+        'vehicle'
       ]);
     });
 
@@ -221,7 +253,9 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
 
     it('registra o consentimento LGPD uma única vez, com versão da política', async () => {
       const { order } = await orderAwaitingApproval();
-      const log = await h.db.admin((db) => db.many<{ policy_version: string }>('select policy_version from public.customer_consent_log where service_order_id = $1', [order.id]));
+      const log = await h.db.admin((db) =>
+        db.many<{ policy_version: string }>('select policy_version from public.customer_consent_log where service_order_id = $1', [order.id])
+      );
       expect(log).toEqual([{ policy_version: '2026-11' }]);
     });
   });
@@ -230,15 +264,20 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
     it('cliente preenche pelo link; a oficina vincula e converte em OS', async () => {
       const intro = await h.api('get', `/triage/public/${shop.slug}`).expect(200);
       expect(intro.body.catalog).toHaveLength(6);
-      await h.api('post', `/triage/public/${shop.slug}/sessions`)
+      await h
+        .api('post', `/triage/public/${shop.slug}/sessions`)
         .send({
           contact: { name: 'Joana Prado', phone: '(71) 97777-1234', plate: 'jkl-4m56', vehicle: 'Fiat Argo 2021' },
           reported_symptoms: [{ symptom_code: 'cooling_overheating', answers: { when: 'No trânsito parado' } }],
           free_form_notes: 'A luz vermelha acendeu ontem.'
         })
         .expect(201);
-      await h.api('post', `/triage/public/${shop.slug}/sessions`).send({ contact: { name: 'X', phone: '1' }, reported_symptoms: [] }).expect(400);
-      await h.api('post', '/triage/public/oficina-que-nao-existe/sessions')
+      await h
+        .api('post', `/triage/public/${shop.slug}/sessions`)
+        .send({ contact: { name: 'X', phone: '1' }, reported_symptoms: [] })
+        .expect(400);
+      await h
+        .api('post', '/triage/public/oficina-que-nao-existe/sessions')
         .send({ contact: { name: 'Joana', phone: '71977771234' }, reported_symptoms: [{ symptom_code: 'cooling_overheating' }] })
         .expect(404);
 
@@ -275,7 +314,10 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
       await h.api('post', '/customers', reception.token).send({ name: 'Válido', tenant_id: shop.id }).expect(400);
       await h.api('post', '/vehicles', reception.token).send({ customer_id: 'nao-e-uuid', plate: 'ABC1234' }).expect(400);
       await h.api('get', '/customers/nao-e-uuid', reception.token).expect(400);
-      await h.api('post', '/triage/sessions', reception.token).send({ reported_symptoms: [{ symptom_code: 'sintoma_inventado' }] }).expect(400);
+      await h
+        .api('post', '/triage/sessions', reception.token)
+        .send({ reported_symptoms: [{ symptom_code: 'sintoma_inventado' }] })
+        .expect(400);
     });
 
     it('mecânico não cadastra clientes nem gerencia usuários; recepção não gerencia usuários', async () => {
@@ -338,9 +380,13 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
   describe('planos, limites e feature flags', () => {
     it('respeita o limite de usuários e de OS por mês do plano', async () => {
       const small = await h.createTenant();
-      await h.api('patch', `/admin/tenants/${small.id}`, h.adminToken).send({ limits: { max_users: 2, max_orders_month: 1 } }).expect(200);
+      await h
+        .api('patch', `/admin/tenants/${small.id}`, h.adminToken)
+        .send({ limits: { max_users: 2, max_orders_month: 1 } })
+        .expect(200);
       await h.createUser(small, 'mechanic');
-      const over = await h.api('post', '/users', small.ownerToken)
+      const over = await h
+        .api('post', '/users', small.ownerToken)
         .send({ email: `${unique('x')}@oficina.test`, full_name: 'Excedente', role: 'mechanic', password: 'senha-forte-123' })
         .expect(403);
       expect(over.body.code).toBe('LIMIT_REACHED');
@@ -353,7 +399,8 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
 
     it('módulo desligado por feature flag some para o tenant — e a OS segue funcionando sem o motor', async () => {
       const bare = await h.createTenant();
-      await h.api('patch', `/admin/tenants/${bare.id}`, h.adminToken)
+      await h
+        .api('patch', `/admin/tenants/${bare.id}`, h.adminToken)
         .send({ feature_flags: { diagnostics: false, triage: false, portal: false } })
         .expect(200);
       for (const path of ['/triage/catalog', '/diagnostics/suggest/brake_grinding']) {
@@ -363,12 +410,14 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
       await h.api('get', `/triage/public/${bare.slug}`).expect(403);
 
       const { customer, vehicle } = await h.createCustomerWithVehicle(bare.ownerToken, 'FLG0F01');
-      const order = await h.api('post', '/service-orders', bare.ownerToken)
+      const order = await h
+        .api('post', '/service-orders', bare.ownerToken)
         .send({ customer_id: customer.id, vehicle_id: vehicle.id, reported_symptoms: [{ symptom_code: 'brake_grinding' }] })
         .expect(201);
       const started = await status(order.body.id, 'diagnosis', bare.ownerToken).expect(200);
       expect(started.body.mechanic_suggestions_snapshot).toBeNull();
-      await h.api('post', `/service-orders/${order.body.id}/items`, bare.ownerToken)
+      await h
+        .api('post', `/service-orders/${order.body.id}/items`, bare.ownerToken)
         .send({ type: 'service', description: 'Serviço manual', quantity: 1, unit_price: 80 })
         .expect(201);
       const quote = await h.api('post', `/service-orders/${order.body.id}/quotes`, bare.ownerToken).expect(201);
@@ -381,7 +430,10 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
     it('licença vencida bloqueia o tenant; renovar a validade libera', async () => {
       const lapsed = await h.createTenant({ expires_at: new Date(Date.now() + 86_400_000).toISOString() });
       await h.api('get', '/customers', lapsed.ownerToken).expect(200);
-      await h.api('patch', `/admin/tenants/${lapsed.id}`, h.adminToken).send({ expires_at: new Date(Date.now() - 1000).toISOString() }).expect(200);
+      await h
+        .api('patch', `/admin/tenants/${lapsed.id}`, h.adminToken)
+        .send({ expires_at: new Date(Date.now() - 1000).toISOString() })
+        .expect(200);
       const denied = await h.api('get', '/customers', lapsed.ownerToken).expect(403);
       expect(denied.body.code).toBe('TENANT_EXPIRED');
       await h.api('patch', `/admin/tenants/${lapsed.id}`, h.adminToken).send({ expires_at: null }).expect(200);
@@ -433,7 +485,8 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
       expect(detail.body).toMatchObject({ users_count: 1, orders_this_month: 0, expiring_soon: false });
       expect(detail.body.users[0]).toMatchObject({ role: 'owner', email: created.ownerEmail });
 
-      await h.api('post', '/admin/tenants', h.adminToken)
+      await h
+        .api('post', '/admin/tenants', h.adminToken)
         .send({ name: 'Duplicada', slug: created.slug, plan: 'basic', owner_email: `${unique('d')}@oficina.test`, owner_name: 'Outra' })
         .expect(409);
       const audit = await h.api('get', `/admin/audit?tenant_id=${created.id}`, h.adminToken).expect(200);
@@ -443,7 +496,8 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
     it('impersonation gera acesso temporário de owner e fica registrada com o motivo', async () => {
       const target = await h.createTenant();
       await h.api('post', `/admin/tenants/${target.id}/impersonate`, h.adminToken).send({ reason: 'x' }).expect(400);
-      const session = await h.api('post', `/admin/tenants/${target.id}/impersonate`, h.adminToken)
+      const session = await h
+        .api('post', `/admin/tenants/${target.id}/impersonate`, h.adminToken)
         .send({ reason: 'Chamado #482: cliente não consegue enviar orçamento' })
         .expect(200);
       expect(session.body.expires_in).toBe(900);

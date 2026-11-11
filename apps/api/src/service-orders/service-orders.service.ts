@@ -192,8 +192,15 @@ export class ServiceOrdersService {
           reported_symptoms, free_form_notes, created_by)
        values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
       [
-        ctx.tenantId, usage.next_number, input.customer_id, input.vehicle_id, input.triage_session_id,
-        input.assigned_mechanic_id, JSON.stringify(input.reported_symptoms), input.free_form_notes, ctx.userId
+        ctx.tenantId,
+        usage.next_number,
+        input.customer_id,
+        input.vehicle_id,
+        input.triage_session_id,
+        input.assigned_mechanic_id,
+        JSON.stringify(input.reported_symptoms),
+        input.free_form_notes,
+        ctx.userId
       ]
     );
     await this.workflow.recordHistory(db, ctx.tenantId, order.id, null, 'draft', actorOf(ctx), 'OS aberta');
@@ -302,10 +309,11 @@ export class ServiceOrdersService {
         3
       );
       if (sets.length) {
-        const updated = await db.exec(
-          `update public.service_order_items set ${sets.join(', ')} where id = $1 and service_order_id = $2`,
-          [itemId, orderId, ...values]
-        );
+        const updated = await db.exec(`update public.service_order_items set ${sets.join(', ')} where id = $1 and service_order_id = $2`, [
+          itemId,
+          orderId,
+          ...values
+        ]);
         if (!updated) throw new NotFoundException('Item não encontrado.');
       }
       await this.workflow.recalculateTotal(db, orderId);
@@ -364,10 +372,10 @@ export class ServiceOrdersService {
         [id]
       );
       const snapshot = await this.diagnostics.compute(db, order.reported_symptoms, order.brand);
-      await db.exec(
-        `update public.service_orders set mechanic_suggestions_snapshot = $2, suggestions_computed_at = now() where id = $1`,
-        [id, JSON.stringify(snapshot)]
-      );
+      await db.exec(`update public.service_orders set mechanic_suggestions_snapshot = $2, suggestions_computed_at = now() where id = $1`, [
+        id,
+        JSON.stringify(snapshot)
+      ]);
       return this.load(db, ctx, id);
     });
   }

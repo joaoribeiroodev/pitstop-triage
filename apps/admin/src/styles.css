@@ -1,0 +1,23 @@
+/* Painel Super Admin: mesma base visual, com a barra superior escura para nunca ser confundido com o app da oficina. */
+.admin-bar { background: var(--ink); color: #fff; display: flex; gap: 0.25rem; align-items: center; padding: 0.5rem 1rem; flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
+.admin-bar .brand { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-right: 1rem; }
+.admin-bar .brand small { color: var(--tape); font-family: var(--font-body); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin-left: 0.4rem; }
+.admin-bar a { color: #dfe6ee; text-decoration: none; padding: 0.5rem 0.8rem; border-radius: var(--radius); font-weight: 600; min-height: var(--tap); display: inline-flex; align-items: center; }
+.admin-bar a:hover { background: #24313f; }
+.admin-bar a.active { background: var(--coverall); color: #fff; }
+.admin-bar .who { margin-left: auto; display: flex; gap: 0.75rem; align-items: center; font-size: 0.9rem; color: #b8c4d0; }
+.admin-bar button { background: transparent; color: #dfe6ee; border-color: #46566a; }
+
+.kpis { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+.kpi { display: grid; gap: 0.1rem; }
+.kpi strong { font-family: var(--font-display); font-size: 2.6rem; line-height: 1; }
+
+.flags { display: grid; gap: 0.25rem 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
+.danger-zone { border-color: var(--stop); }
+.row-warn td:first-child { box-shadow: inset 4px 0 0 var(--tape); }
+
+.bars { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.75rem; align-items: end; height: 12rem; }
+.bars > div { display: grid; grid-template-rows: 1fr auto auto; height: 100%; text-align: center; gap: 0.25rem; }
+.bars .track { display: flex; align-items: end; justify-content: center; }
+.bars .bar { width: min(100%, 3.5rem); background: var(--coverall); border-radius: var(--radius) var(--radius) 0 0; min-height: 2px; }
+pre.payload { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8rem; color: var(--ink-soft); max-width: 34rem; }

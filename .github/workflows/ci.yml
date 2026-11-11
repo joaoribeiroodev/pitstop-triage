@@ -2,9 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, develop]
   pull_request:
-    branches: [main, master]
 
 permissions:
   contents: read
@@ -13,47 +12,112 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
   quality:
-    name: Quality gate
+    name: Lint, formato e tipos
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: ESLint
-        run: npm run lint
-
-      - name: Prettier
-        run: npm run format:check
-
-      - name: Typecheck API
-        run: npm run typecheck:api
-
-      - name: Build application
-        run: npm run build
-
-      - name: Upload production build
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+  api:
+    name: Backend (unitários, integração e RLS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          name: pitstop-triage-dist
-          path: dist/pitstop-triage/browser
-          retention-days: 7
-          if-no-files-found: error
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  web:
+    name: Frontends (testes e build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:web
+      - run: npm run build:web
+      - run: npm run build:admin
+
+  e2e:
+    name: Aceite do MVP (E2E)
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pitstop_dev
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:54329/pitstop_dev
+      DATABASE_SSL: 'false'
+      AUTH_PROVIDER: local
+      APP_JWT_SECRET: ci-only-secret-ci-only-secret-ci-only-secret
+      THROTTLE_DISABLED: 'true'
+      LOG_LEVEL: warn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run db:migrate && npm run seed:dev
+      - name: Sobe API, app da oficina e painel admin
+        run: |
+          npm run dev:api > api.log 2>&1 &
+          npm run dev:web > web.log 2>&1 &
+          npm run dev:admin > admin.log 2>&1 &
+          npx --yes wait-on@8 -t 180s http-get://127.0.0.1:3000/api/v1/health http-get://127.0.0.1:4200 http-get://127.0.0.1:4300
+      - run: npm run test:e2e
+      - if: failure()
+        run: tail -n 80 api.log web.log admin.log
+
+  docker:
+    name: Imagem do backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f apps/api/Dockerfile -t pitstop-api .

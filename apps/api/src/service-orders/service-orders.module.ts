@@ -42,12 +42,7 @@ export class ServiceOrdersController {
   }
 
   @Patch(':id/items/:itemId')
-  updateItem(
-    @Ctx() ctx: TenantContext,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('itemId', ParseUUIDPipe) itemId: string,
-    @Body() dto: UpdateItemDto
-  ) {
+  updateItem(@Ctx() ctx: TenantContext, @Param('id', ParseUUIDPipe) id: string, @Param('itemId', ParseUUIDPipe) itemId: string, @Body() dto: UpdateItemDto) {
     return this.orders.updateItem(ctx, id, itemId, dto);
   }
 

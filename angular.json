@@ -1,0 +1,144 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "analytics": false
+  },
+  "newProjectRoot": "apps",
+  "projects": {
+    "web": {
+      "projectType": "application",
+      "root": "apps/web",
+      "sourceRoot": "apps/web/src",
+      "prefix": "ps",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/web",
+            "index": "apps/web/src/index.html",
+            "browser": "apps/web/src/main.ts",
+            "polyfills": [],
+            "tsConfig": "apps/web/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/web/public"
+              }
+            ],
+            "styles": ["libs/front/styles.css", "apps/web/src/styles.css"]
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "serviceWorker": "apps/web/ngsw-config.json",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "600kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kB",
+                  "maximumError": "12kB"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "web:build:production"
+            },
+            "development": {
+              "buildTarget": "web:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": [],
+            "tsConfig": "apps/web/tsconfig.spec.json",
+            "karmaConfig": "karma.conf.cjs",
+            "include": ["apps/web/src/**/*.spec.ts"]
+          }
+        }
+      }
+    },
+    "admin": {
+      "projectType": "application",
+      "root": "apps/admin",
+      "sourceRoot": "apps/admin/src",
+      "prefix": "pa",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/admin",
+            "index": "apps/admin/src/index.html",
+            "browser": "apps/admin/src/main.ts",
+            "polyfills": [],
+            "tsConfig": "apps/admin/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/admin/public"
+              }
+            ],
+            "styles": ["libs/front/styles.css", "apps/admin/src/styles.css"]
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "admin:build:production"
+            },
+            "development": {
+              "buildTarget": "admin:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": [],
+            "tsConfig": "apps/admin/tsconfig.spec.json",
+            "karmaConfig": "karma.conf.cjs",
+            "include": ["apps/admin/src/**/*.spec.ts"]
+          }
+        }
+      }
+    }
+  }
+}

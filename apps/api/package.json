@@ -5,10 +5,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
-    "start:dev": "tsx watch src/main.ts",
-    "db:migrate": "tsx scripts/migrate.ts",
-    "db:reset": "tsx scripts/migrate.ts --reset",
-    "seed:dev": "tsx scripts/seed-dev.ts",
+    "start:dev": "node --watch -r ts-node/register/transpile-only src/main.ts",
+    "db:migrate": "ts-node --transpile-only scripts/migrate.ts",
+    "db:reset": "ts-node --transpile-only scripts/migrate.ts --reset",
+    "seed:dev": "ts-node --transpile-only scripts/seed-dev.ts",
     "test": "jest --runInBand",
     "test:unit": "jest --selectProjects unit",
     "test:int": "jest --runInBand --selectProjects integration",
@@ -41,6 +41,6 @@
     "jest": "^29.7.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
-    "tsx": "4.22.4"
+    "ts-node": "^10.9.2"
   }
 }

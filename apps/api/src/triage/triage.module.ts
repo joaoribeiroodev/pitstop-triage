@@ -30,10 +30,12 @@ import { ServiceOrdersService } from '../service-orders/service-orders.service';
 import { normalizePlate } from '../vehicles/vehicles.module';
 
 export class TriageDto {
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   customer_id?: string;
 
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   vehicle_id?: string;
 
   @IsArray()
@@ -43,15 +45,19 @@ export class TriageDto {
   @Type(() => ReportedSymptomDto)
   reported_symptoms: ReportedSymptomDto[];
 
-  @IsOptional() @IsString() @MaxLength(4000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
   free_form_notes?: string;
 }
 
 export class UpdateTriageDto {
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   customer_id?: string;
 
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   vehicle_id?: string;
 
   @IsOptional()
@@ -62,12 +68,16 @@ export class UpdateTriageDto {
   @Type(() => ReportedSymptomDto)
   reported_symptoms?: ReportedSymptomDto[];
 
-  @IsOptional() @IsString() @MaxLength(4000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
   free_form_notes?: string;
 }
 
 export class PublicContactDto {
-  @IsString() @MinLength(2) @MaxLength(160)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
   name: string;
 
   @Transform(({ value }) => onlyDigits(String(value ?? '')) ?? '')
@@ -76,10 +86,13 @@ export class PublicContactDto {
 
   @IsOptional()
   @Transform(({ value }) => (value ? normalizePlate(value) : undefined))
-  @IsString() @MaxLength(8)
+  @IsString()
+  @MaxLength(8)
   plate?: string;
 
-  @IsOptional() @IsString() @MaxLength(120)
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
   vehicle?: string;
 }
 
@@ -95,12 +108,15 @@ export class PublicTriageDto {
   @Type(() => ReportedSymptomDto)
   reported_symptoms: ReportedSymptomDto[];
 
-  @IsOptional() @IsString() @MaxLength(2000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   free_form_notes?: string;
 }
 
 export class TriageListQuery extends PaginationQuery {
-  @IsOptional() @IsIn(TRIAGE_STATUSES)
+  @IsOptional()
+  @IsIn(TRIAGE_STATUSES)
   status?: TriageStatus;
 }
 
@@ -146,10 +162,7 @@ export class TriageService {
     const params = query.status ? [query.status] : [];
     return this.db.tenant(rls(ctx), async (db) => {
       const { total } = await db.one<{ total: number }>(`select count(*)::int as total from public.triage_sessions t ${where}`, params);
-      const rows = await db.many<TriageSession>(
-        `${SELECT} ${where} order by t.created_at desc limit ${query.pageSize} offset ${offsetOf(query)}`,
-        params
-      );
+      const rows = await db.many<TriageSession>(`${SELECT} ${where} order by t.created_at desc limit ${query.pageSize} offset ${offsetOf(query)}`, params);
       return paginated(rows, total, query);
     });
   }
@@ -246,8 +259,7 @@ export class TriageService {
   // ───────────── triagem pública (link enviado ao cliente) ─────────────
   private async publicTenant(db: Db, slug: string): Promise<Tenant> {
     const tenant = await db.maybeOne<Tenant>('select * from public.tenants where slug = $1', [slug.toLowerCase()]);
-    const usable =
-      tenant && tenant.status === 'active' && (tenant.expires_at === null || new Date(tenant.expires_at) > new Date());
+    const usable = tenant && tenant.status === 'active' && (tenant.expires_at === null || new Date(tenant.expires_at) > new Date());
     if (!tenant || !usable) throw new NotFoundException('Oficina não encontrada.');
     const flags = resolveFeatureFlags(tenant.plan, tenant.feature_flags);
     if (!flags.triage || !flags.public_triage) throw new ForbiddenException('Esta oficina não recebe triagens online.');

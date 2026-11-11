@@ -28,9 +28,7 @@ export class LocalAuthProvider implements AuthProvider {
   ) {}
 
   async signIn(email: string, password: string): Promise<SessionTokens> {
-    const user = await this.db.admin((db) =>
-      db.maybeOne<LocalUser>('select * from auth.users where email = $1', [email.toLowerCase()])
-    );
+    const user = await this.db.admin((db) => db.maybeOne<LocalUser>('select * from auth.users where email = $1', [email.toLowerCase()]));
     if (!user?.encrypted_password || !verifyPassword(password, user.encrypted_password)) {
       throw new UnauthorizedException('E-mail ou senha inválidos.');
     }
@@ -40,9 +38,7 @@ export class LocalAuthProvider implements AuthProvider {
   async refresh(refreshToken: string): Promise<SessionTokens> {
     const payload = await this.tokens.verifyAppToken(refreshToken, 'refresh').catch(() => null);
     if (!payload?.sub) throw new UnauthorizedException('Sessão expirada. Faça login novamente.');
-    const user = await this.db.admin((db) =>
-      db.maybeOne<LocalUser>('select * from auth.users where id = $1', [payload.sub])
-    );
+    const user = await this.db.admin((db) => db.maybeOne<LocalUser>('select * from auth.users where id = $1', [payload.sub]));
     if (!user) throw new UnauthorizedException('Sessão expirada. Faça login novamente.');
     return this.issue(user);
   }
@@ -67,19 +63,13 @@ export class LocalAuthProvider implements AuthProvider {
 
   async updateAppMetadata(userId: string, appMetadata: AppMetadata): Promise<void> {
     await this.db.admin((db) =>
-      db.exec('update auth.users set raw_app_meta_data = $2, updated_at = now() where id = $1', [
-        userId,
-        JSON.stringify(appMetadata)
-      ])
+      db.exec('update auth.users set raw_app_meta_data = $2, updated_at = now() where id = $1', [userId, JSON.stringify(appMetadata)])
     );
   }
 
   async setPassword(userId: string, password: string): Promise<void> {
     const updated = await this.db.admin((db) =>
-      db.exec('update auth.users set encrypted_password = $2, updated_at = now() where id = $1', [
-        userId,
-        hashPassword(password)
-      ])
+      db.exec('update auth.users set encrypted_password = $2, updated_at = now() where id = $1', [userId, hashPassword(password)])
     );
     if (!updated) throw new ConflictException('Usuário não encontrado no provedor local.');
   }

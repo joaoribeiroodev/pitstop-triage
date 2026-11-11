@@ -74,7 +74,12 @@ describe('motor determinístico — cálculo do score', () => {
     const result = computeSuggestions(input());
     expect(result.suggestions[0].stats_scope).toBe('none');
     expect(causesOf(result)[0]).toMatchObject({
-      description: 'Pastilhas desgastadas', global_score: 0.4, shop_score: 0, final_score: 0.4, origin: 'global', shop_occurrences: 0
+      description: 'Pastilhas desgastadas',
+      global_score: 0.4,
+      shop_score: 0,
+      final_score: 0.4,
+      origin: 'global',
+      shop_occurrences: 0
     });
   });
 
@@ -102,12 +107,20 @@ describe('motor determinístico — cálculo do score', () => {
 
   it('desempata por ordem alfabética da descrição', () => {
     const result = computeSuggestions(input());
-    const tied = causesOf(result).filter((cause) => cause.final_score === 0.2).map((cause) => cause.description);
+    const tied = causesOf(result)
+      .filter((cause) => cause.final_score === 0.2)
+      .map((cause) => cause.description);
     expect(tied).toEqual(['Disco com sulcos', 'Guias sem lubrificação']);
   });
 
   it('o score final fica sempre entre 0 e 1, mesmo com peso de catálogo fora da faixa', () => {
-    const wild = { ...BRAKE, probable_causes: [{ name: 'X', weight: 7 }, { name: 'Y', weight: -3 }] };
+    const wild = {
+      ...BRAKE,
+      probable_causes: [
+        { name: 'X', weight: 7 },
+        { name: 'Y', weight: -3 }
+      ]
+    };
     const result = computeSuggestions(input({ catalog: [wild], stats: [stat('X', 10)] }));
     for (const cause of causesOf(result)) {
       expect(cause.final_score).toBeGreaterThanOrEqual(0);
@@ -158,14 +171,27 @@ describe('motor determinístico — enriquecimento e saída', () => {
 
   it('soma o tempo estimado e mantém a ordem dos sintomas relatados', () => {
     const result = computeSuggestions(
-      input({ symptoms: [{ symptom_code: 'rough_idle', answers: {} }, { symptom_code: 'brake_noise', answers: {} }, { symptom_code: 'rough_idle', answers: {} }] })
+      input({
+        symptoms: [
+          { symptom_code: 'rough_idle', answers: {} },
+          { symptom_code: 'brake_noise', answers: {} },
+          { symptom_code: 'rough_idle', answers: {} }
+        ]
+      })
     );
     expect(result.suggestions.map((suggestion) => suggestion.symptom_code)).toEqual(['rough_idle', 'brake_noise']);
     expect(result.total_estimated_minutes).toBe(210);
   });
 
   it('sintoma fora do catálogo é reportado, não derruba o cálculo', () => {
-    const result = computeSuggestions(input({ symptoms: [{ symptom_code: 'nao_existe', answers: {} }, { symptom_code: 'brake_noise', answers: {} }] }));
+    const result = computeSuggestions(
+      input({
+        symptoms: [
+          { symptom_code: 'nao_existe', answers: {} },
+          { symptom_code: 'brake_noise', answers: {} }
+        ]
+      })
+    );
     expect(result.unknown_symptoms).toEqual(['nao_existe']);
     expect(result.suggestions).toHaveLength(1);
   });

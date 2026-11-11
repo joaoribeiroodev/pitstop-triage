@@ -13,16 +13,7 @@ export type TenantStatus = (typeof TENANT_STATUSES)[number];
 export const TENANT_PLANS = ['basic', 'pro', 'enterprise'] as const;
 export type TenantPlan = (typeof TENANT_PLANS)[number];
 
-export const FEATURE_FLAGS = [
-  'triage',
-  'public_triage',
-  'diagnostics',
-  'portal',
-  'whatsapp',
-  'inventory',
-  'financial',
-  'ai'
-] as const;
+export const FEATURE_FLAGS = ['triage', 'public_triage', 'diagnostics', 'portal', 'whatsapp', 'inventory', 'financial', 'ai'] as const;
 export type FeatureFlag = (typeof FEATURE_FLAGS)[number];
 export type FeatureFlags = Record<FeatureFlag, boolean>;
 

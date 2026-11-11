@@ -9,7 +9,9 @@ import { DIAGNOSTIC_ENHANCER, DiagnosticEnhancer, enhanceSafely, NoOpEnhancer } 
 import { CatalogSymptom, computeSuggestions, ShopPartRow, ShopServiceRow, ShopStatRow } from './engine';
 
 export class SuggestQuery {
-  @IsOptional() @IsString() @MaxLength(60)
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
   brand?: string;
 }
 
@@ -41,9 +43,7 @@ export class DiagnosticsService {
       [codes]
     );
     const shopParts = await db.many<ShopPartRow>('select name, sku, default_price from public.shop_parts_catalog where is_active');
-    const shopServices = await db.many<ShopServiceRow>(
-      'select name, default_price, duration_minutes from public.shop_services_catalog where is_active'
-    );
+    const shopServices = await db.many<ShopServiceRow>('select name, default_price, duration_minutes from public.shop_services_catalog where is_active');
     return computeSuggestions({ symptoms, vehicleBrand, catalog, stats, shopParts, shopServices });
   }
 

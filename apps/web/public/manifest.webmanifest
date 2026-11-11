@@ -1,0 +1,12 @@
+{
+  "name": "PitStop — gestão da oficina",
+  "short_name": "PitStop",
+  "description": "Triagem, ordens de serviço e orçamentos da oficina.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#eef1f4",
+  "theme_color": "#1f4e8c",
+  "icons": [{ "src": "logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}

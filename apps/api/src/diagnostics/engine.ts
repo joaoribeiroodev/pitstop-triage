@@ -65,12 +65,7 @@ export interface EngineInput {
 
 /** Chave de comparação de textos livres: sem acento, sem caixa, espaços colapsados. */
 export function normalizeKey(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
+  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 export function normalizeBrand(value: string | null | undefined): string {
@@ -99,9 +94,7 @@ interface AggregatedStat {
 function aggregate(rows: ShopStatRow[]): Map<string, AggregatedStat> {
   const byCause = new Map<string, AggregatedStat>();
   // Ordem estável de leitura: o resultado não pode depender da ordem em que o banco devolveu as linhas.
-  const ordered = [...rows].sort(
-    (a, b) => compareText(a.cause_description, b.cause_description) || compareText(a.vehicle_brand, b.vehicle_brand)
-  );
+  const ordered = [...rows].sort((a, b) => compareText(a.cause_description, b.cause_description) || compareText(a.vehicle_brand, b.vehicle_brand));
   for (const row of ordered) {
     if (row.occurrences <= 0) continue;
     const key = normalizeKey(row.cause_description);

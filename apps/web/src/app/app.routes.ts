@@ -1,0 +1,55 @@
+import { Routes } from '@angular/router';
+import { authGuard, featureFlagGuard, roleGuard } from '@front/core';
+
+export const routes: Routes = [
+  // públicas
+  { path: 'login', loadComponent: () => import('./pages/login.page').then((m) => m.LoginPage) },
+  { path: 'bloqueado', loadComponent: () => import('./pages/login.page').then((m) => m.BlockedPage) },
+  { path: 'suporte', loadComponent: () => import('./pages/login.page').then((m) => m.SupportSessionPage) },
+  { path: 'portal/:token', loadComponent: () => import('./pages/portal.page').then((m) => m.PortalPage) },
+  { path: 'triagem/:slug', loadComponent: () => import('./pages/public-triage.page').then((m) => m.PublicTriagePage) },
+  { path: 'privacidade', loadComponent: () => import('./pages/portal.page').then((m) => m.PrivacyPage) },
+
+  // app da oficina
+  {
+    path: '',
+    canActivate: [authGuard],
+    loadComponent: () => import('./ui/shell.component').then((m) => m.ShellComponent),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: 'dashboard', loadComponent: () => import('./pages/dashboard.page').then((m) => m.DashboardPage) },
+      { path: 'customers', loadComponent: () => import('./pages/customers.page').then((m) => m.CustomersPage) },
+      { path: 'customers/:id', loadComponent: () => import('./pages/customers.page').then((m) => m.CustomerDetailPage) },
+      { path: 'vehicles', loadComponent: () => import('./pages/vehicles.page').then((m) => m.VehiclesPage) },
+      { path: 'vehicles/:id', loadComponent: () => import('./pages/vehicles.page').then((m) => m.VehicleDetailPage) },
+      {
+        path: 'triage',
+        canActivate: [featureFlagGuard('triage')],
+        children: [
+          { path: '', loadComponent: () => import('./pages/triage.page').then((m) => m.TriageListPage) },
+          {
+            path: 'new',
+            canActivate: [roleGuard('owner', 'manager', 'receptionist')],
+            loadComponent: () => import('./pages/triage.page').then((m) => m.TriageWizardPage)
+          },
+          { path: ':id', loadComponent: () => import('./pages/triage.page').then((m) => m.TriageDetailPage) }
+        ]
+      },
+      { path: 'service-orders', loadComponent: () => import('./pages/orders-board.page').then((m) => m.OrdersBoardPage) },
+      {
+        path: 'service-orders/new',
+        canActivate: [roleGuard('owner', 'manager', 'receptionist')],
+        loadComponent: () => import('./pages/orders-board.page').then((m) => m.NewOrderPage)
+      },
+      { path: 'service-orders/:id', loadComponent: () => import('./pages/order-detail.page').then((m) => m.OrderDetailPage) },
+      { path: 'quotes/:id', loadComponent: () => import('./pages/quote.page').then((m) => m.QuotePage) },
+      { path: 'settings', loadComponent: () => import('./pages/settings.page').then((m) => m.SettingsPage) },
+      { path: 'settings/users', canActivate: [roleGuard('owner')], loadComponent: () => import('./pages/settings.page').then((m) => m.UsersPage) },
+      { path: 'settings/catalog', loadComponent: () => import('./pages/settings.page').then((m) => m.CatalogPage) },
+      // módulos de fases futuras: a rota só existe quando o módulo está ativo no tenant
+      { path: 'inventory', canActivate: [featureFlagGuard('inventory')], loadComponent: () => import('./pages/settings.page').then((m) => m.ComingSoonPage) },
+      { path: 'financial', canActivate: [featureFlagGuard('financial')], loadComponent: () => import('./pages/settings.page').then((m) => m.ComingSoonPage) }
+    ]
+  },
+  { path: '**', redirectTo: '' }
+];

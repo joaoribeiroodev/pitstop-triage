@@ -2,8 +2,8 @@
  * Aplica as migrations em um Postgres local/CI (docker-compose, testes).
  * Em um projeto Supabase real, use a CLI: `supabase db push` — ela lê a mesma pasta supabase/migrations.
  *
- *   tsx scripts/migrate.ts            aplica o que falta
- *   tsx scripts/migrate.ts --reset    recria tudo do zero (somente em host local)
+ *   npm run db:migrate                 aplica o que falta
+ *   npm run db:migrate      --reset    recria tudo do zero (somente em host local)
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -22,7 +22,9 @@ export async function migrate(databaseUrl: string, options: { reset?: boolean; q
   try {
     if (options.reset) {
       if (!LOCAL_HOSTS.has(host)) throw new Error(`--reset recusado: "${host}" não é um host local.`);
-      await client.query('drop schema if exists public cascade; drop schema if exists auth cascade; drop schema if exists _pitstop cascade; create schema public;');
+      await client.query(
+        'drop schema if exists public cascade; drop schema if exists auth cascade; drop schema if exists _pitstop cascade; create schema public;'
+      );
       log('banco zerado');
     }
     const { rows } = await client.query(`select to_regnamespace('auth') is not null as has_auth`);
@@ -31,9 +33,13 @@ export async function migrate(databaseUrl: string, options: { reset?: boolean; q
       await client.query(readFileSync(SHIM, 'utf8'));
       log('shim local do Supabase aplicado');
     }
-    await client.query('create schema if not exists _pitstop; create table if not exists _pitstop.migrations (name text primary key, applied_at timestamptz not null default now())');
+    await client.query(
+      'create schema if not exists _pitstop; create table if not exists _pitstop.migrations (name text primary key, applied_at timestamptz not null default now())'
+    );
     const applied = new Set((await client.query('select name from _pitstop.migrations')).rows.map((row) => row.name));
-    for (const file of readdirSync(MIGRATIONS_DIR).filter((name) => name.endsWith('.sql')).sort()) {
+    for (const file of readdirSync(MIGRATIONS_DIR)
+      .filter((name) => name.endsWith('.sql'))
+      .sort()) {
       if (applied.has(file)) continue;
       await client.query('begin');
       try {

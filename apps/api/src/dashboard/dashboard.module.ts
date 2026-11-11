@@ -31,13 +31,8 @@ export class DashboardController {
            from public.service_orders o where true ${scope}`,
         params
       );
-      const triage = await db.one<{ pending_triage: number }>(
-        `select count(*)::int as pending_triage from public.triage_sessions where status = 'pending'`
-      );
-      const needsAction = await db.many<ServiceOrderSummary>(
-        `${ORDER_SUMMARY_SQL} where ${actionable} ${scope} order by o.updated_at limit 20`,
-        actionParams
-      );
+      const triage = await db.one<{ pending_triage: number }>(`select count(*)::int as pending_triage from public.triage_sessions where status = 'pending'`);
+      const needsAction = await db.many<ServiceOrderSummary>(`${ORDER_SUMMARY_SQL} where ${actionable} ${scope} order by o.updated_at limit 20`, actionParams);
       return { ...kpis, ...triage, needs_action: needsAction };
     });
   }

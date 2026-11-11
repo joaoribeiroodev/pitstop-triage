@@ -112,9 +112,15 @@ export class AdminService {
         `insert into public.tenants (name, slug, document, contact_name, contact_email, contact_phone, plan, is_trial, expires_at)
          values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *`,
         [
-          dto.name.trim(), dto.slug, onlyDigits(dto.document), blankToNull(dto.contact_name),
-          blankToNull(dto.contact_email)?.toLowerCase() ?? null, onlyDigits(dto.contact_phone), dto.plan,
-          dto.is_trial ?? false, dto.expires_at ?? null
+          dto.name.trim(),
+          dto.slug,
+          onlyDigits(dto.document),
+          blankToNull(dto.contact_name),
+          blankToNull(dto.contact_email)?.toLowerCase() ?? null,
+          onlyDigits(dto.contact_phone),
+          dto.plan,
+          dto.is_trial ?? false,
+          dto.expires_at ?? null
         ]
       );
       await this.audit(db, admin, created, 'tenant.created', { plan: dto.plan, expires_at: dto.expires_at ?? null, owner_email: ownerEmail });
@@ -128,10 +134,12 @@ export class AdminService {
         appMetadata: { tenant_id: tenant.id, role: 'owner' }
       });
       await this.db.admin((db) =>
-        db.exec(
-          `insert into public.tenant_users (tenant_id, user_id, role, full_name, email) values ($1, $2, 'owner', $3, $4)`,
-          [tenant.id, owner.id, dto.owner_name.trim(), ownerEmail]
-        )
+        db.exec(`insert into public.tenant_users (tenant_id, user_id, role, full_name, email) values ($1, $2, 'owner', $3, $4)`, [
+          tenant.id,
+          owner.id,
+          dto.owner_name.trim(),
+          ownerEmail
+        ])
       );
       return { ...tenant, owner_invited: owner.invited };
     } catch (error) {
@@ -177,10 +185,7 @@ export class AdminService {
       const tenant = await this.find(db, id, true);
       if (dto.confirm_slug !== tenant.slug) throw new BadRequestException('O slug de confirmação não confere.');
       if (tenant.status === 'suspended') throw new ConflictException('Esta oficina já está suspensa.');
-      const updated = await db.one<Tenant>(
-        `update public.tenants set status = 'suspended', suspended_at = now() where id = $1 returning *`,
-        [id]
-      );
+      const updated = await db.one<Tenant>(`update public.tenants set status = 'suspended', suspended_at = now() where id = $1 returning *`, [id]);
       await this.audit(db, admin, updated, 'tenant.suspended', { reason: dto.reason ?? null });
       return updated;
     });
@@ -190,10 +195,7 @@ export class AdminService {
     return this.db.admin(async (db) => {
       const tenant = await this.find(db, id, true);
       if (tenant.status === 'active') throw new ConflictException('Esta oficina já está ativa.');
-      const updated = await db.one<Tenant>(
-        `update public.tenants set status = 'active', suspended_at = null where id = $1 returning *`,
-        [id]
-      );
+      const updated = await db.one<Tenant>(`update public.tenants set status = 'active', suspended_at = null where id = $1 returning *`, [id]);
       await this.audit(db, admin, updated, 'tenant.reactivated', { previous_status: tenant.status });
       return updated;
     });

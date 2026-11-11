@@ -1,4 +1,18 @@
-import { Body, Controller, ForbiddenException, Get, HttpCode, Inject, Injectable, Module, NotFoundException, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  Inject,
+  Injectable,
+  Module,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 import {
@@ -23,7 +37,9 @@ import { QuotesModule } from '../quotes/quotes.module';
 import { QuotesService } from '../quotes/quotes.service';
 
 export class PortalRejectDto {
-  @IsOptional() @IsString() @MaxLength(1000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
   reason?: string;
 }
 
@@ -67,8 +83,7 @@ export class PortalService {
       [hashToken(token)]
     );
     if (!row || !row.purposes.includes(purpose) || !row.portal_enabled) throw denied;
-    const blocked =
-      row.tenant_status !== 'active' || (row.tenant_expires_at !== null && new Date(row.tenant_expires_at) < new Date());
+    const blocked = row.tenant_status !== 'active' || (row.tenant_expires_at !== null && new Date(row.tenant_expires_at) < new Date());
     if (blocked) throw denied;
     await db.exec('update public.customer_access_tokens set last_used_at = now() where id = $1', [row.id]);
     return row;
@@ -101,8 +116,12 @@ export class PortalService {
         `insert into public.customer_consent_log (tenant_id, access_token_id, service_order_id, policy_version, ip, user_agent)
          values ($1, $2, $3, $4, $5, $6)`,
         [
-          access.tenant_id, access.id, access.service_order_id, this.env.privacyPolicyVersion,
-          request.ip ?? null, String(request.headers['user-agent'] ?? '').slice(0, 300) || null
+          access.tenant_id,
+          access.id,
+          access.service_order_id,
+          this.env.privacyPolicyVersion,
+          request.ip ?? null,
+          String(request.headers['user-agent'] ?? '').slice(0, 300) || null
         ]
       );
     });
@@ -115,9 +134,17 @@ export class PortalService {
       const orderId = access.service_order_id;
 
       const order = await db.one<{
-        order_number: number; status: OrderStatus; opened_at: string; total_amount: number;
-        reported_symptoms: ReportedSymptom[]; free_form_notes: string | null; triage_source: string | null;
-        plate: string; brand: string | null; model: string | null; year: number | null;
+        order_number: number;
+        status: OrderStatus;
+        opened_at: string;
+        total_amount: number;
+        reported_symptoms: ReportedSymptom[];
+        free_form_notes: string | null;
+        triage_source: string | null;
+        plate: string;
+        brand: string | null;
+        model: string | null;
+        year: number | null;
       }>(
         `select o.order_number, o.status, o.opened_at, o.total_amount, o.reported_symptoms, o.free_form_notes,
                 ts.source as triage_source, v.plate, v.brand, v.model, v.year
@@ -181,7 +208,14 @@ export class PortalService {
   }
 
   private async currentQuote(db: Db, access: TokenRow): Promise<PortalQuote | null> {
-    const quote = await db.maybeOne<{ id: string; version: number; status: QuoteStatus; total_amount: number; sent_at: string | null; expires_at: string | null }>(
+    const quote = await db.maybeOne<{
+      id: string;
+      version: number;
+      status: QuoteStatus;
+      total_amount: number;
+      sent_at: string | null;
+      expires_at: string | null;
+    }>(
       `select id, version, status, total_amount, sent_at, expires_at
          from public.quotes
         where service_order_id = $1 and status in ('sent', 'approved', 'rejected')
@@ -205,7 +239,14 @@ export class PortalService {
     return this.db.admin(async (db) => {
       const access = await this.authorize(db, token, 'view_order');
       this.assertConsent(access);
-      const rows = await db.many<{ order_number: number; status: OrderStatus; opened_at: string; delivered_at: string | null; total_amount: number; services: string[] }>(
+      const rows = await db.many<{
+        order_number: number;
+        status: OrderStatus;
+        opened_at: string;
+        delivered_at: string | null;
+        total_amount: number;
+        services: string[];
+      }>(
         `select o.order_number, o.status, o.opened_at, o.delivered_at, o.total_amount,
                 coalesce((select array_agg(i.description order by i.sort_order)
                             from public.service_order_items i

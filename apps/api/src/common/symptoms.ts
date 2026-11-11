@@ -17,7 +17,9 @@ export class ReportedSymptomDto {
 export const reportedSymptomType = () => Type(() => ReportedSymptomDto);
 
 export class FreeNotes {
-  @IsOptional() @IsString() @MaxLength(4000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
   free_form_notes?: string;
 }
 

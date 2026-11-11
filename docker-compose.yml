@@ -1,0 +1,42 @@
+# Ambiente local: Postgres para desenvolvimento e testes, e (opcional) o backend em contêiner.
+#   npm run db:up        sobe só o banco (porta 54329)
+#   docker compose --profile api up --build   sobe banco + backend como em produção
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pitstop_dev
+    ports:
+      - '54329:5432'
+    volumes:
+      - pitstop-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d pitstop_dev']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    profiles: [api]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # AUTH_PROVIDER=local é recusado com NODE_ENV=production; este serviço é só para testar a imagem localmente.
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://postgres:postgres@db:5432/pitstop_dev
+      DATABASE_SSL: 'false'
+      AUTH_PROVIDER: local
+      APP_JWT_SECRET: troque-este-segredo-local-de-32-caracteres-ou-mais
+      PORTAL_BASE_URL: http://localhost:4200
+    ports:
+      - '3000:3000'
+
+volumes:
+  pitstop-db:

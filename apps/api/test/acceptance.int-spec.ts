@@ -36,10 +36,12 @@ describe('Aceite do MVP (seção 18)', () => {
 
   it('2. cadastra dez clientes com veículos e busca por telefone e por placa', async () => {
     for (let index = 0; index < 10; index += 1) {
-      const customer = await h.api('post', '/customers', reception.token)
+      const customer = await h
+        .api('post', '/customers', reception.token)
         .send({ name: `Cliente ${index}`, phone: `(71) 9${String(8000 + index)}-00${String(index).padStart(2, '0')}` })
         .expect(201);
-      const vehicle = await h.api('post', '/vehicles', reception.token)
+      const vehicle = await h
+        .api('post', '/vehicles', reception.token)
         .send({ customer_id: customer.body.id, plate: `abc-1d${String(index).padStart(2, '0')}`, brand: 'Ford', model: 'Ka', year: 2015 + index })
         .expect(201);
       if (index === 3) {
@@ -67,7 +69,8 @@ describe('Aceite do MVP (seção 18)', () => {
     // o catálogo entregue à recepção não carrega causas/pesos: isso é insumo do motor, não da triagem
     expect(JSON.stringify(catalog.body)).not.toContain('probable_causes');
 
-    const triage = await h.api('post', '/triage/sessions', reception.token)
+    const triage = await h
+      .api('post', '/triage/sessions', reception.token)
       .send({
         customer_id: customerId,
         vehicle_id: vehicleId,
@@ -85,7 +88,8 @@ describe('Aceite do MVP (seção 18)', () => {
     order = converted.body;
     expect(order).toMatchObject({ status: 'draft', order_number: 1, triage_session_id: triage.body.id, mechanic_suggestions_snapshot: null });
     expect((await h.api('get', `/triage/sessions/${triage.body.id}`, reception.token)).body).toMatchObject({
-      status: 'converted', service_order_id: order.id
+      status: 'converted',
+      service_order_id: order.id
     });
     await h.api('post', `/triage/sessions/${triage.body.id}/convert`, reception.token).expect(409);
 
@@ -107,16 +111,19 @@ describe('Aceite do MVP (seção 18)', () => {
   });
 
   it('4. ignora as sugestões: diagnóstico manual e orçamento do zero', async () => {
-    await h.api('patch', `/service-orders/${order.id}`, mechanic.token)
+    await h
+      .api('patch', `/service-orders/${order.id}`, mechanic.token)
       .send({
         mechanic_diagnosis: 'Nada do sugerido: mangueira de vácuo solta. Reencaixada e testada.',
         confirmed_causes: [{ symptom_code: 'engine_rough_idle', cause_description: 'Mangueira de vácuo solta' }]
       })
       .expect(200);
-    await h.api('post', `/service-orders/${order.id}/items`, mechanic.token)
+    await h
+      .api('post', `/service-orders/${order.id}/items`, mechanic.token)
       .send({ type: 'service', description: 'Diagnóstico e reaperto de mangueiras', quantity: 1, unit_price: 150 })
       .expect(201);
-    const withItems = await h.api('post', `/service-orders/${order.id}/items`, mechanic.token)
+    const withItems = await h
+      .api('post', `/service-orders/${order.id}/items`, mechanic.token)
       .send({ type: 'part', description: 'Abraçadeira de mangueira', quantity: 2, unit_price: 12.5 })
       .expect(201);
     expect(withItems.body.total_amount).toBe(175);
@@ -172,7 +179,13 @@ describe('Aceite do MVP (seção 18)', () => {
     }
     const final = await h.api('get', `/service-orders/${order.id}`, shop.ownerToken).expect(200);
     expect(final.body.history.map((entry: { to_status: string }) => entry.to_status)).toEqual([
-      'draft', 'diagnosis', 'awaiting_approval', 'approved', 'in_progress', 'completed', 'delivered'
+      'draft',
+      'diagnosis',
+      'awaiting_approval',
+      'approved',
+      'in_progress',
+      'completed',
+      'delivered'
     ]);
     expect(final.body.history.every((entry: { changed_by_name: string; created_at: string }) => entry.changed_by_name && entry.created_at)).toBe(true);
     expect(final.body.history[3]).toMatchObject({ actor_type: 'customer' });

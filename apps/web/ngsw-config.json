@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "resources": { "files": ["/index.html", "/manifest.webmanifest", "/logo.png", "/*.css", "/*.js"] }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "consulta-offline",
+      "urls": ["/api/v1/service-orders/**", "/api/v1/service-orders", "/api/v1/dashboard/summary", "/api/v1/auth/me", "/api/v1/triage/catalog"],
+      "cacheConfig": { "strategy": "freshness", "maxSize": 80, "maxAge": "3d", "timeout": "4s" }
+    }
+  ],
+  "navigationUrls": ["/**", "!/api/**"]
+}

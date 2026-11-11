@@ -47,9 +47,7 @@ export class OrderWorkflowService {
 
     const from = order.status;
     if (!canTransition(from, to)) {
-      throw new ConflictException(
-        `Transição não permitida: "${ORDER_STATUS_LABELS[from]}" → "${ORDER_STATUS_LABELS[to]}".`
-      );
+      throw new ConflictException(`Transição não permitida: "${ORDER_STATUS_LABELS[from]}" → "${ORDER_STATUS_LABELS[to]}".`);
     }
     await this.assertInvariants(db, order, to);
 

@@ -46,8 +46,7 @@ export class AuthController {
     const claims = request.claims!;
     return this.db.admin(async (db) => {
       const isSuperAdmin =
-        !claims.impersonatedBy &&
-        (await db.maybeOne('select 1 from public.super_admins where email = $1', [claims.email.toLowerCase()])) !== null;
+        !claims.impersonatedBy && (await db.maybeOne('select 1 from public.super_admins where email = $1', [claims.email.toLowerCase()])) !== null;
 
       if (claims.impersonatedBy) {
         const tenant = await db.maybeOne<Tenant>('select * from public.tenants where id = $1', [claims.appMetadata.tenant_id]);

@@ -9,8 +9,7 @@ import { ItemDto } from '../service-orders/service-orders.dto';
 import { actorOf } from '../service-orders/service-orders.service';
 import { AccessTokenService } from './access-token.service';
 
-const QUOTE_COLUMNS =
-  'id, service_order_id, version, total_amount, status, sent_at, responded_at, responded_via, expires_at, response_notes, created_at';
+const QUOTE_COLUMNS = 'id, service_order_id, version, total_amount, status, sent_at, responded_at, responded_via, expires_at, response_notes, created_at';
 const ITEM_COLUMNS = 'id, type, description, quantity, unit_price, total, sort_order';
 
 export type QuoteDecision = 'approved' | 'rejected';
@@ -39,10 +38,7 @@ export class QuotesService {
 
   private async withItems(db: Db, id: string): Promise<Quote> {
     const { tenant_id: _tenant, ...quote } = await this.loadQuote(db, id);
-    const items = await db.many<OrderItem>(
-      `select ${ITEM_COLUMNS} from public.quote_items where quote_id = $1 order by sort_order, created_at`,
-      [id]
-    );
+    const items = await db.many<OrderItem>(`select ${ITEM_COLUMNS} from public.quote_items where quote_id = $1 order by sort_order, created_at`, [id]);
     return { ...quote, items };
   }
 
@@ -139,10 +135,7 @@ export class QuotesService {
           where service_order_id = $1 and revoked_at is null and 'approve_quote' = any(purposes)`,
         [quote.service_order_id]
       );
-      await db.exec(
-        `update public.quotes set status = 'sent', sent_at = now(), expires_at = now() + make_interval(days => $2) where id = $1`,
-        [id, days]
-      );
+      await db.exec(`update public.quotes set status = 'sent', sent_at = now(), expires_at = now() + make_interval(days => $2) where id = $1`, [id, days]);
       await this.workflow.transition(db, quote.service_order_id, 'awaiting_approval', actor, `Orçamento v${quote.version} enviado`);
 
       const issued = await this.tokens.issue(db, {
@@ -181,16 +174,25 @@ export class QuotesService {
    * Aprovação/recusa — usada pela oficina e pelo portal (lá, em transação privilegiada já autorizada pelo token).
    * Ao aprovar, os itens do orçamento passam a ser os itens da OS e ela avança para "aprovada".
    */
-  async respondInTransaction(db: Db, quoteId: string, decision: QuoteDecision, via: 'portal' | 'staff', notes: string | undefined, actor: Actor): Promise<void> {
+  async respondInTransaction(
+    db: Db,
+    quoteId: string,
+    decision: QuoteDecision,
+    via: 'portal' | 'staff',
+    notes: string | undefined,
+    actor: Actor
+  ): Promise<void> {
     const quote = await this.loadQuote(db, quoteId, true);
     if (quote.status !== 'sent') throw new ConflictException('Este orçamento não está mais aguardando resposta.');
     if (quote.expires_at && new Date(quote.expires_at) < new Date()) {
       throw new ConflictException('Este orçamento expirou. Peça à oficina um novo envio.');
     }
-    await db.exec(
-      `update public.quotes set status = $2, responded_at = now(), responded_via = $3, response_notes = $4 where id = $1`,
-      [quoteId, decision, via, notes?.trim() || null]
-    );
+    await db.exec(`update public.quotes set status = $2, responded_at = now(), responded_via = $3, response_notes = $4 where id = $1`, [
+      quoteId,
+      decision,
+      via,
+      notes?.trim() || null
+    ]);
     if (decision === 'approved') {
       await db.exec('delete from public.service_order_items where service_order_id = $1', [quote.service_order_id]);
       await db.exec(
@@ -217,7 +219,12 @@ export class QuotesService {
       const order = await db.maybeOne('select 1 from public.service_orders where id = $1', [orderId]);
       if (!order) throw new NotFoundException('Ordem de serviço não encontrada.');
       const issued = await this.tokens.issue(db, {
-        tenantId: ctx.tenantId, orderId, quoteId: null, purposes: ['view_order'], days, createdBy: ctx.userId
+        tenantId: ctx.tenantId,
+        orderId,
+        quoteId: null,
+        purposes: ['view_order'],
+        days,
+        createdBy: ctx.userId
       });
       return { portal_url: `${this.env.portalBaseUrl}/portal/${issued.token}`, expires_at: issued.expires_at };
     });

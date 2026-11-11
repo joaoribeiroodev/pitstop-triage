@@ -1,12 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import {
-  FeatureFlag,
-  resolveFeatureFlags,
-  resolveLimits,
-  Tenant,
-  TenantRole
-} from '@pitstop/shared-types';
+import { FeatureFlag, resolveFeatureFlags, resolveLimits, Tenant, TenantRole } from '@pitstop/shared-types';
 import type { RequestWithAuth, TenantContext, TenantInfo } from '../common/context';
 import { FEATURE, IS_PUBLIC, IS_SESSION_ROUTE, IS_SUPER_ADMIN_ROUTE, ROLES } from '../common/decorators';
 import { DatabaseService } from '../database/database.service';
@@ -73,11 +67,7 @@ export class TenantGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    if (
-      flag(this.reflector, IS_PUBLIC, context) ||
-      flag(this.reflector, IS_SUPER_ADMIN_ROUTE, context) ||
-      flag(this.reflector, IS_SESSION_ROUTE, context)
-    ) {
+    if (flag(this.reflector, IS_PUBLIC, context) || flag(this.reflector, IS_SUPER_ADMIN_ROUTE, context) || flag(this.reflector, IS_SESSION_ROUTE, context)) {
       return true;
     }
     const request = context.switchToHttp().getRequest<RequestWithAuth>();
@@ -90,9 +80,7 @@ export class TenantGuard implements CanActivate {
     if (!claims) throw new UnauthorizedException('Autenticação necessária.');
 
     if (claims.impersonatedBy) {
-      const tenant = await this.db.admin((db) =>
-        db.maybeOne<Tenant>('select * from public.tenants where id = $1', [claims.appMetadata.tenant_id])
-      );
+      const tenant = await this.db.admin((db) => db.maybeOne<Tenant>('select * from public.tenants where id = $1', [claims.appMetadata.tenant_id]));
       if (!tenant) throw new ForbiddenException('Oficina não encontrada.');
       return {
         userId: claims.sub,

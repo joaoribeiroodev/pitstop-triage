@@ -45,33 +45,52 @@ export class VehicleDto {
   @Matches(PLATE_PATTERN, { message: 'Placa inválida. Use o formato ABC1234 ou ABC1D23.' })
   plate: string;
 
-  @IsOptional() @IsString() @MaxLength(60)
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
   brand?: string;
 
-  @IsOptional() @IsString() @MaxLength(80)
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
   model?: string;
 
-  @IsOptional() @IsInt() @Min(1900) @Max(2100)
+  @IsOptional()
+  @IsInt()
+  @Min(1900)
+  @Max(2100)
   year?: number;
 
-  @IsOptional() @IsString() @MaxLength(40)
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
   color?: string;
 
-  @IsOptional() @IsString() @MaxLength(17)
+  @IsOptional()
+  @IsString()
+  @MaxLength(17)
   vin?: string;
 
-  @IsOptional() @IsString() @MaxLength(30)
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
   fuel_type?: string;
 
-  @IsOptional() @IsInt() @Min(0) @Max(5_000_000)
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(5_000_000)
   current_mileage?: number;
 
-  @IsOptional() @IsString() @MaxLength(2000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   notes?: string;
 }
 
 export class UpdateVehicleDto {
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   customer_id?: string;
 
   @IsOptional()
@@ -79,36 +98,57 @@ export class UpdateVehicleDto {
   @Matches(PLATE_PATTERN, { message: 'Placa inválida. Use o formato ABC1234 ou ABC1D23.' })
   plate?: string;
 
-  @IsOptional() @IsString() @MaxLength(60)
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
   brand?: string;
 
-  @IsOptional() @IsString() @MaxLength(80)
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
   model?: string;
 
-  @IsOptional() @IsInt() @Min(1900) @Max(2100)
+  @IsOptional()
+  @IsInt()
+  @Min(1900)
+  @Max(2100)
   year?: number;
 
-  @IsOptional() @IsString() @MaxLength(40)
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
   color?: string;
 
-  @IsOptional() @IsString() @MaxLength(17)
+  @IsOptional()
+  @IsString()
+  @MaxLength(17)
   vin?: string;
 
-  @IsOptional() @IsString() @MaxLength(30)
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
   fuel_type?: string;
 
-  @IsOptional() @IsInt() @Min(0) @Max(5_000_000)
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(5_000_000)
   current_mileage?: number;
 
-  @IsOptional() @IsString() @MaxLength(2000)
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   notes?: string;
 }
 
 export class VehicleListQuery extends PaginationQuery {
-  @IsOptional() @IsString() @MaxLength(100)
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   q?: string;
 
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   customer_id?: string;
 }
 
@@ -174,9 +214,17 @@ export class VehiclesService {
         `insert into public.vehicles (tenant_id, customer_id, plate, brand, model, year, color, vin, fuel_type, current_mileage, notes)
          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning *`,
         [
-          ctx.tenantId, dto.customer_id, dto.plate, blankToNull(dto.brand), blankToNull(dto.model), dto.year ?? null,
-          blankToNull(dto.color), blankToNull(dto.vin)?.toUpperCase() ?? null, blankToNull(dto.fuel_type),
-          dto.current_mileage ?? null, blankToNull(dto.notes)
+          ctx.tenantId,
+          dto.customer_id,
+          dto.plate,
+          blankToNull(dto.brand),
+          blankToNull(dto.model),
+          dto.year ?? null,
+          blankToNull(dto.color),
+          blankToNull(dto.vin)?.toUpperCase() ?? null,
+          blankToNull(dto.fuel_type),
+          dto.current_mileage ?? null,
+          blankToNull(dto.notes)
         ]
       );
     });
@@ -186,16 +234,21 @@ export class VehiclesService {
     const text = (value: string | undefined) => (value === undefined ? undefined : blankToNull(value));
     const { sets, values } = buildUpdate(
       {
-        customer_id: dto.customer_id, plate: dto.plate, brand: text(dto.brand), model: text(dto.model), year: dto.year,
-        color: text(dto.color), vin: dto.vin === undefined ? undefined : (blankToNull(dto.vin)?.toUpperCase() ?? null),
-        fuel_type: text(dto.fuel_type), current_mileage: dto.current_mileage, notes: text(dto.notes)
+        customer_id: dto.customer_id,
+        plate: dto.plate,
+        brand: text(dto.brand),
+        model: text(dto.model),
+        year: dto.year,
+        color: text(dto.color),
+        vin: dto.vin === undefined ? undefined : (blankToNull(dto.vin)?.toUpperCase() ?? null),
+        fuel_type: text(dto.fuel_type),
+        current_mileage: dto.current_mileage,
+        notes: text(dto.notes)
       },
       2
     );
     return this.db.tenant(rls(ctx), async (db) => {
-      const sql = sets.length
-        ? `update public.vehicles set ${sets.join(', ')} where id = $1 returning *`
-        : 'select * from public.vehicles where id = $1';
+      const sql = sets.length ? `update public.vehicles set ${sets.join(', ')} where id = $1 returning *` : 'select * from public.vehicles where id = $1';
       const row = await db.maybeOne<Vehicle>(sql, [id, ...values]);
       if (!row) throw new NotFoundException('Veículo não encontrado.');
       return row;
@@ -211,16 +264,17 @@ export class VehiclesService {
    * Consulta de dados do veículo por placa em provedor externo (FIPE_PLATE_API_URL), com cache de 30 dias.
    * É um atalho de preenchimento: qualquer falha vira 503 amigável e o cadastro segue manual.
    */
-  async lookupPlate(rawPlate: string): Promise<{ plate: string; brand: string | null; model: string | null; year: number | null; color: string | null; cached: boolean }> {
+  async lookupPlate(
+    rawPlate: string
+  ): Promise<{ plate: string; brand: string | null; model: string | null; year: number | null; color: string | null; cached: boolean }> {
     const plate = normalizePlate(rawPlate);
     if (!PLATE_PATTERN.test(plate)) throw new BadRequestException('Placa inválida. Use o formato ABC1234 ou ABC1D23.');
     const unavailable = new ServiceUnavailableException('Consulta de placa indisponível no momento. Preencha os dados manualmente.');
 
     const cached = await this.db.admin((db) =>
-      db.maybeOne<{ payload: Record<string, unknown> }>(
-        `select payload from public.fipe_cache where plate = $1 and fetched_at > now() - interval '30 days'`,
-        [plate]
-      )
+      db.maybeOne<{ payload: Record<string, unknown> }>(`select payload from public.fipe_cache where plate = $1 and fetched_at > now() - interval '30 days'`, [
+        plate
+      ])
     );
     if (cached) return { ...shape(plate, cached.payload), cached: true };
     if (!this.env.fipePlateApiUrl) throw unavailable;

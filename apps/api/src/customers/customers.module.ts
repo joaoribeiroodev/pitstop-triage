@@ -189,10 +189,7 @@ export class CustomersService {
    */
   anonymize(ctx: TenantContext, id: string): Promise<Customer> {
     return this.db.tenant(rls(ctx), async (db) => {
-      const open = await db.maybeOne(
-        `select 1 from public.service_orders where customer_id = $1 and status not in ('delivered', 'cancelled') limit 1`,
-        [id]
-      );
+      const open = await db.maybeOne(`select 1 from public.service_orders where customer_id = $1 and status not in ('delivered', 'cancelled') limit 1`, [id]);
       if (open) throw new BadRequestException('Há ordens de serviço em andamento para este cliente. Conclua ou cancele antes de anonimizar.');
       const customer = await db.maybeOne<Customer>(
         `update public.customers as c

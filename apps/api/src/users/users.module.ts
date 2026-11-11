@@ -71,16 +71,12 @@ export class UsersService {
   ) {}
 
   list(ctx: TenantContext): Promise<TenantUser[]> {
-    return this.db.tenant(rls(ctx), (db) =>
-      db.many<TenantUser>(`select ${COLUMNS} from public.tenant_users order by is_active desc, full_name`)
-    );
+    return this.db.tenant(rls(ctx), (db) => db.many<TenantUser>(`select ${COLUMNS} from public.tenant_users order by is_active desc, full_name`));
   }
 
   /** Lista enxuta para atribuição de OS — visível a todos os papéis. */
   assignable(ctx: TenantContext): Promise<Array<Pick<TenantUser, 'id' | 'full_name' | 'role'>>> {
-    return this.db.tenant(rls(ctx), (db) =>
-      db.many(`select id, full_name, role from public.tenant_users where is_active order by full_name`)
-    );
+    return this.db.tenant(rls(ctx), (db) => db.many(`select id, full_name, role from public.tenant_users where is_active order by full_name`));
   }
 
   async create(ctx: TenantContext, dto: CreateUserDto): Promise<TenantUser & { invited: boolean }> {
@@ -116,7 +112,7 @@ export class UsersService {
     const updated = await this.db.tenant(rls(ctx), async (db) => {
       const current = await db.maybeOne<TenantUser>(`select ${COLUMNS} from public.tenant_users where id = $1 for update`, [id]);
       if (!current) throw new NotFoundException('Usuário não encontrado.');
-      const losesOwner = current.role === 'owner' && current.is_active && (dto.role !== undefined && dto.role !== 'owner' || dto.is_active === false);
+      const losesOwner = current.role === 'owner' && current.is_active && ((dto.role !== undefined && dto.role !== 'owner') || dto.is_active === false);
       if (losesOwner) await this.assertAnotherOwner(db, id);
       if (current.id === ctx.memberId && dto.is_active === false) {
         throw new BadRequestException('Você não pode desativar o próprio acesso.');

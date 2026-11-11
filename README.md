@@ -1,229 +1,110 @@
-<p align="center">
-  <h1 align="center">PitStop Triage</h1>
-  <p align="center">Triagem automotiva guiada que gera um diagnóstico prévio (CDP) antes da visita à oficina.</p>
-</p>
+# PitStop
 
----
+SaaS B2B multi-tenant de gestão para oficinas mecânicas: triagem de sintomas, ordens de serviço, orçamento com aprovação digital, portal do cliente e painel central de provisionamento.
 
-<p align="center">
-  <img src="https://github.com/joaoribeiroodev/pitstop-triage/actions/workflows/ci.yml/badge.svg" alt="CI" />
-  <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Angular-19-DD0031?logo=angular&logoColor=white" alt="Angular" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
-  <img src="https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white" alt="Vercel" />
-</p>
+A triagem e as sugestões ao mecânico são **determinísticas** (catálogo curado + histórico da própria oficina). Não há IA no caminho crítico: o produto funciona inteiro sem ela. A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO.md).
 
----
+> Esta é a versão 2 do projeto. A versão anterior (PitStop Triage, triagem para o motorista com OpenAI) permanece na branch `main` até o merge.
 
-## Sobre
+## O que tem aqui
 
-O **PitStop Triage** conduz o motorista por uma triagem em cinco etapas — veículo, zona do problema, sintomas e refinamento com IA — e entrega um **Código de Diagnóstico Prévio (CDP)** em linguagem acessível. O resumo pode ser baixado em PDF e levado na oficina, reduzindo idas e vindas na recepção. Dados ficam no navegador (sem cadastro); a IA é acionada somente quando necessário.
+| Pasta                   | O que é                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `apps/api`              | Backend NestJS (monólito modular), API em `/api/v1`                                       |
+| `apps/web`              | App da oficina (Angular 19, PWA) + portal do cliente (`/portal/:token`) + triagem pública |
+| `apps/admin`            | Painel Super Admin (Angular 19), deploy separado                                          |
+| `libs/front`            | Base compartilhada dos frontends: sessão, interceptor, guards, formatação, estilos        |
+| `packages/shared-types` | Contratos TypeScript compartilhados entre backend e frontends                             |
+| `supabase/migrations`   | Schema, RLS, hook de custom claims e seed do catálogo de sintomas                         |
+| `e2e`                   | Teste de aceite do MVP no navegador (Playwright)                                          |
 
----
+### Módulos da Fase 1 (MVP)
 
-## Funcionalidades
+- **Autenticação e RBAC**: Supabase Auth com `tenant_id` e `role` no JWT; papéis owner, manager, receptionist e mechanic.
+- **CRM**: clientes e veículos, busca por telefone e placa, exportação e anonimização (LGPD).
+- **Triagem**: wizard de 4 etapas no balcão e link público para o cliente preencher em casa.
+- **Motor de diagnóstico determinístico**: causas ranqueadas (50% catálogo + 50% histórico da oficina), verificações e peças com preço da oficina; snapshot imutável por OS.
+- **Ordens de serviço**: quadro kanban com arrastar e soltar, workflow validado no backend, timeline auditada.
+- **Orçamento**: versões, envio por link tokenizado, mensagem pronta e link `wa.me`.
+- **Portal do cliente**: acompanhamento, aprovação ou recusa e histórico do veículo, com DTO dedicado.
+- **Painel Super Admin**: provisionamento de oficinas, planos, feature flags, limites, suspensão, sessão de suporte e auditoria.
 
-- **Identificação do veículo** — consulta FIPE (API Parallelum) ou cadastro manual
-- **Mapa interativo** — seleção da zona afetada com visualização 3D (Three.js)
-- **Sintomas contextualizados** — checklist por zona, em linguagem leiga
-- **Refinamento com IA** — perguntas geradas pela OpenAI
-- **CDP para o cliente** — resumo claro, urgência, hipóteses, roteiro para a oficina e detalhes técnicos colapsáveis
-- **PDF local** — geração no navegador (jsPDF), sem envio a servidor
-- **Triagem concluída** — confirmação de encerramento com CDP persistido no `localStorage`
-- **LGPD** — consentimento na boas-vindas, política de privacidade e exclusão de dados locais
-- **Ortografia pt-BR** — pós-processamento de textos da IA (acentos e termos automotivos)
+Fases 2 a 4 (WhatsApp via API oficial, estoque, financeiro, agenda, IA opcional) ainda não foram implementadas. As tabelas e feature flags já existem; a interface `DiagnosticEnhancer` tem só a implementação `NoOpEnhancer`.
 
----
+## Rodando local
 
-## Stack tecnológica
-
-| Categoria | Tecnologia                  | Finalidade                               |
-| --------- | --------------------------- | ---------------------------------------- |
-| Frontend  | Angular 19 (NgModules)      | SPA com rotas, guards, Signals e OnPush  |
-| Frontend  | CSS puro (`styles.css`)     | Tema automotivo (`pit-*`) e componentes  |
-| Frontend  | Three.js                    | Carro 3D na etapa de mapa                |
-| Frontend  | jsPDF                       | PDF do CDP no navegador                  |
-| Frontend  | RxJS                        | HTTP e fluxos assíncronos                |
-| Backend   | Vercel Serverless Functions | Endpoints `/api` em TypeScript           |
-| Backend   | OpenAI API                  | GPT com JSON Schema estruturado          |
-| Backend   | API FIPE (Parallelum)       | Marcas, modelos, anos e valores          |
-| DevOps    | GitHub Actions              | Lint, Prettier, typecheck da API e build |
-| DevOps    | Vercel                      | Frontend + serverless                    |
-
----
-
-## Fluxo da aplicação
-
-```
-/inicio          → boas-vindas + consentimento LGPD
-/privacidade     → política de privacidade
-/veiculo         → FIPE ou manual
-/mapa            → zona no carro 3D
-/sintomas        → checklist por zona
-/chat-ia         → refinamento (OpenAI)
-/resultado       → CDP + PDF + confirmar triagem
-```
-
-Guards garantem que cada etapa só seja acessada após a anterior. O progresso aparece no stepper do shell da aplicação.
-
----
-
-## Começando
-
-### Pré-requisitos
-
-- **Node.js** `>= 22` (`engines` em `package.json`)
-- **npm** `10.9.2` (`packageManager`)
-- Chave **OpenAI** (obrigatória para IA em dev/produção)
-
-### Instalação
+Pré-requisitos: Node.js 22+, npm 10 e Docker (para o Postgres).
 
 ```bash
-git clone https://github.com/joaoribeiroodev/pitstop-triage.git
-cd pitstop-triage
 npm ci
+cp .env.example .env          # ajuste se quiser; o padrão já funciona local
+npm run db:up                 # Postgres em localhost:54329
+set -a && source .env && set +a
+npm run db:migrate            # aplica supabase/migrations
+npm run seed:dev              # oficina demo + usuários
+
+npm run dev:api               # http://localhost:3000/api/v1
+npm run dev:web               # http://localhost:4200  (app da oficina e portal)
+npm run dev:admin             # http://localhost:4300  (painel admin)
 ```
 
-### Variáveis de ambiente
+Em desenvolvimento o backend usa `AUTH_PROVIDER=local` (usuários no próprio Postgres), então não é preciso um projeto Supabase. Esse provedor é recusado com `NODE_ENV=production`.
 
-Crie `.env` na raiz (use `.env.example` como referência):
+Usuários do seed (senha `pitstop-dev-123`):
 
-```env
-OPENAI_API_KEY=sua_chave_aqui
-OPENAI_MODEL=gpt-4o-mini
-API_DEV_PORT=3001
+| Onde            | Login                                                           |
+| --------------- | --------------------------------------------------------------- |
+| Painel admin    | `admin@pitstop.local`                                           |
+| App da oficina  | `dono@demo.local`, `recepcao@demo.local`, `mecanico@demo.local` |
+| Triagem pública | `http://localhost:4200/triagem/oficina-demo`                    |
+
+## Testes e qualidade
+
+```bash
+npm run lint            # ESLint (TypeScript + Angular + templates)
+npm run format:check    # Prettier
+npm run typecheck
+npm test                # backend: unitários do motor, integração e isolamento RLS (precisa do Postgres)
+npm run test:web        # frontends: Karma/Jasmine
+npm run test:e2e        # aceite do MVP no navegador (API, web e admin rodando com o seed)
+npm run check           # tudo acima, menos o E2E, mais os builds
 ```
 
-> Chave em [OpenAI Platform](https://platform.openai.com/api-keys).
+- Os testes de integração recriam o banco `pitstop_test` e aplicam as migrations reais. Para outro Postgres: `TEST_DATABASE_URL=postgres://...`.
+- O E2E (`e2e/acceptance.mjs`) percorre o checklist da seção 18 da especificação: cadastro, triagem, OS, diagnóstico ignorando as sugestões, orçamento, aprovação pelo portal, entrega, histórico do veículo e suspensão/reativação pelo admin. Na primeira vez: `npx playwright install chromium`. Com `E2E_SCREENSHOTS=pasta` ele salva capturas de cada etapa.
+- O CI (`.github/workflows/ci.yml`) roda lint, formato, tipos, testes do backend, testes e builds dos frontends, o E2E e o build da imagem Docker em todo PR e em push para `main` e `develop`.
 
-### Execução local
+## Deploy
 
-| Comando                 | Descrição                                             |
-| ----------------------- | ----------------------------------------------------- |
-| `npm run dev`           | Angular (`:4200`) + API local (`:3001`) em paralelo   |
-| `npm start`             | Só frontend (IA indisponível — fallbacks locais)      |
-| `npm run start:full`    | `vercel dev` — runtime unificado                      |
-| `npm run check`         | Mesmo pipeline do CI (lint, format, typecheck, build) |
-| `npm run build`         | Build em `dist/pitstop-triage/browser`                |
-| `npm run lint`          | ESLint (`src/` + `api/`)                              |
-| `npm run format`        | Prettier                                              |
-| `npm run typecheck:api` | Typecheck das Vercel Functions                        |
+| Parte          | Onde                   | Como                                                                                        |
+| -------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
+| Banco e Auth   | Supabase               | `supabase db push` aplica `supabase/migrations`. Ative o Custom Access Token Hook (abaixo). |
+| Backend        | Railway                | `railway.json` aponta para `apps/api/Dockerfile`. Variáveis conforme `.env.example`.        |
+| App da oficina | Vercel                 | Projeto com `apps/web/vercel.json` (build `npm run build:web`, saída `dist/web/browser`).   |
+| Painel admin   | Vercel (outro projeto) | `apps/admin/vercel.json`, em subdomínio próprio (`admin.<domínio>`).                        |
 
-**Dev completo:** `npm run dev` — proxy `/api` → `localhost:3001` (`proxy.conf.json` + `scripts/dev-api.mjs`).
+Passos que dependem das suas contas:
 
----
+1. **Supabase**: crie o projeto, rode as migrations e, em Authentication → Hooks, selecione a função `public.custom_access_token_hook` como Custom Access Token Hook. É ela que coloca `tenant_id`, `role` e `is_super_admin` no JWT.
+2. **Primeiro super admin**: crie o usuário no Supabase Auth e insira o e-mail em `public.super_admins`.
+3. **Railway**: defina `AUTH_PROVIDER=supabase`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_JWT_SECRET`, `CORS_ORIGINS` e `PORTAL_BASE_URL`.
+4. **Vercel**: nos dois `vercel.json`, troque `TROQUE-PELO-DOMINIO-DO-BACKEND` pelo domínio do backend no Railway. O frontend chama `/api` no próprio domínio e a Vercel repassa ao backend.
+5. O painel admin abre a sessão de suporte em `app.<domínio>` quando está em `admin.<domínio>`. Para outro endereço, adicione `<meta name="pitstop-app-url" content="https://...">` em `apps/admin/src/index.html`.
 
-## Estrutura do projeto
+A imagem do backend é a mesma para Railway ou VPS com Coolify:
 
-Organização **Angular clássica** — pastas por tipo de artefato (`components`, `services`, `modules`, etc.):
-
-```
-pitstop-triage/
-├── api/                              # Vercel Serverless (permanece na raiz)
-│   ├── _shared.ts                    # CORS, validação, OpenAI
-│   ├── openai.ts                     # Cliente OpenAI (JSON estruturado)
-│   ├── ai-schemas.ts                 # Schemas CDP e refinamento
-│   ├── gerar-diagnostico.ts          # POST /api/gerar-diagnostico
-│   ├── refinar-triagem.ts            # POST /api/refinar-triagem
-│   └── tsconfig.json
-├── scripts/
-│   ├── dev-api.mjs                   # Emula as functions localmente
-│   └── predev.mjs                    # Libera portas 3001/4200
-└── src/
-    ├── app/
-    │   ├── components/               # Componentes Angular
-    │   │   ├── boas-vindas/          # Telas do fluxo
-    │   │   ├── veiculo/
-    │   │   ├── mapa/
-    │   │   ├── sintomas/
-    │   │   ├── chat-ia/
-    │   │   ├── resultado/
-    │   │   ├── privacidade/
-    │   │   ├── car-3d/               # Reutilizável (mapa 3D)
-    │   │   └── lgpd-notice/          # Reutilizável (aviso LGPD)
-    │   ├── services/                   # Serviços (providedIn: 'root')
-    │   │   ├── triage-state.service.ts
-    │   │   ├── diagnostico-api.service.ts
-    │   │   ├── fipe.service.ts
-    │   │   ├── cdp-pdf.service.ts
-    │   │   └── lgpd-consent.service.ts
-    │   ├── modules/
-    │   │   ├── pages.module.ts       # Declara telas do fluxo
-    │   │   ├── shared.module.ts      # Exporta car-3d e lgpd-notice
-    │   │   └── pages.routes.ts       # Rotas /inicio … /resultado
-    │   ├── models/                     # Interfaces (CDP, veículo, triagem…)
-    │   ├── guards/                     # LGPD e progresso da triagem
-    │   ├── constants/                  # Steps, LGPD, exibição do CDP
-    │   ├── data/                       # Catálogo de sintomas, fallbacks
-    │   ├── utils/                      # Ortografia pt-BR (browser + API)
-    │   ├── app.module.ts
-    │   ├── app-routing.module.ts
-    │   └── app.component.*
-    ├── index.html
-    ├── main.ts
-    └── styles.css
+```bash
+docker build -f apps/api/Dockerfile -t pitstop-api .
 ```
 
-### Path aliases (`tsconfig.json`)
+## Segurança, em resumo
 
-| Alias           | Caminho                |
-| --------------- | ---------------------- |
-| `@components/*` | `src/app/components/*` |
-| `@services/*`   | `src/app/services/*`   |
-| `@modules/*`    | `src/app/modules/*`    |
-| `@models/*`     | `src/app/models/*`     |
-| `@guards/*`     | `src/app/guards/*`     |
-| `@constants/*`  | `src/app/constants/*`  |
-| `@data/*`       | `src/app/data/*`       |
-| `@utils/*`      | `src/app/utils/*`      |
+- Isolamento por tenant no banco (RLS em todas as tabelas de negócio), com teste automatizado por tabela.
+- `service_role` só no backend. Os frontends nunca falam com o Supabase para operações de negócio.
+- Tokens do portal: UUID v4 entregue ao cliente, hash SHA-256 no banco, com expiração, revogação e finalidade.
+- Rate limit global e reforçado em login e portal; Helmet; CORS por origem; validação de payload em todos os endpoints.
+- LGPD: consentimento registrado no primeiro acesso ao portal, exportação e anonimização por cliente.
 
-A API serverless reutiliza `@utils/*` e `@models/*` via `api/tsconfig.json` (sem dependência do Angular).
+## Convenções
 
-### Estado e persistência
-
-- **`TriageStateService`** — Signals + `localStorage` (`pitstop-triage/state/v2`)
-- **`LgpdConsentService`** — consentimento (`pitstop-triage/lgpd/v1`)
-- Serviços registrados com `providedIn: 'root'` (sem `CoreModule`)
-
----
-
-## Roadmap
-
-### Implementado
-
-- [x] Fluxo em 5 etapas com stepper e progresso
-- [x] FIPE e entrada manual de veículo
-- [x] Mapa 3D (Three.js)
-- [x] Refinamento e CDP via OpenAI + fallbacks locais
-- [x] CDP orientado ao cliente e PDF para oficina
-- [x] Confirmação de triagem concluída
-- [x] LGPD (consentimento, privacidade, exclusão local)
-- [x] Correção ortográfica pt-BR nos textos da IA
-- [x] CI (lint, Prettier, typecheck API, build)
-
----
-
-## Contribuindo
-
-Contribuições são bem-vindas. Antes de abrir um PR, rode `npm run check` localmente e mantenha o padrão de pastas (`components`, `services`, `modules`, …).
-
----
-
-## Licença
-
-Projeto sob licença **MIT**.
-
----
-
-## Autor
-
-<p align="center">
-  <strong>João Pedro Lima Ribeiro</strong><br />
-  Desenvolvedor do PitStop Triage
-</p>
-
-<p align="center">
-  <a href="https://github.com/joaoribeiroodev">
-    <img src="https://img.shields.io/badge/GitHub-joaoribeiroodev-181717?logo=github&logoColor=white" alt="GitHub" />
-  </a>
-</p>
+TypeScript em todo o monorepo, Prettier + ESLint, Conventional Commits, branches `main` (produção), `develop` (staging) e `feature/*`. IDs UUID v4, timestamps `TIMESTAMPTZ` em UTC, migrations SQL versionadas em `supabase/migrations/`, segredos apenas em variáveis de ambiente.

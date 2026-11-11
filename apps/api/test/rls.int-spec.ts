@@ -7,26 +7,48 @@ import { Harness, TestTenant } from './harness';
 
 /** Insere ao menos uma linha em TODA tabela de negócio para o tenant informado. */
 async function seedGraph(db: Db, tenantId: string, plate: string): Promise<void> {
-  const customer = await db.one<{ id: string }>(`insert into public.customers (tenant_id, name, phone) values ($1, 'Fulano', '71999990000') returning id`, [tenantId]);
-  const vehicle = await db.one<{ id: string }>(`insert into public.vehicles (tenant_id, customer_id, plate) values ($1, $2, $3) returning id`, [tenantId, customer.id, plate]);
-  const triage = await db.one<{ id: string }>(`insert into public.triage_sessions (tenant_id, customer_id, vehicle_id) values ($1, $2, $3) returning id`, [tenantId, customer.id, vehicle.id]);
+  const customer = await db.one<{ id: string }>(`insert into public.customers (tenant_id, name, phone) values ($1, 'Fulano', '71999990000') returning id`, [
+    tenantId
+  ]);
+  const vehicle = await db.one<{ id: string }>(`insert into public.vehicles (tenant_id, customer_id, plate) values ($1, $2, $3) returning id`, [
+    tenantId,
+    customer.id,
+    plate
+  ]);
+  const triage = await db.one<{ id: string }>(`insert into public.triage_sessions (tenant_id, customer_id, vehicle_id) values ($1, $2, $3) returning id`, [
+    tenantId,
+    customer.id,
+    vehicle.id
+  ]);
   const order = await db.one<{ id: string }>(
     `insert into public.service_orders (tenant_id, order_number, customer_id, vehicle_id, triage_session_id, mechanic_diagnosis)
      values ($1, 1, $2, $3, $4, 'diagnóstico interno') returning id`,
     [tenantId, customer.id, vehicle.id, triage.id]
   );
-  await db.exec(`insert into public.service_order_items (tenant_id, service_order_id, type, description, unit_price) values ($1, $2, 'service', 'Serviço', 100)`, [tenantId, order.id]);
+  await db.exec(
+    `insert into public.service_order_items (tenant_id, service_order_id, type, description, unit_price) values ($1, $2, 'service', 'Serviço', 100)`,
+    [tenantId, order.id]
+  );
   await db.exec(`insert into public.service_order_status_history (tenant_id, service_order_id, to_status) values ($1, $2, 'draft')`, [tenantId, order.id]);
   await db.exec(`insert into public.service_order_notes (tenant_id, service_order_id, body) values ($1, $2, 'nota interna')`, [tenantId, order.id]);
   const quote = await db.one<{ id: string }>(`insert into public.quotes (tenant_id, service_order_id) values ($1, $2) returning id`, [tenantId, order.id]);
-  await db.exec(`insert into public.quote_items (tenant_id, quote_id, type, description, unit_price) values ($1, $2, 'part', 'Peça', 50)`, [tenantId, quote.id]);
+  await db.exec(`insert into public.quote_items (tenant_id, quote_id, type, description, unit_price) values ($1, $2, 'part', 'Peça', 50)`, [
+    tenantId,
+    quote.id
+  ]);
   const token = await db.one<{ id: string }>(
     `insert into public.customer_access_tokens (tenant_id, token_hash, service_order_id, quote_id, purposes, expires_at)
      values ($1, $2, $3, $4, '{view_order}', now() + interval '1 day') returning id`,
     [tenantId, `hash-${tenantId}`, order.id, quote.id]
   );
-  await db.exec(`insert into public.customer_consent_log (tenant_id, access_token_id, service_order_id, policy_version) values ($1, $2, $3, 'v1')`, [tenantId, token.id, order.id]);
-  await db.exec(`insert into public.shop_symptom_stats (tenant_id, symptom_code, cause_description, occurrences) values ($1, 'brake_grinding', 'Causa', 3)`, [tenantId]);
+  await db.exec(`insert into public.customer_consent_log (tenant_id, access_token_id, service_order_id, policy_version) values ($1, $2, $3, 'v1')`, [
+    tenantId,
+    token.id,
+    order.id
+  ]);
+  await db.exec(`insert into public.shop_symptom_stats (tenant_id, symptom_code, cause_description, occurrences) values ($1, 'brake_grinding', 'Causa', 3)`, [
+    tenantId
+  ]);
   await db.exec(`insert into public.shop_services_catalog (tenant_id, name, default_price) values ($1, 'Alinhamento', 90)`, [tenantId]);
   await db.exec(`insert into public.shop_parts_catalog (tenant_id, name, default_price) values ($1, 'Filtro', 30)`, [tenantId]);
   const item = await db.one<{ id: string }>(`insert into public.inventory_items (tenant_id, name) values ($1, 'Óleo') returning id`, [tenantId]);
@@ -117,8 +139,12 @@ describe('RLS — isolamento entre tenants no banco', () => {
   });
 
   it('INSERT: o tenant A não consegue gravar linhas em nome do tenant B', async () => {
-    await expect(asTenant(a, (db) => db.exec(`insert into public.customers (tenant_id, name) values ($1, 'Intruso')`, [b.id]))).rejects.toMatchObject({ code: '42501' });
-    await expect(asTenant(a, (db) => db.exec(`insert into public.shop_parts_catalog (tenant_id, name) values ($1, 'Peça')`, [b.id]))).rejects.toMatchObject({ code: '42501' });
+    await expect(asTenant(a, (db) => db.exec(`insert into public.customers (tenant_id, name) values ($1, 'Intruso')`, [b.id]))).rejects.toMatchObject({
+      code: '42501'
+    });
+    await expect(asTenant(a, (db) => db.exec(`insert into public.shop_parts_catalog (tenant_id, name) values ($1, 'Peça')`, [b.id]))).rejects.toMatchObject({
+      code: '42501'
+    });
     // nem "mudar o dono" de uma linha própria para o outro tenant
     await expect(asTenant(a, (db) => db.exec(`update public.customers set tenant_id = $1`, [b.id]))).rejects.toMatchObject({ code: '42501' });
   });

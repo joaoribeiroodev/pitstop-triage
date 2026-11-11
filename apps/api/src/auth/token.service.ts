@@ -22,8 +22,7 @@ export class TokenService {
   async verifyAccessToken(token: string): Promise<AuthClaims> {
     try {
       const issuer = decodeJwt(token).iss;
-      const payload =
-        issuer === APP_ISSUER ? await this.verifyAppToken(token, ['access', 'impersonation']) : await this.verifySupabase(token);
+      const payload = issuer === APP_ISSUER ? await this.verifyAppToken(token, ['access', 'impersonation']) : await this.verifySupabase(token);
       if (!payload.sub) throw new Error('token sem sub');
       return {
         sub: payload.sub,

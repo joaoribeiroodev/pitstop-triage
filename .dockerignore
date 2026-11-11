@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/coverage
+.angular
+.git
+.github
+.env
+.env.*
+!.env.example
+apps/web
+apps/admin
+libs
+e2e
+docs
