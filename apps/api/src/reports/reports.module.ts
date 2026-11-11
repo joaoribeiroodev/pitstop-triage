@@ -18,8 +18,6 @@ export class ReportsQuery {
   to?: string;
 }
 
-const iso = (date: Date) => date.toISOString().slice(0, 10);
-
 /**
  * Indicadores da oficina (Fase 3). Tudo é calculado sobre OS concluídas no período (data de conclusão),
  * e os orçamentos pelo envio. Somente leitura, sempre dentro da RLS do tenant.
@@ -29,15 +27,19 @@ export class ReportsService {
   constructor(private readonly db: DatabaseService) {}
 
   overview(ctx: TenantContext, query: ReportsQuery): Promise<ReportsOverview> {
-    const to = query.to ?? iso(new Date());
-    const from = query.from ?? iso(new Date(Date.now() - 89 * 86_400_000));
-    if (from > to) throw new BadRequestException('O início do período precisa ser antes do fim.');
-    if (new Date(to).getTime() - new Date(from).getTime() > 731 * 86_400_000) throw new BadRequestException('O período máximo é de dois anos.');
-    // Intervalo fechado em dias: [from 00:00, to + 1 dia).
-    const params = [from, to];
+    // Intervalo fechado em dias, no fuso da oficina: [from 00:00, to + 1 dia).
     const period = `o.completed_at >= $1::date and o.completed_at < ($2::date + 1)`;
 
     return this.db.tenant(rls(ctx), async (db) => {
+      // "Hoje" é o dia corrente da oficina, não o do servidor: quem decide é o fuso da transação.
+      const { from, to, days } = await db.one<{ from: string; to: string; days: number }>(
+        `select f::text as "from", t::text as "to", t - f as days
+           from (select coalesce($1::date, coalesce($2::date, current_date) - 89) as f, coalesce($2::date, current_date) as t) p`,
+        [query.from ?? null, query.to ?? null]
+      );
+      if (days < 0) throw new BadRequestException('O início do período precisa ser antes do fim.');
+      if (days > 731) throw new BadRequestException('O período máximo é de dois anos.');
+      const params = [from, to];
       const totals = await db.one<{ orders_completed: number; revenue: number; average_ticket: number; average_execution_minutes: number | null }>(
         `select count(*)::int as orders_completed,
                 coalesce(sum(o.total_amount), 0) as revenue,

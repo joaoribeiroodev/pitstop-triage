@@ -4,9 +4,11 @@ import { RouterLink } from '@angular/router';
 import { Api, AuthService, ToastService } from '@front/core';
 import { FORMAT_PIPES, ROLE_LABELS } from '@front/format';
 import {
+  DEFAULT_TIMEZONE,
   NOTIFICATION_EVENTS,
   NOTIFICATION_PLACEHOLDERS,
   TENANT_ROLES,
+  TENANT_TIMEZONES,
   type NotificationEvent,
   type NotificationTemplates,
   type ShopPart,
@@ -15,6 +17,22 @@ import {
   type TenantUser
 } from '@pitstop/shared-types';
 import { EVENT_LABELS } from '../ui/notify.component';
+
+/** "America/Sao_Paulo" → "São Paulo (GMT-3)", com o deslocamento atual do fuso. */
+export function timezoneLabel(zone: string): string {
+  const city = zone
+    .split('/')[1]
+    .replace(/_/g, ' ')
+    .replace('Sao Paulo', 'São Paulo')
+    .replace('Belem', 'Belém')
+    .replace('Maceio', 'Maceió')
+    .replace('Araguaina', 'Araguaína')
+    .replace('Cuiaba', 'Cuiabá');
+  const offset = new Intl.DateTimeFormat('pt-BR', { timeZone: zone, timeZoneName: 'shortOffset' })
+    .formatToParts(new Date())
+    .find((part) => part.type === 'timeZoneName')?.value;
+  return `${city} (${offset})`;
+}
 
 const PLAN_LABELS = { basic: 'Básico', pro: 'Pro', enterprise: 'Enterprise' } as const;
 
@@ -77,6 +95,15 @@ const PLAN_LABELS = { basic: 'Básico', pro: 'Pro', enterprise: 'Enterprise' } a
             >Validade do link do cliente (dias)
             <input type="number" name="days" min="1" max="90" required [(ngModel)]="form.portal_token_days" />
           </label>
+          <label style="max-width: 22rem"
+            >Fuso horário da oficina
+            <select name="timezone" [(ngModel)]="form.timezone">
+              @for (zone of timezones; track zone.id) {
+                <option [value]="zone.id">{{ zone.label }}</option>
+              }
+            </select>
+            <small>Define quando o dia vira para vencimentos, painel e indicadores.</small>
+          </label>
           @if (auth.hasFeature('schedule')) {
             <label
               >Boxes da oficina (um por linha)
@@ -99,13 +126,16 @@ export class SettingsPage {
   form = {
     mechanics_see_all_orders: this.auth.tenant()?.settings.mechanics_see_all_orders ?? false,
     portal_token_days: this.auth.tenant()?.settings.portal_token_days ?? 30,
-    bays: (this.auth.tenant()?.settings.bays ?? []).join('\n')
+    bays: (this.auth.tenant()?.settings.bays ?? []).join('\n'),
+    timezone: this.auth.tenant()?.settings.timezone ?? DEFAULT_TIMEZONE
   };
+  readonly timezones = TENANT_TIMEZONES.map((id) => ({ id, label: timezoneLabel(id) }));
 
   async save(): Promise<void> {
     await this.api.patch('/tenant/settings', {
       mechanics_see_all_orders: this.form.mechanics_see_all_orders,
       portal_token_days: Number(this.form.portal_token_days),
+      timezone: this.form.timezone,
       bays: this.form.bays
         .split('\n')
         .map((bay) => bay.trim().slice(0, 40))

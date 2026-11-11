@@ -466,6 +466,75 @@ describe('Operação da oficina: estoque, financeiro, agenda, indicadores e avis
     });
   });
 
+  describe('horários e fuso da oficina', () => {
+    const zoneOf = (tenant: TestTenant, timezone?: string) =>
+      h.db.tenant({ tenantId: tenant.id, userId: '00000000-0000-4000-8000-000000000001', role: 'owner', timezone }, (db) =>
+        db.one<{ zone: string; today: string }>(`select current_setting('timezone') as zone, current_date::text as today`)
+      );
+
+    it('grava instantes em UTC e calcula o dia no fuso da oficina (padrão: Brasília)', async () => {
+      expect((await zoneOf(shop)).zone).toBe('America/Sao_Paulo');
+      expect((await zoneOf(shop, 'America/Manaus')).zone).toBe('America/Manaus');
+      expect((await h.db.admin((db) => db.one<{ zone: string }>(`select current_setting('timezone') as zone`))).zone).toBe('America/Sao_Paulo');
+      // o fuso vale só dentro da transação: a conexão volta ao pool no padrão do servidor
+      const columns = await h.db.admin((db) =>
+        db.many<{ column_name: string }>(
+          `select table_name || '.' || column_name as column_name from information_schema.columns
+            where table_schema = 'public' and data_type = 'timestamp without time zone'`
+        )
+      );
+      expect(columns).toEqual([]);
+
+      // a API devolve ISO 8601 em UTC, qualquer que seja o fuso da oficina
+      const { vehicle } = await h.createCustomerWithVehicle(reception.token, 'FUS1A11');
+      expect(vehicle.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    });
+
+    it('uma OS concluída às 22h30 de Brasília conta no próprio dia, não no dia seguinte do UTC', async () => {
+      const late = await approvedOrder('FUS2B22', [{ type: 'service', description: 'Serviço noturno', quantity: 1, unit_price: 70 }]);
+      await finish(late.id);
+      // 2026-03-01T01:30Z ainda é 28 de fevereiro, 22h30, em Brasília
+      await h.db.admin((db) => db.exec(`update public.service_orders set completed_at = '2026-03-01T01:30:00Z' where id = $1`, [late.id]));
+
+      const february = await h.api('get', '/reports/overview', shop.ownerToken).query({ from: '2026-02-28', to: '2026-02-28' }).expect(200);
+      expect(february.body).toMatchObject({ orders_completed: 1, revenue: 70, by_month: [{ month: '2026-02', orders: 1, revenue: 70 }] });
+      const march = await h.api('get', '/reports/overview', shop.ownerToken).query({ from: '2026-03-01', to: '2026-03-01' }).expect(200);
+      expect(march.body.orders_completed).toBe(0);
+
+      // em Manaus (UTC-4) o mesmo instante é 21h30 do dia 28: continua em fevereiro; em Noronha (UTC-2) também
+      await h.api('patch', '/tenant/settings', shop.ownerToken).send({ timezone: 'Europe/Lisbon' }).expect(400);
+      const saved = await h.api('patch', '/tenant/settings', shop.ownerToken).send({ timezone: 'America/Noronha' }).expect(200);
+      expect(saved.body.settings.timezone).toBe('America/Noronha');
+      const noronha = await h.api('get', '/reports/overview', shop.ownerToken).query({ from: '2026-02-28', to: '2026-02-28' }).expect(200);
+      expect(noronha.body.orders_completed).toBe(1);
+      // 02:30Z já é 1º de março em Noronha (00h30), mas ainda 28/02 em Brasília
+      await h.db.admin((db) => db.exec(`update public.service_orders set completed_at = '2026-03-01T02:30:00Z' where id = $1`, [late.id]));
+      const moved = await h.api('get', '/reports/overview', shop.ownerToken).query({ from: '2026-03-01', to: '2026-03-01' }).expect(200);
+      expect(moved.body).toMatchObject({ orders_completed: 1, by_month: [{ month: '2026-03' }] });
+      await h.api('patch', '/tenant/settings', shop.ownerToken).send({ timezone: 'America/Sao_Paulo' }).expect(200);
+      const back = await h.api('get', '/reports/overview', shop.ownerToken).query({ from: '2026-03-01', to: '2026-03-01' }).expect(200);
+      expect(back.body.orders_completed).toBe(0);
+    });
+
+    it('vencimento é data de calendário: vai e volta como YYYY-MM-DD e vence pelo dia da oficina', async () => {
+      const today = (await zoneOf(shop)).today;
+      const due = await h
+        .api('post', '/financial/entries', shop.ownerToken)
+        .send({ type: 'payable', description: 'Vence hoje', amount: 10, due_date: today })
+        .expect(201);
+      expect(due.body).toMatchObject({ due_date: today, overdue: false });
+      const raw = await h.db.admin((db) => db.one<{ due_date: unknown }>('select due_date from public.financial_entries where id = $1', [due.body.id]));
+      expect(raw.due_date).toBe(today);
+      await h.api('delete', `/financial/entries/${due.body.id}`, shop.ownerToken).expect(204);
+    });
+
+    it('APP_TIMEZONE inválido impede a subida do backend', async () => {
+      const { loadEnv } = await import('../src/config/env');
+      expect(() => loadEnv({ ...process.env, APP_TIMEZONE: 'Brasil/Errado' })).toThrow(/APP_TIMEZONE inválido/);
+      expect(loadEnv({ ...process.env, APP_TIMEZONE: ' America/Bahia ' }).appTimezone).toBe('America/Bahia');
+    });
+  });
+
   describe('camada opcional de IA', () => {
     const suggest = (query: Json = {}) => h.api('get', '/diagnostics/suggest/brake_noise_when_braking', mechanic.token).query(query).expect(200);
     const ai = (content: unknown, ok = true) =>

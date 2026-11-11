@@ -5,6 +5,8 @@ import { ENV, Env } from '../config/env';
 // numeric e bigint chegam como string no driver; o domínio trabalha com number.
 types.setTypeParser(1700, (value) => Number(value));
 types.setTypeParser(20, (value) => Number(value));
+// `date` é uma data de calendário (vencimento), não um instante: fica como 'YYYY-MM-DD', sem virar Date e deslizar de dia pelo fuso.
+types.setTypeParser(1082, (value) => value);
 
 export interface Db {
   many<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
@@ -17,6 +19,8 @@ export interface RlsIdentity {
   tenantId: string;
   userId: string;
   role: string;
+  /** Fuso da oficina (IANA). Ausente: vale o padrão do ambiente. */
+  timezone?: string;
 }
 
 function wrap(client: PoolClient): Db {
@@ -41,8 +45,10 @@ function wrap(client: PoolClient): Db {
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {
   readonly pool: Pool;
+  private readonly defaultTimezone: string;
 
   constructor(@Inject(ENV) env: Env) {
+    this.defaultTimezone = env.appTimezone;
     this.pool = new Pool({
       connectionString: env.databaseUrl,
       ssl: env.databaseSsl ? { rejectUnauthorized: false } : undefined,
@@ -61,7 +67,7 @@ export class DatabaseService implements OnModuleDestroy {
       role: 'authenticated',
       app_metadata: { tenant_id: identity.tenantId, role: identity.role }
     });
-    return this.transaction(async (client) => {
+    return this.transaction(identity.timezone ?? this.defaultTimezone, async (client) => {
       await client.query(`select set_config('request.jwt.claims', $1, true)`, [claims]);
       await client.query('set local role authenticated');
       return work(wrap(client));
@@ -73,13 +79,19 @@ export class DatabaseService implements OnModuleDestroy {
    * Usada só onde não existe usuário de tenant: guards, portal por token, painel admin, jobs.
    */
   async admin<T>(work: (db: Db) => Promise<T>): Promise<T> {
-    return this.transaction((client) => work(wrap(client)));
+    return this.transaction(this.defaultTimezone, (client) => work(wrap(client)));
   }
 
-  private async transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+  /**
+   * Horários: as colunas são timestamptz (instantes em UTC) e a API devolve ISO 8601 em UTC.
+   * O fuso só vale dentro da transação, para o banco saber onde começam "hoje", a semana e o mês
+   * (current_date, date_trunc, ::date) do ponto de vista da oficina, e não do servidor.
+   */
+  private async transaction<T>(timezone: string, work: (client: PoolClient) => Promise<T>): Promise<T> {
     const client = await this.pool.connect();
     try {
       await client.query('begin');
+      await client.query(`select set_config('timezone', $1, true)`, [timezone]);
       const result = await work(client);
       await client.query('commit');
       return result;

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Module, Patch } from '@nestjs/common';
-import { ArrayMaxSize, IsArray, IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
-import type { Tenant } from '@pitstop/shared-types';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { TENANT_TIMEZONES, type Tenant, type TenantTimezone } from '@pitstop/shared-types';
 import { toTenantInfo } from '../auth/guards';
 import type { TenantContext, TenantInfo } from '../common/context';
 import { Ctx, Roles } from '../common/decorators';
@@ -16,6 +16,11 @@ export class UpdateTenantSettingsDto {
   @Min(1)
   @Max(90)
   portal_token_days?: number;
+
+  /** Fuso horário da oficina: define o "hoje" de vencimentos, painel e indicadores. */
+  @IsOptional()
+  @IsIn(TENANT_TIMEZONES)
+  timezone?: TenantTimezone;
 
   /** Boxes de serviço usados na agenda. */
   @IsOptional()

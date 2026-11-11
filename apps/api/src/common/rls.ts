@@ -2,7 +2,7 @@ import type { RlsIdentity } from '../database/database.service';
 import type { TenantContext } from './context';
 
 export function rls(ctx: TenantContext): RlsIdentity {
-  return { tenantId: ctx.tenantId, userId: ctx.userId, role: ctx.role };
+  return { tenantId: ctx.tenantId, userId: ctx.userId, role: ctx.role, timezone: ctx.tenant.settings.timezone };
 }
 
 export function onlyDigits(value: string | null | undefined): string | null {

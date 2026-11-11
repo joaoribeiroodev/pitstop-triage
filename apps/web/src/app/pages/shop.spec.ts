@@ -276,9 +276,15 @@ describe('ajustes e orçamento', () => {
 
     const page = await mount(SettingsPage, { role: 'owner' });
     expect(page.text()).toContain('Usuários');
-    page.component.form = { mechanics_see_all_orders: true, portal_token_days: 15, bays: ' Box 1 \n\nElevador' };
+    page.component.form = { mechanics_see_all_orders: true, portal_token_days: 15, bays: ' Box 1 \n\nElevador', timezone: 'America/Manaus' };
     const saving = page.component.save();
-    expect(await page.respond('PATCH', '/tenant/settings', {})).toEqual({ mechanics_see_all_orders: true, portal_token_days: 15, bays: ['Box 1', 'Elevador'] });
+    expect(await page.respond('PATCH', '/tenant/settings', {})).toEqual({
+      mechanics_see_all_orders: true,
+      portal_token_days: 15,
+      timezone: 'America/Manaus',
+      bays: ['Box 1', 'Elevador']
+    });
+    expect(page.component.timezones[0].label).toMatch(/^São Paulo \(GMT-3\)$/);
     await page.respond('GET', '/auth/me', me('owner'));
     await saving;
   });

@@ -23,7 +23,32 @@ export interface TenantLimits {
   max_storage_mb: number;
 }
 
+/**
+ * Fusos horários aceitos para uma oficina (IANA). Os horários são sempre gravados em UTC (timestamptz);
+ * o fuso da oficina decide onde começa "hoje", "esta semana" e "este mês" nos relatórios e vencimentos.
+ */
+export const TENANT_TIMEZONES = [
+  'America/Sao_Paulo',
+  'America/Bahia',
+  'America/Fortaleza',
+  'America/Recife',
+  'America/Belem',
+  'America/Maceio',
+  'America/Araguaina',
+  'America/Cuiaba',
+  'America/Campo_Grande',
+  'America/Manaus',
+  'America/Porto_Velho',
+  'America/Boa_Vista',
+  'America/Rio_Branco',
+  'America/Noronha'
+] as const;
+export type TenantTimezone = (typeof TENANT_TIMEZONES)[number];
+export const DEFAULT_TIMEZONE: TenantTimezone = 'America/Sao_Paulo';
+
 export interface TenantSettings {
+  /** Fuso horário da oficina. Ausente: vale o padrão do ambiente (APP_TIMEZONE). */
+  timezone?: TenantTimezone;
   /** Se true, mecânicos enxergam toda a fila; se false, apenas as OS atribuídas a eles. */
   mechanics_see_all_orders?: boolean;
   /** Validade padrão (dias) do link enviado ao cliente. */

@@ -13,6 +13,8 @@ export interface Env {
   appJwtSecret: string;
   corsOrigins: string[];
   portalBaseUrl: string;
+  /** Fuso padrão das regras de negócio (dia, semana, mês) quando a oficina não definiu o seu. O armazenamento é sempre UTC. */
+  appTimezone: string;
   privacyPolicyVersion: string;
   /** Contato do encarregado (DPO) exibido na política de privacidade. Vazio: a política manda procurar a oficina. */
   dpoContactEmail: string;
@@ -37,6 +39,17 @@ function required(source: NodeJS.ProcessEnv, key: string): string {
   const value = source[key];
   if (!value) throw new Error(`Variável de ambiente obrigatória ausente: ${key}`);
   return value;
+}
+
+/** APP_TIMEZONE precisa ser um fuso IANA válido; um valor errado derruba a subida, em vez de gerar relatórios no dia errado. */
+function timezone(value: string | undefined): string {
+  const zone = value?.trim() || 'America/Sao_Paulo';
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+  } catch {
+    throw new Error(`APP_TIMEZONE inválido: "${zone}". Use um fuso IANA, por exemplo America/Sao_Paulo.`);
+  }
+  return zone;
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
@@ -68,6 +81,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       .map((origin) => origin.trim())
       .filter(Boolean),
     portalBaseUrl: (source.PORTAL_BASE_URL ?? 'http://localhost:4200').replace(/\/$/, ''),
+    appTimezone: timezone(source.APP_TIMEZONE),
     privacyPolicyVersion: source.PRIVACY_POLICY_VERSION ?? '2026-11',
     dpoContactEmail: (source.DPO_CONTACT_EMAIL ?? '').trim(),
     fipePlateApiUrl: source.FIPE_PLATE_API_URL ?? '',

@@ -120,6 +120,13 @@ docker build -f apps/api/Dockerfile -t pitstop-api .
 - Rate limit global e reforçado em login e portal; Helmet; CORS por origem; validação de payload em todos os endpoints.
 - LGPD: consentimento registrado no primeiro acesso ao portal, exportação e anonimização por cliente.
 
+## Datas e horários
+
+- **Armazenamento**: todo instante é `TIMESTAMPTZ` (UTC no banco); a única coluna `DATE` é o vencimento financeiro, que é data de calendário.
+- **API**: instantes em ISO 8601 com `Z` (UTC); datas de calendário como `YYYY-MM-DD`.
+- **Regras de negócio**: "hoje", semana e mês são calculados no fuso da oficina (Ajustes → Fuso horário), aplicado por transação. Sem ajuste, vale `APP_TIMEZONE` (padrão `America/Sao_Paulo`).
+- **Telas**: o navegador mostra os instantes no fuso do aparelho, em `pt-BR`.
+
 ## Convenções
 
 TypeScript em todo o monorepo, Prettier + ESLint, Conventional Commits, branches `main` (produção), `develop` (staging) e `feature/*`. IDs UUID v4, timestamps `TIMESTAMPTZ` em UTC, migrations SQL versionadas em `supabase/migrations/`, segredos apenas em variáveis de ambiente.
