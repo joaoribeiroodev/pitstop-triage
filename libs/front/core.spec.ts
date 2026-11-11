@@ -18,7 +18,17 @@ const ME: MeResponse = {
     plan: 'pro',
     status: 'active',
     expires_at: null,
-    feature_flags: { triage: true, public_triage: true, diagnostics: true, portal: true, whatsapp: false, inventory: false, financial: false, ai: false },
+    feature_flags: {
+      triage: true,
+      public_triage: true,
+      diagnostics: true,
+      portal: true,
+      whatsapp: false,
+      schedule: true,
+      inventory: false,
+      financial: false,
+      ai: false
+    },
     limits: { max_users: 15, max_orders_month: 600, max_storage_mb: 5120 },
     settings: {}
   }

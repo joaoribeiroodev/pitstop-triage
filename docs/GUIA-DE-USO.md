@@ -64,4 +64,9 @@ Pelo link, o cliente vê o veículo, o andamento, o orçamento item a item e os 
 - **Painel**: indicadores do dia e a lista **Precisam de você**, com o que espera ação do seu papel.
 - **Ordens**: o quadro com todas as OS por etapa.
 - **Clientes** e **Veículos**: cadastro e histórico completo de cada carro.
+- **Agenda**: os horários do dia por box e por mecânico. O sistema não deixa marcar dois serviços no mesmo box ou com o mesmo responsável. Cadastre os boxes em **Ajustes → Preferências da oficina**.
+- **Estoque** (plano Pro): cadastre as peças com saldo e mínimo. Ao montar o orçamento, escolha a peça em **Estoque** na lista: quando a OS for concluída, a quantidade sai do saldo sozinha. Itens abaixo do mínimo aparecem com o aviso **Repor**.
+- **Financeiro** (plano Pro, gestão): cada OS concluída vira uma conta a receber. Dê baixa em **Recebi** e lance as despesas em **Novo lançamento**.
+- **Indicadores** (gestão): faturamento, ticket médio, conversão de orçamentos e o que mais rende, por período.
+- **Avisos ao cliente** (plano Pro): na aba Orçamento da OS, **Avisar o cliente** monta a mensagem de WhatsApp com o link de acompanhamento. Os textos ficam em **Ajustes → Avisos ao cliente**.
 - **LGPD**: na ficha do cliente, o proprietário pode exportar os dados ou anonimizar o cadastro.

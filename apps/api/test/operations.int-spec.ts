@@ -502,5 +502,45 @@ describe('Operação da oficina: estoque, financeiro, agenda, indicadores e avis
       expect(failed.body.ai_note).toBeUndefined();
       expect(failed.body.suggestions).toEqual(enhanced.body.suggestions);
     });
+
+    it('o resumo entra no snapshot da OS ao iniciar o diagnóstico e ao recalcular', async () => {
+      const { customer, vehicle } = await h.createCustomerWithVehicle(reception.token, 'IAA1A11');
+      const created = await h
+        .api('post', '/service-orders', reception.token)
+        .send({
+          customer_id: customer.id,
+          vehicle_id: vehicle.id,
+          reported_symptoms: [{ symptom_code: 'brake_noise_when_braking', answers: {} }],
+          assigned_mechanic_id: memberId
+        })
+        .expect(201);
+      ai('Verifique primeiro as pastilhas.');
+      const started = await h.api('post', `/service-orders/${created.body.id}/status`, mechanic.token).send({ status: 'diagnosis' }).expect(200);
+      expect(started.body.mechanic_suggestions_snapshot.ai_note).toBe('Verifique primeiro as pastilhas.');
+      const stored = await h.api('get', `/service-orders/${created.body.id}`, mechanic.token).expect(200);
+      expect(stored.body.mechanic_suggestions_snapshot.ai_note).toBe('Verifique primeiro as pastilhas.');
+
+      // recalcular com o provedor fora do ar: o snapshot novo vem sem resumo e a operação conclui
+      ai('x', false);
+      const recomputed = await h.api('post', `/service-orders/${created.body.id}/recompute-suggestions`, mechanic.token).expect(200);
+      expect(recomputed.body.mechanic_suggestions_snapshot.ai_note).toBeUndefined();
+      expect(recomputed.body.mechanic_suggestions_snapshot.suggestions).toEqual(started.body.mechanic_suggestions_snapshot.suggestions);
+
+      // falha ao gravar o resumo também não derruba nada
+      ai('Resumo que não será gravado.');
+      const spy = jest.spyOn(h.db, 'tenant');
+      let calls = 0;
+      spy.mockImplementation(function (this: unknown, ...args: unknown[]) {
+        calls += 1;
+        if (calls === 2) return Promise.reject(new Error('banco indisponível'));
+        return (Object.getPrototypeOf(h.db).tenant as (...a: unknown[]) => Promise<unknown>).apply(h.db, args);
+      } as never);
+      try {
+        const safe = await h.api('post', `/service-orders/${created.body.id}/recompute-suggestions`, mechanic.token).expect(200);
+        expect(safe.body.mechanic_suggestions_snapshot.ai_note).toBeUndefined();
+      } finally {
+        spy.mockRestore();
+      }
+    });
   });
 });

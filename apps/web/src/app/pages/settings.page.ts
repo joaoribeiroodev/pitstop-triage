@@ -3,7 +3,18 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, AuthService, ToastService } from '@front/core';
 import { FORMAT_PIPES, ROLE_LABELS } from '@front/format';
-import { TENANT_ROLES, type ShopPart, type ShopService, type TenantRole, type TenantUser } from '@pitstop/shared-types';
+import {
+  NOTIFICATION_EVENTS,
+  NOTIFICATION_PLACEHOLDERS,
+  TENANT_ROLES,
+  type NotificationEvent,
+  type NotificationTemplates,
+  type ShopPart,
+  type ShopService,
+  type TenantRole,
+  type TenantUser
+} from '@pitstop/shared-types';
+import { EVENT_LABELS } from '../ui/notify.component';
 
 const PLAN_LABELS = { basic: 'Básico', pro: 'Pro', enterprise: 'Enterprise' } as const;
 
@@ -45,6 +56,13 @@ const PLAN_LABELS = { basic: 'Básico', pro: 'Pro', enterprise: 'Enterprise' } a
               ><span><strong>Catálogo de serviços e peças</strong><br /><small>Preços padrão usados nos orçamentos e nas sugestões</small></span></a
             >
           </li>
+          @if (auth.hasFeature('whatsapp')) {
+            <li>
+              <a class="list-link" routerLink="/settings/notifications"
+                ><span><strong>Avisos ao cliente</strong><br /><small>Textos das mensagens de WhatsApp e envio automático</small></span></a
+              >
+            </li>
+          }
         </ul>
       </nav>
 
@@ -59,6 +77,13 @@ const PLAN_LABELS = { basic: 'Básico', pro: 'Pro', enterprise: 'Enterprise' } a
             >Validade do link do cliente (dias)
             <input type="number" name="days" min="1" max="90" required [(ngModel)]="form.portal_token_days" />
           </label>
+          @if (auth.hasFeature('schedule')) {
+            <label
+              >Boxes da oficina (um por linha)
+              <textarea name="bays" rows="3" placeholder="Box 1&#10;Box 2&#10;Elevador" [(ngModel)]="form.bays"></textarea>
+              <small>Usados na agenda para reservar o espaço junto com o horário.</small>
+            </label>
+          }
           <div><button class="btn-primary">Salvar preferências</button></div>
         </form>
       }
@@ -73,13 +98,18 @@ export class SettingsPage {
   readonly planLabels = PLAN_LABELS;
   form = {
     mechanics_see_all_orders: this.auth.tenant()?.settings.mechanics_see_all_orders ?? false,
-    portal_token_days: this.auth.tenant()?.settings.portal_token_days ?? 30
+    portal_token_days: this.auth.tenant()?.settings.portal_token_days ?? 30,
+    bays: (this.auth.tenant()?.settings.bays ?? []).join('\n')
   };
 
   async save(): Promise<void> {
     await this.api.patch('/tenant/settings', {
       mechanics_see_all_orders: this.form.mechanics_see_all_orders,
-      portal_token_days: Number(this.form.portal_token_days)
+      portal_token_days: Number(this.form.portal_token_days),
+      bays: this.form.bays
+        .split('\n')
+        .map((bay) => bay.trim().slice(0, 40))
+        .filter(Boolean)
     });
     await this.auth.loadMe();
     this.toast.ok('Preferências salvas');
@@ -355,18 +385,110 @@ export class CatalogPage implements OnInit {
   }
 }
 
+interface NotificationSettings {
+  templates: NotificationTemplates;
+  defaults: NotificationTemplates;
+  whatsapp_auto: boolean;
+  api_configured: boolean;
+}
+
+/** Textos dos avisos ao cliente e o envio automático pela API oficial do WhatsApp. */
 @Component({
   standalone: true,
-  imports: [RouterLink],
+  imports: [FormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="page page-narrow">
-      <h1>Módulo em preparação</h1>
-      <p class="notice">
-        Este módulo está ativo para a sua oficina, mas ainda não foi liberado nesta versão do PitStop. Você será avisado quando estiver disponível.
-      </p>
-      <div><a class="btn" routerLink="/dashboard">Voltar ao painel</a></div>
+    <div class="page">
+      <div>
+        <a routerLink="/settings">Ajustes</a>
+        <h1>Avisos ao cliente</h1>
+        <p class="muted">
+          Escreva do jeito da sua oficina. Os marcadores entre chaves são trocados pelos dados de cada serviço:
+          @for (name of placeholders; track name) {
+            <code>{{ '{' + name + '}' }}</code>
+          }
+        </p>
+      </div>
+
+      @if (settings(); as current) {
+        <form class="sheet stack" (ngSubmit)="save()" #form="ngForm">
+          @for (event of events; track event) {
+            <label
+              >{{ labels[event] }}
+              <textarea [name]="event" rows="4" required minlength="10" maxlength="700" [disabled]="!canEdit" [(ngModel)]="texts[event]"></textarea>
+            </label>
+            @if (canEdit && texts[event] !== current.defaults[event]) {
+              <div>
+                <button type="button" class="btn-quiet" (click)="texts[event] = current.defaults[event]">
+                  Voltar ao texto padrão de "{{ labels[event] }}"
+                </button>
+              </div>
+            }
+          }
+
+          <fieldset class="stack-sm" [disabled]="!canEdit || !current.api_configured">
+            <legend>Envio automático</legend>
+            <label class="check">
+              <input type="checkbox" name="auto" [(ngModel)]="auto" />
+              Enviar sozinho quando o orçamento sai, quando o serviço começa e quando o veículo fica pronto
+            </label>
+            @if (!current.api_configured) {
+              <small
+                >A integração com a API oficial do WhatsApp ainda não está configurada neste ambiente. Enquanto isso, a equipe envia pelo botão "Abrir no
+                WhatsApp" de cada OS.</small
+              >
+            } @else {
+              <small>Se um envio falhar, a OS segue normalmente e a falha fica registrada no histórico de avisos da OS.</small>
+            }
+          </fieldset>
+
+          @if (canEdit) {
+            <div><button class="btn-primary" [disabled]="form.invalid">Salvar avisos</button></div>
+          } @else {
+            <small>Só a gestão da oficina altera estes textos.</small>
+          }
+        </form>
+      }
     </div>
+  `,
+  styles: `
+    code {
+      margin-right: 0.35rem;
+      color: var(--coverall);
+    }
+    fieldset {
+      border: 1px solid var(--line);
+      border-radius: 0.75rem;
+      padding: 1rem;
+    }
   `
 })
-export class ComingSoonPage {}
+export class NotificationsSettingsPage implements OnInit {
+  private readonly api = inject(Api);
+  private readonly toast = inject(ToastService);
+  readonly canEdit = inject(AuthService).hasRole('owner', 'manager');
+  readonly events = NOTIFICATION_EVENTS;
+  readonly labels = EVENT_LABELS;
+  readonly placeholders = NOTIFICATION_PLACEHOLDERS;
+  readonly settings = signal<NotificationSettings | null>(null);
+  texts: Record<NotificationEvent, string> = { quote_pending: '', status_update: '', vehicle_ready: '' };
+  auto = false;
+
+  ngOnInit(): void {
+    void this.api.get<NotificationSettings>('/notifications/settings').then((settings) => this.apply(settings));
+  }
+
+  private apply(settings: NotificationSettings): void {
+    this.texts = { ...settings.templates };
+    this.auto = settings.whatsapp_auto;
+    this.settings.set(settings);
+  }
+
+  async save(): Promise<void> {
+    const current = this.settings();
+    const body: Record<string, unknown> = { ...this.texts };
+    if (current?.api_configured) body['whatsapp_auto'] = this.auto;
+    this.apply(await this.api.patch<NotificationSettings>('/notifications/settings', body));
+    this.toast.ok('Avisos salvos');
+  }
+}

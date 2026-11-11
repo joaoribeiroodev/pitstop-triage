@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Api, silent } from '@front/core';
+import { Api, AuthService, silent } from '@front/core';
 import { FORMAT_PIPES } from '@front/format';
-import type { ItemType, ShopPart, ShopService } from '@pitstop/shared-types';
+import type { InventoryItem, ItemType, ShopPart, ShopService } from '@pitstop/shared-types';
 
 export interface ItemInput {
   type: ItemType;
   description: string;
   quantity: number;
   unit_price: number;
+  /** Item do estoque que esta peça consome: dá baixa automática na conclusão da OS. */
+  inventory_item_id?: string | null;
 }
 
 export interface ItemRow extends ItemInput {
@@ -45,6 +47,9 @@ export interface ItemRow extends ItemInput {
               <td>
                 <small>{{ item.type === 'service' ? 'Mão de obra' : 'Peça' }}</small
                 ><br />{{ item.description }}
+                @if (item.inventory_item_id) {
+                  <span class="status" data-tone="work" title="Dá baixa no estoque quando a OS for concluída">Estoque</span>
+                }
               </td>
               <td class="right num">{{ item.quantity }}</td>
               <td class="right num">{{ item.unit_price | brl }}</td>
@@ -70,7 +75,7 @@ export interface ItemRow extends ItemInput {
     @if (editable()) {
       <form class="stack-sm add-item" (ngSubmit)="add()" #form="ngForm">
         <h3>Adicionar item</h3>
-        @if (services().length || parts().length) {
+        @if (services().length || parts().length || stock().length) {
           <label
             >Do catálogo da oficina
             <select name="pick" [(ngModel)]="pick" (ngModelChange)="applyPick()">
@@ -89,6 +94,13 @@ export interface ItemRow extends ItemInput {
                   }
                 </optgroup>
               }
+              @if (stock().length) {
+                <optgroup label="Estoque (dá baixa na conclusão)">
+                  @for (item of stock(); track item.id) {
+                    <option [value]="'e:' + item.id">{{ item.name }} ({{ item.unit_price | brl }}, saldo {{ item.quantity_on_hand }})</option>
+                  }
+                </optgroup>
+              }
             </select>
           </label>
         }
@@ -104,6 +116,14 @@ export interface ItemRow extends ItemInput {
           <label>Quantidade <input name="quantity" type="number" required min="0.01" step="0.01" [(ngModel)]="draft.quantity" /></label>
           <label>Preço unitário (R$) <input name="unit_price" type="number" required min="0" step="0.01" [(ngModel)]="draft.unit_price" /></label>
         </div>
+        @if (linked(); as item) {
+          <small
+            >Ligado ao estoque: {{ item.name }} (saldo {{ item.quantity_on_hand }}).
+            @if (draft.quantity > item.quantity_on_hand) {
+              <strong>A quantidade pedida é maior que o saldo.</strong>
+            }
+          </small>
+        }
         <div><button [disabled]="form.invalid">Adicionar ao orçamento</button></div>
       </form>
     }
@@ -126,6 +146,7 @@ export interface ItemRow extends ItemInput {
 })
 export class ItemsEditorComponent implements OnInit {
   private readonly api = inject(Api);
+  private readonly auth = inject(AuthService);
   readonly items = input.required<ItemRow[]>();
   readonly editable = input(false);
   readonly added = output<ItemInput>();
@@ -133,6 +154,9 @@ export class ItemsEditorComponent implements OnInit {
   readonly removed = output<number>();
   readonly services = signal<ShopService[]>([]);
   readonly parts = signal<ShopPart[]>([]);
+  readonly stock = signal<InventoryItem[]>([]);
+  /** Item de estoque ligado ao rascunho atual, enquanto ele for uma peça. */
+  readonly linked = signal<InventoryItem | null>(null);
   readonly total = computed(() => this.items().reduce((sum, item) => sum + item.quantity * item.unit_price, 0));
   pick = '';
   draft: ItemInput = { type: 'service', description: '', quantity: 1, unit_price: 0 };
@@ -147,6 +171,11 @@ export class ItemsEditorComponent implements OnInit {
       .get<ShopPart[]>('/catalog/parts', undefined, silent())
       .then((list) => this.parts.set(list.filter((item) => item.is_active)))
       .catch(() => undefined);
+    if (!this.auth.hasFeature('inventory')) return;
+    void this.api
+      .get<InventoryItem[]>('/inventory/items', undefined, silent())
+      .then((list) => this.stock.set(list.filter((item) => item.is_active)))
+      .catch(() => undefined);
   }
 
   applyPick(): void {
@@ -155,16 +184,22 @@ export class ItemsEditorComponent implements OnInit {
     const part = kind === 'p' ? this.parts().find((item) => item.id === id) : undefined;
     if (service) this.draft = { type: 'service', description: service.name, quantity: 1, unit_price: service.default_price };
     if (part) this.draft = { type: 'part', description: part.name, quantity: 1, unit_price: part.default_price };
+    const item = kind === 'e' ? this.stock().find((candidate) => candidate.id === id) : undefined;
+    if (item) this.draft = { type: 'part', description: item.name, quantity: 1, unit_price: item.unit_price };
+    this.linked.set(item ?? null);
   }
 
   add(): void {
+    const stockItem = this.draft.type === 'part' ? this.linked() : null;
     this.added.emit({
       ...this.draft,
+      ...(stockItem ? { inventory_item_id: stockItem.id } : {}),
       description: this.draft.description.trim(),
       quantity: Number(this.draft.quantity),
       unit_price: Number(this.draft.unit_price)
     });
     this.draft = { type: this.draft.type, description: '', quantity: 1, unit_price: 0 };
     this.pick = '';
+    this.linked.set(null);
   }
 }

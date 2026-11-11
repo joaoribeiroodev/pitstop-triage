@@ -48,9 +48,14 @@ export class DiagnosticsService {
     return computeSuggestions({ symptoms, vehicleBrand, catalog, stats, shopParts, shopServices });
   }
 
+  /** Passa um resultado já calculado pela camada opcional (módulo "ai"). Nunca falha: no pior caso devolve o próprio resultado. */
+  enhance(ctx: TenantContext, result: DiagnosticResult): Promise<DiagnosticResult> {
+    return enhanceSafely(this.enhancer, result, { tenantId: ctx.tenantId, enabled: ctx.tenant.feature_flags.ai }, this.logger);
+  }
+
   async suggest(ctx: TenantContext, symptoms: ReportedSymptom[], vehicleBrand: string | null): Promise<DiagnosticResult> {
     const result = await this.db.tenant(rls(ctx), (db) => this.compute(db, symptoms, vehicleBrand));
-    return enhanceSafely(this.enhancer, result, { tenantId: ctx.tenantId, enabled: ctx.tenant.feature_flags.ai }, this.logger);
+    return this.enhance(ctx, result);
   }
 
   async suggestByTriage(ctx: TenantContext, triageId: string): Promise<DiagnosticResult> {

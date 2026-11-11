@@ -386,6 +386,7 @@ export class ServiceOrdersService {
       return this.load(db, ctx, id);
     });
     // Aviso automático ao cliente, depois do commit e sem poder de derrubar a operação.
+    if (dto.status === 'diagnosis') return this.withAiNote(ctx, order);
     if (dto.status === 'in_progress') await this.notifications.notifyAutomatically(ctx, id, 'status_update');
     if (dto.status === 'completed') await this.notifications.notifyAutomatically(ctx, id, 'vehicle_ready');
     // Efeito pós-commit: a base de conhecimento da oficina é alimentada depois que a conclusão já está confirmada.
@@ -394,7 +395,34 @@ export class ServiceOrdersService {
     return order;
   }
 
+  /**
+   * Camada opcional de IA (módulo "ai"): acrescenta um resumo ao snapshot já gravado, fora da transação da OS.
+   * Sem o módulo, sem chave ou com qualquer falha, a OS segue exatamente como o motor determinístico a deixou.
+   */
+  private async withAiNote(ctx: TenantContext, order: ServiceOrder): Promise<ServiceOrder> {
+    const snapshot = order.mechanic_suggestions_snapshot;
+    if (!ctx.tenant.feature_flags.ai || !snapshot || snapshot.ai_note) return order;
+    try {
+      const enhanced = await this.diagnostics.enhance(ctx, snapshot);
+      if (!enhanced.ai_note) return order;
+      await this.db.tenant(rls(ctx), (db) =>
+        db.exec(`update public.service_orders set mechanic_suggestions_snapshot = mechanic_suggestions_snapshot || $2::jsonb where id = $1`, [
+          order.id,
+          JSON.stringify({ ai_note: enhanced.ai_note })
+        ])
+      );
+      return { ...order, mechanic_suggestions_snapshot: { ...snapshot, ai_note: enhanced.ai_note } };
+    } catch (error) {
+      this.logger.warn(`Resumo de IA da OS ${order.id} não gravado: ${(error as Error).message}`);
+      return order;
+    }
+  }
+
   async recomputeSuggestions(ctx: TenantContext, id: string): Promise<ServiceOrder> {
+    return this.withAiNote(ctx, await this.recomputeInTransaction(ctx, id));
+  }
+
+  private recomputeInTransaction(ctx: TenantContext, id: string): Promise<ServiceOrder> {
     return this.db.tenant(rls(ctx), async (db) => {
       await this.lockOpen(db, ctx, id);
       const order = await db.one<{ reported_symptoms: ReportedSymptom[]; brand: string | null }>(

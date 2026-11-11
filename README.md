@@ -18,7 +18,7 @@ Como usar o sistema depois de instalado: [`docs/GUIA-DE-USO.md`](docs/GUIA-DE-US
 | `libs/front`            | Base compartilhada dos frontends: sessão, interceptor, guards, formatação, estilos        |
 | `packages/shared-types` | Contratos TypeScript compartilhados entre backend e frontends                             |
 | `supabase/migrations`   | Schema, RLS, hook de custom claims e seed do catálogo de sintomas                         |
-| `e2e`                   | Teste de aceite do MVP no navegador (Playwright)                                          |
+| `e2e`                   | Teste de aceite ponta a ponta no navegador (Playwright)                                   |
 
 ### Módulos da Fase 1 (MVP)
 
@@ -31,7 +31,18 @@ Como usar o sistema depois de instalado: [`docs/GUIA-DE-USO.md`](docs/GUIA-DE-US
 - **Portal do cliente**: acompanhamento, aprovação ou recusa e histórico do veículo, com DTO dedicado.
 - **Painel Super Admin**: provisionamento de oficinas, planos, feature flags, limites, suspensão, sessão de suporte e auditoria.
 
-Fases 2 a 4 (WhatsApp via API oficial, estoque, financeiro, agenda, IA opcional) ainda não foram implementadas. As tabelas e feature flags já existem; a interface `DiagnosticEnhancer` tem só a implementação `NoOpEnhancer`.
+### Módulos das Fases 2 a 4
+
+Cada um é ligado por oficina no painel admin (feature flag); o plano define o padrão.
+
+- **Avisos ao cliente** (`whatsapp`): textos por oficina para "orçamento pronto", "novidade no serviço" e "veículo pronto", mensagem pronta com link `wa.me` e link de acompanhamento. Envio automático opcional pela API oficial do WhatsApp (Meta Cloud API), sempre depois do commit e com registro em `notification_log`: uma falha de envio nunca derruba a operação.
+- **Agenda** (`schedule`): agendamentos por dia, com bloqueio de conflito por box e por mecânico.
+- **Estoque** (`inventory`): itens com saldo, mínimo e movimentações. Peça de OS ligada ao estoque dá baixa automática na conclusão, na mesma transação.
+- **Financeiro** (`financial`): contas a receber e a pagar. Toda OS concluída gera a conta a receber (uma por OS).
+- **Indicadores**: faturamento, ticket médio, conversão de orçamentos, serviços que mais rendem, por mecânico e por mês.
+- **IA opcional** (`ai`): com `OPENAI_API_KEY` definida, acrescenta um resumo em linguagem simples ao painel de sugestões. Só seguem para o provedor nomes de sintomas, causas e a marca. O motor determinístico continua sendo a fonte de verdade e funciona igual sem a chave.
+
+Fora do escopo desta versão: multi-filial, white-label e migração para infraestrutura própria (VPS). O envio automático pelo WhatsApp e o resumo por IA estão cobertos por testes com o provedor simulado, mas não foram exercitados contra as APIs reais da Meta e da OpenAI.
 
 ## Rodando local
 
@@ -91,7 +102,7 @@ Passos que dependem das suas contas:
 
 1. **Supabase**: crie o projeto, rode as migrations e, em Authentication → Hooks, selecione a função `public.custom_access_token_hook` como Custom Access Token Hook. É ela que coloca `tenant_id`, `role` e `is_super_admin` no JWT.
 2. **Primeiro super admin**: crie o usuário no Supabase Auth e insira o e-mail em `public.super_admins`.
-3. **Backend (Render ou Railway)**: defina `AUTH_PROVIDER=supabase`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_JWT_SECRET`, `CORS_ORIGINS`, `PORTAL_BASE_URL` e, se quiser, `DPO_CONTACT_EMAIL` (contato do encarregado mostrado na política de privacidade). No Render, use a conexão do pooler do Supabase (Session pooler), porque a conexão direta é só IPv6. No plano gratuito do Render o serviço hiberna após 15 minutos sem acesso e a primeira requisição seguinte demora perto de um minuto.
+3. **Backend (Render ou Railway)**: defina `AUTH_PROVIDER=supabase`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_JWT_SECRET`, `CORS_ORIGINS`, `PORTAL_BASE_URL` e, se quiser, `DPO_CONTACT_EMAIL` (contato do encarregado mostrado na política de privacidade), `WHATSAPP_API_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` (envio automático; os modelos aprovados na Meta recebem, nesta ordem, cliente, oficina, veículo, placa, status e link) e `OPENAI_API_KEY` (resumo por IA). No Render, use a conexão do pooler do Supabase (Session pooler), porque a conexão direta é só IPv6. No plano gratuito do Render o serviço hiberna após 15 minutos sem acesso e a primeira requisição seguinte demora perto de um minuto.
 4. **Vercel**: os dois `vercel.json` repassam `/api` para o backend de staging (`pitstop-api-ct5p.onrender.com`). Ao criar outro ambiente, troque esse domínio pelo do backend correspondente.
 5. O painel admin abre a sessão de suporte no endereço definido em `PORTAL_BASE_URL` do backend, que é também a base dos links do portal do cliente.
 

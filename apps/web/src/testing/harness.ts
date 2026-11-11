@@ -12,6 +12,7 @@ const FLAGS: FeatureFlags = {
   diagnostics: true,
   portal: true,
   whatsapp: false,
+  schedule: true,
   inventory: false,
   financial: false,
   ai: false

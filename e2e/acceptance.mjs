@@ -175,6 +175,63 @@ try {
   await shot(reception, 'quadro');
   log('histórico do veículo e quadro de OS conferem');
 
+  // ── gestão: financeiro, estoque, agenda, indicadores e avisos ──
+  const owner = await session(WEB, 'dono@demo.local');
+  await owner.goto(`${WEB}/financial`);
+  const receivable = owner.getByRole('row', { name: new RegExp(PLATE) });
+  await receivable.waitFor();
+  await receivable.getByRole('button', { name: /Dar baixa/ }).click();
+  await owner.getByText('Baixa registrada').waitFor();
+  await shot(owner, 'financeiro');
+  log('a OS concluída virou conta a receber e a gestão deu baixa');
+
+  const SKU = `E2E-${PLATE}`;
+  await owner.goto(`${WEB}/inventory`);
+  await owner.getByRole('button', { name: 'Novo item' }).click();
+  await owner.getByLabel('Nome').fill(`Pastilha ${PLATE}`);
+  await owner.getByLabel('Código (SKU)').fill(SKU);
+  await owner.getByLabel('Saldo inicial').fill('4');
+  await owner.getByLabel('Estoque mínimo').fill('5');
+  await owner.getByRole('button', { name: 'Cadastrar item' }).click();
+  const stockRow = owner.getByRole('row', { name: new RegExp(SKU) });
+  await stockRow.getByText('Repor').waitFor();
+  await stockRow.getByRole('button', { name: /Movimentar/ }).click();
+  await owner.getByLabel('Quantidade').fill('6');
+  await owner.getByRole('button', { name: 'Registrar' }).click();
+  await owner.getByText('Movimentação registrada').waitFor();
+  assert.equal(await stockRow.getByText('Repor').count(), 0, 'a entrada tira o item do alerta de reposição');
+  await shot(owner, 'estoque');
+  log('estoque: item cadastrado, alerta de mínimo e entrada registrada');
+
+  await owner.goto(`${WEB}/schedule`);
+  await owner
+    .getByLabel('Dia', { exact: true })
+    .fill(`20${40 + Math.floor(Math.random() * 40)}-0${1 + Math.floor(Math.random() * 9)}-1${Math.floor(Math.random() * 10)}`);
+  const book = async (title) => {
+    await owner.getByRole('button', { name: 'Novo agendamento' }).click();
+    await owner.getByLabel('O que será feito').fill(title);
+    await owner.getByLabel('Responsável').selectOption({ label: 'Seu Jorge (mecânico)' });
+    await owner.getByRole('button', { name: 'Agendar', exact: true }).click();
+  };
+  await book(`Revisão ${PLATE}`);
+  await owner.getByText('Agendamento criado').waitFor();
+  await book(`Encaixe ${PLATE}`);
+  await owner
+    .getByRole('alert')
+    .getByText(/já tem um agendamento nesse horário/)
+    .waitFor();
+  await shot(owner, 'agenda');
+  log('agenda: agendamento criado e conflito de mecânico bloqueado');
+
+  await owner.goto(`${WEB}/reports`);
+  await owner.getByText('ticket médio').waitFor();
+  await owner.getByRole('heading', { name: 'Faturamento por mês' }).waitFor();
+  await shot(owner, 'indicadores');
+  await owner.goto(`${WEB}/settings/notifications`);
+  await owner.getByLabel('Veículo pronto').waitFor();
+  await shot(owner, 'avisos');
+  log('indicadores e modelos de aviso ao cliente disponíveis para a gestão');
+
   // ── super admin: suspender e reativar ──
   const admin = await session(ADMIN, 'admin@pitstop.local');
   await admin.getByRole('link', { name: 'Oficina Demo' }).click();
@@ -198,7 +255,7 @@ try {
   await shot(admin, 'admin-auditoria');
   log('reativação devolve o acesso e tudo fica na auditoria');
 
-  console.log('\nAceite do MVP: aprovado.');
+  console.log('\nAceite ponta a ponta: aprovado.');
 } finally {
   // Se o teste quebrar com a oficina demo suspensa, devolve o acesso para não envenenar a próxima execução.
   if (suspendedOn) {

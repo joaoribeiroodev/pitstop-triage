@@ -19,6 +19,7 @@ import {
 } from '@pitstop/shared-types';
 import { copyText } from '../ui/clipboard';
 import { ItemInput, ItemsEditorComponent } from '../ui/items-editor.component';
+import { NotifyCustomerComponent } from '../ui/notify.component';
 import { SymptomCatalog, SymptomReportComponent } from '../ui/symptoms';
 
 type Tab = 'symptoms' | 'diagnosis' | 'quote' | 'timeline';
@@ -44,7 +45,7 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
 
 @Component({
   standalone: true,
-  imports: [FormsModule, RouterLink, PlateComponent, StatusComponent, SymptomReportComponent, ItemsEditorComponent, ...FORMAT_PIPES],
+  imports: [FormsModule, RouterLink, PlateComponent, StatusComponent, SymptomReportComponent, ItemsEditorComponent, NotifyCustomerComponent, ...FORMAT_PIPES],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (order(); as o) {
@@ -219,6 +220,9 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
                     >Geradas pelo catálogo e pelo histórico da oficina em {{ o.suggestions_computed_at | moment }}. São apoio à sua análise: nada aqui é
                     obrigatório.</small
                   >
+                  @if (o.mechanic_suggestions_snapshot?.ai_note; as aiNote) {
+                    <p class="notice ai-note"><span class="mono-label">Resumo por IA</span><br />{{ aiNote }}</p>
+                  }
                   @for (suggestion of o.mechanic_suggestions_snapshot?.suggestions; track suggestion.symptom_code) {
                     <details open>
                       <summary>{{ suggestion.symptom_name }}</summary>
@@ -391,6 +395,10 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
                     <div><button type="button" (click)="issueTracking()">Gerar link de acompanhamento</button></div>
                   }
                 </section>
+              }
+
+              @if (canSend() && auth.hasFeature('whatsapp') && o.status !== 'draft' && o.status !== 'cancelled') {
+                <ps-notify-customer [orderId]="o.id" />
               }
             </div>
           }

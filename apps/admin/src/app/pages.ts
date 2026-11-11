@@ -31,10 +31,11 @@ const FLAG_LABELS: Record<FeatureFlag, string> = {
   public_triage: 'Triagem pública (link para o cliente)',
   diagnostics: 'Motor de diagnóstico determinístico',
   portal: 'Portal do cliente',
-  whatsapp: 'Notificações por WhatsApp (fase 2)',
-  inventory: 'Estoque (fase 3)',
-  financial: 'Financeiro (fase 3)',
-  ai: 'Camada de IA opcional (fase 4)'
+  whatsapp: 'Avisos ao cliente por WhatsApp',
+  schedule: 'Agenda (boxes e mecânicos)',
+  inventory: 'Estoque de peças',
+  financial: 'Financeiro (contas a receber e a pagar)',
+  ai: 'Resumo por IA no diagnóstico (opcional)'
 };
 
 const ACTION_LABELS: Record<string, string> = {

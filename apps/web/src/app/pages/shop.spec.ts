@@ -9,7 +9,7 @@ import { VehiclePickerComponent } from '../ui/vehicle-picker.component';
 import { CustomerDetailPage, CustomersPage } from './customers.page';
 import { DashboardPage } from './dashboard.page';
 import { BlockedPage, LoginPage, SupportSessionPage } from './login.page';
-import { CatalogPage, ComingSoonPage, SettingsPage, UsersPage } from './settings.page';
+import { CatalogPage, SettingsPage, UsersPage } from './settings.page';
 import { VehicleDetailPage, VehiclesPage } from './vehicles.page';
 
 const CUSTOMER: Customer = {
@@ -276,9 +276,9 @@ describe('ajustes e orçamento', () => {
 
     const page = await mount(SettingsPage, { role: 'owner' });
     expect(page.text()).toContain('Usuários');
-    page.component.form = { mechanics_see_all_orders: true, portal_token_days: 15 };
+    page.component.form = { mechanics_see_all_orders: true, portal_token_days: 15, bays: ' Box 1 \n\nElevador' };
     const saving = page.component.save();
-    expect(await page.respond('PATCH', '/tenant/settings', {})).toEqual({ mechanics_see_all_orders: true, portal_token_days: 15 });
+    expect(await page.respond('PATCH', '/tenant/settings', {})).toEqual({ mechanics_see_all_orders: true, portal_token_days: 15, bays: ['Box 1', 'Elevador'] });
     await page.respond('GET', '/auth/me', me('owner'));
     await saving;
   });
@@ -360,7 +360,6 @@ describe('ajustes e orçamento', () => {
     const reception = await mount(CatalogPage);
     await reception.respond('GET', '/catalog/services', [service]);
     expect(reception.component.canEdit).toBeFalse();
-    expect((await mount(ComingSoonPage)).text()).toContain('Módulo em preparação');
   });
 
   it('itens do orçamento: soma o total e adiciona do catálogo ou à mão', async () => {

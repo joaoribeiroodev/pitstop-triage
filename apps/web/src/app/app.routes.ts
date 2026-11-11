@@ -46,9 +46,20 @@ export const routes: Routes = [
       { path: 'settings', loadComponent: () => import('./pages/settings.page').then((m) => m.SettingsPage) },
       { path: 'settings/users', canActivate: [roleGuard('owner')], loadComponent: () => import('./pages/settings.page').then((m) => m.UsersPage) },
       { path: 'settings/catalog', loadComponent: () => import('./pages/settings.page').then((m) => m.CatalogPage) },
-      // módulos de fases futuras: a rota só existe quando o módulo está ativo no tenant
-      { path: 'inventory', canActivate: [featureFlagGuard('inventory')], loadComponent: () => import('./pages/settings.page').then((m) => m.ComingSoonPage) },
-      { path: 'financial', canActivate: [featureFlagGuard('financial')], loadComponent: () => import('./pages/settings.page').then((m) => m.ComingSoonPage) }
+      {
+        path: 'settings/notifications',
+        canActivate: [featureFlagGuard('whatsapp')],
+        loadComponent: () => import('./pages/settings.page').then((m) => m.NotificationsSettingsPage)
+      },
+      // módulos por plano: a rota só existe quando o módulo está ativo no tenant
+      { path: 'schedule', canActivate: [featureFlagGuard('schedule')], loadComponent: () => import('./pages/schedule.page').then((m) => m.SchedulePage) },
+      { path: 'inventory', canActivate: [featureFlagGuard('inventory')], loadComponent: () => import('./pages/inventory.page').then((m) => m.InventoryPage) },
+      {
+        path: 'financial',
+        canActivate: [featureFlagGuard('financial'), roleGuard('owner', 'manager')],
+        loadComponent: () => import('./pages/financial.page').then((m) => m.FinancialPage)
+      },
+      { path: 'reports', canActivate: [roleGuard('owner', 'manager')], loadComponent: () => import('./pages/reports.page').then((m) => m.ReportsPage) }
     ]
   },
   { path: '**', redirectTo: '' }
