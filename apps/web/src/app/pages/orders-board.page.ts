@@ -29,7 +29,10 @@ type Assignable = Pick<TenantUser, 'id' | 'full_name' | 'role'>;
   template: `
     <div class="page page-wide">
       <div class="row-between">
-        <h1>Ordens de serviço</h1>
+        <header class="page-head">
+          <span class="eyebrow">Quadro da oficina</span>
+          <h1>Ordens em <span class="hl">movimento</span></h1>
+        </header>
         @if (canOpen) {
           <div class="row">
             @if (auth.hasFeature('triage')) {
@@ -75,19 +78,23 @@ type Assignable = Pick<TenantUser, 'id' | 'full_name' | 'role'>;
             @for (order of column.orders; track order.id) {
               <a class="board-card" cdkDrag [cdkDragData]="order" [routerLink]="['/service-orders', order.id]">
                 <span class="row-between"
-                  ><ps-plate [value]="order.vehicle_plate" /><small class="num">OS {{ order.order_number }}</small></span
-                >
+                  ><span class="mono-label">OS {{ order.order_number }}</span
+                  ><ps-plate [value]="order.vehicle_plate"
+                /></span>
                 <strong>{{ order.customer_name }}</strong>
                 <small>{{ order.vehicle_label }}</small>
-                <span class="row-between">
-                  <small>{{ order.assigned_mechanic_name || 'Sem mecânico' }}</small>
+                <span class="row-between card-foot">
+                  <small class="row"
+                    ><span class="avatar" aria-hidden="true">{{ initials(order.assigned_mechanic_name) }}</span
+                    >{{ order.assigned_mechanic_name || 'Sem mecânico' }}</small
+                  >
                   @if (order.total_amount) {
                     <small class="num">{{ order.total_amount | brl }}</small>
                   }
                 </span>
               </a>
             } @empty {
-              <small class="muted">Nenhuma OS aqui.</small>
+              <small class="col-empty">Nenhuma OS nesta etapa.</small>
             }
           </section>
         }
@@ -119,6 +126,12 @@ export class OrdersBoardPage implements OnInit {
   ngOnInit(): void {
     void this.load();
     void this.api.get<Assignable[]>('/users/assignable').then((team) => this.mechanics.set(team.filter((member) => member.role === 'mechanic')));
+  }
+
+  initials(name: string | null): string {
+    if (!name) return '–';
+    const parts = name.trim().split(/\s+/);
+    return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : '')).toUpperCase();
   }
 
   async load(): Promise<void> {
@@ -154,10 +167,12 @@ export class OrdersBoardPage implements OnInit {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <div>
-        <a routerLink="/service-orders">Ordens de serviço</a>
-        <h1>Abrir OS sem triagem</h1>
-      </div>
+      <header class="page-head">
+        <a routerLink="/service-orders">← Ordens de serviço</a>
+        <span class="eyebrow">Sem triagem</span>
+        <h1>Abrir <span class="hl">ordem de serviço</span></h1>
+        <p>Para revisões e serviços combinados, sem relato de sintomas. Escolha o veículo e descreva o pedido.</p>
+      </header>
       @if (vehicle(); as v) {
         <form class="sheet stack" (ngSubmit)="create()">
           <div class="row-between">

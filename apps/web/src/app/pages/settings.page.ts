@@ -13,7 +13,10 @@ const PLAN_LABELS = { basic: 'Básico', pro: 'Pro', enterprise: 'Enterprise' } a
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <h1>Ajustes</h1>
+      <header class="page-head">
+        <span class="eyebrow">Sua oficina</span>
+        <h1>Ajustes do <span class="hl">pit lane</span></h1>
+      </header>
 
       @if (auth.tenant(); as tenant) {
         <section class="sheet stack-sm">

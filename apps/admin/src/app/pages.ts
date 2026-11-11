@@ -72,7 +72,10 @@ function slugify(text: string): string {
   template: `
     <div class="page">
       <div class="row-between">
-        <h1>Oficinas</h1>
+        <header class="page-head">
+          <span class="eyebrow">Clientes do PitStop</span>
+          <h1>Oficinas</h1>
+        </header>
         <a class="btn btn-primary" routerLink="/tenants/new">Nova oficina</a>
       </div>
       <form class="row" role="search" (ngSubmit)="load(1)">
@@ -545,7 +548,10 @@ export class TenantDetailPage implements OnInit {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <h1>Métricas</h1>
+      <header class="page-head">
+        <span class="eyebrow">Visão global</span>
+        <h1>Métricas</h1>
+      </header>
       @if (data(); as m) {
         <section class="kpis" aria-label="Indicadores globais">
           <div class="sheet kpi">

@@ -13,7 +13,11 @@ import { VehicleFormComponent } from '../ui/vehicle-form.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <h1>Veículos</h1>
+      <header class="page-head">
+        <span class="eyebrow">Frota atendida</span>
+        <h1>Veículos</h1>
+        <p>Cada carro guarda o histórico de tudo o que já foi feito nele aqui.</p>
+      </header>
       <form class="row" role="search" (ngSubmit)="load(1)">
         <label class="grow"
           ><span class="sr-only">Buscar</span>

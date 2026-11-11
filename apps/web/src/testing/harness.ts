@@ -1,7 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideExperimentalZonelessChangeDetection, Type } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockBehavior, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { apiInterceptor, AuthService, SESSION_KEY } from '@front/core';
 import type { FeatureFlags, MeResponse, ServiceOrder, SymptomCategory, TenantRole } from '@pitstop/shared-types';
@@ -148,6 +148,8 @@ export async function mount<T>(
   localStorage.clear();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
+    // o modelo 3D do carro fica atrás de @defer: nos testes ele não é carregado (não há WebGL no navegador de teste)
+    deferBlockBehavior: DeferBlockBehavior.Manual,
     providers: [
       provideExperimentalZonelessChangeDetection(),
       provideRouter([{ path: '**', children: [] }]),

@@ -50,15 +50,16 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
     @if (order(); as o) {
       <div class="page">
         <header class="stack-sm">
-          <a routerLink="/service-orders">Ordens de serviço</a>
+          <a routerLink="/service-orders">← Ordens de serviço</a>
+          <span class="eyebrow">Ordem de serviço · aberta em {{ o.opened_at | day }}</span>
           <div class="row-between">
             <div class="row">
               <ps-plate [value]="o.vehicle_plate" [large]="true" />
               <div>
-                <h1>OS {{ o.order_number }}</h1>
-                <span
-                  ><a [routerLink]="['/vehicles', o.vehicle_id]">{{ o.vehicle_label }}</a
-                  >, <a [routerLink]="['/customers', o.customer_id]">{{ o.customer_name }}</a> {{ o.customer_phone | phone }}</span
+                <h1>OS {{ o.order_number }} <span class="hl">·</span> {{ o.vehicle_label }}</h1>
+                <span class="muted"
+                  ><a [routerLink]="['/customers', o.customer_id]">{{ o.customer_name }}</a> {{ o.customer_phone | phone }},
+                  <a [routerLink]="['/vehicles', o.vehicle_id]">ficha do veículo</a></span
                 >
               </div>
             </div>
@@ -110,8 +111,11 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
 
         @switch (tab()) {
           @case ('symptoms') {
-            <section class="sheet stack" role="tabpanel" aria-labelledby="tab-symptoms">
-              <h2>Relato do cliente</h2>
+            <section class="sheet stripe stack" role="tabpanel" aria-labelledby="tab-symptoms">
+              <header class="stack-sm">
+                <span class="mono-label signal">Relato do cliente</span>
+                <h2>O que o cliente percebeu</h2>
+              </header>
               <ps-symptom-report [catalog]="catalog()" [symptoms]="o.reported_symptoms" [notes]="o.free_form_notes" />
               @if (o.triage_session_id) {
                 <a [routerLink]="['/triage', o.triage_session_id]">Ver a triagem de origem</a>
@@ -124,7 +128,10 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
               <div class="stack">
                 <form class="sheet stack" (ngSubmit)="saveDiagnosis()">
                   <div class="row-between">
-                    <h2>Diagnóstico do mecânico</h2>
+                    <header class="stack-sm">
+                      <span class="mono-label signal">Análise do mecânico</span>
+                      <h2>Diagnóstico do mecânico</h2>
+                    </header>
                     @if (hasSuggestions() && !showSuggestions()) {
                       <button type="button" class="btn-quiet" (click)="setSuggestionsHidden(false)">Mostrar sugestões</button>
                     }
@@ -170,7 +177,10 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
                 </form>
 
                 <section class="sheet stack">
-                  <h2>Notas</h2>
+                  <header class="stack-sm">
+                    <span class="mono-label">Comunicação</span>
+                    <h2>Notas</h2>
+                  </header>
                   <ul class="list">
                     @for (note of o.notes; track note.id) {
                       <li class="note">
@@ -199,7 +209,10 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
               @if (showSuggestions()) {
                 <aside class="suggestions" aria-label="Sugestões do motor de diagnóstico">
                   <div class="row-between">
-                    <h3>Sugestões para considerar</h3>
+                    <header class="stack-sm">
+                      <span class="mono-label">Apoio à análise</span>
+                      <h3>Sugestões para considerar</h3>
+                    </header>
                     <button type="button" class="btn-quiet" (click)="setSuggestionsHidden(true)">Ignorar sugestões</button>
                   </div>
                   <small
@@ -291,8 +304,11 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
 
           @case ('quote') {
             <div class="stack" role="tabpanel" aria-labelledby="tab-quote">
-              <section class="sheet stack">
-                <h2>Itens do serviço</h2>
+              <section class="sheet stripe stack">
+                <header class="stack-sm">
+                  <span class="mono-label signal">Itens do serviço</span>
+                  <h2>Orçamento para aprovação</h2>
+                </header>
                 <ps-items-editor [items]="o.items" [editable]="itemsEditable()" (added)="addItem($event)" (removed)="removeItem($event)" />
                 @if (!itemsEditable() && !closed()) {
                   <small>Os itens ficam travados depois que o orçamento é enviado. Se o cliente recusar, eles voltam a ser editáveis.</small>
@@ -315,7 +331,8 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
                 </section>
               } @else if (canSend() && canQuote()) {
                 <section class="sheet stack-sm">
-                  <h2>Enviar ao cliente</h2>
+                  <span class="mono-label signal">Próximo passo</span>
+                  <h2>Enviar ao <span class="hl">cliente</span></h2>
                   <p class="muted">Gera a versão {{ o.quotes.length + 1 }} do orçamento com os itens acima e o link para o cliente aprovar ou recusar.</p>
                   <div>
                     <button type="button" class="btn-primary btn-big" [disabled]="!o.items.length" (click)="sendQuote()">Gerar link de aprovação</button>
@@ -379,8 +396,11 @@ const ACTOR_LABELS = { staff: 'Oficina', customer: 'Cliente', system: 'Sistema',
           }
 
           @case ('timeline') {
-            <section class="sheet stack" role="tabpanel" aria-labelledby="tab-timeline">
-              <h2>Histórico da ordem</h2>
+            <section class="sheet stripe stack" role="tabpanel" aria-labelledby="tab-timeline">
+              <header class="stack-sm">
+                <span class="mono-label signal">Histórico da ordem</span>
+                <h2>Timeline do serviço</h2>
+              </header>
               <ol class="timeline">
                 @for (entry of o.history; track entry.id) {
                   <li>

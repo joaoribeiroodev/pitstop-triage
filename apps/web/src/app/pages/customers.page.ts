@@ -14,7 +14,10 @@ import { VehicleFormComponent } from '../ui/vehicle-form.component';
   template: `
     <div class="page">
       <div class="row-between">
-        <h1>Clientes</h1>
+        <header class="page-head">
+          <span class="eyebrow">Relacionamento</span>
+          <h1>Clientes</h1>
+        </header>
         @if (canWrite) {
           <button type="button" class="btn-primary" (click)="dialog.showModal()">Novo cliente</button>
         }

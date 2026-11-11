@@ -6,6 +6,8 @@ A triagem e as sugestões ao mecânico são **determinísticas** (catálogo cura
 
 > Esta é a versão 2 do projeto. A versão anterior (PitStop Triage, triagem para o motorista com OpenAI) permanece na branch `main` até o merge.
 
+Como usar o sistema depois de instalado: [`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md).
+
 ## O que tem aqui
 
 | Pasta                   | O que é                                                                                   |
@@ -22,7 +24,7 @@ A triagem e as sugestões ao mecânico são **determinísticas** (catálogo cura
 
 - **Autenticação e RBAC**: Supabase Auth com `tenant_id` e `role` no JWT; papéis owner, manager, receptionist e mechanic.
 - **CRM**: clientes e veículos, busca por telefone e placa, exportação e anonimização (LGPD).
-- **Triagem**: wizard de 4 etapas no balcão e link público para o cliente preencher em casa.
+- **Triagem**: cinco etapas no balcão (carro, mapa 3D das zonas do veículo, sintomas, detalhes e resumo) e link público para o cliente preencher em casa.
 - **Motor de diagnóstico determinístico**: causas ranqueadas (50% catálogo + 50% histórico da oficina), verificações e peças com preço da oficina; snapshot imutável por OS.
 - **Ordens de serviço**: quadro kanban com arrastar e soltar, workflow validado no backend, timeline auditada.
 - **Orçamento**: versões, envio por link tokenizado, mensagem pronta e link `wa.me`.

@@ -6,7 +6,7 @@ import { FORMAT_PIPES } from '@front/format';
 import { PlateComponent } from '@front/ui';
 import type { Paginated, ReportedSymptom, ServiceOrder, SymptomCategory, TriageSession, TriageStatus, Vehicle } from '@pitstop/shared-types';
 import { copyText } from '../ui/clipboard';
-import { SymptomCatalog, SymptomQuestionsComponent, SymptomReportComponent, SymptomSelectComponent } from '../ui/symptoms';
+import { SymptomCatalog, SymptomQuestionsComponent, SymptomReportComponent, SymptomSelectComponent, ZoneMapComponent } from '../ui/symptoms';
 import { VehiclePickerComponent } from '../ui/vehicle-picker.component';
 
 const TRIAGE_LABELS: Record<TriageStatus, string> = { pending: 'Pendentes', converted: 'Viraram OS', archived: 'Arquivadas' };
@@ -18,7 +18,10 @@ const TRIAGE_LABELS: Record<TriageStatus, string> = { pending: 'Pendentes', conv
   template: `
     <div class="page">
       <div class="row-between">
-        <h1>Triagem</h1>
+        <header class="page-head">
+          <span class="eyebrow">Escuta do cliente</span>
+          <h1>Triagem</h1>
+        </header>
         @if (canWrite) {
           <a class="btn btn-primary" routerLink="/triage/new">Nova triagem</a>
         }
@@ -109,24 +112,78 @@ export class TriageListPage implements OnInit {
   }
 }
 
-const STEPS = ['Cliente e veículo', 'Sintomas', 'Detalhes', 'Revisão'] as const;
+/** As cinco etapas do pit lane: do carro ao resumo do relato. */
+const STEPS = [
+  { label: 'Carro', eyebrow: 'Identificação' },
+  { label: 'Mapa', eyebrow: 'Localização' },
+  { label: 'Sintomas', eyebrow: 'Sintomas' },
+  { label: 'Detalhes', eyebrow: 'Detalhes' },
+  { label: 'Resumo', eyebrow: 'Revisão' }
+] as const;
 
 @Component({
   standalone: true,
-  imports: [FormsModule, RouterLink, PlateComponent, VehiclePickerComponent, SymptomSelectComponent, SymptomQuestionsComponent, SymptomReportComponent],
+  imports: [
+    FormsModule,
+    RouterLink,
+    PlateComponent,
+    VehiclePickerComponent,
+    ZoneMapComponent,
+    SymptomSelectComponent,
+    SymptomQuestionsComponent,
+    SymptomReportComponent
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <div>
-        <a routerLink="/triage">Triagem</a>
-        <h1>Nova triagem</h1>
+      <a routerLink="/triage">Triagem</a>
+
+      <div class="stack">
+        <ol class="steps" aria-label="Etapas da triagem">
+          @for (item of steps; track item.label; let i = $index) {
+            <li [class.done]="i < step() || !!saved()" [attr.aria-current]="i === step() && !saved() ? 'step' : null">{{ item.label }}</li>
+          }
+        </ol>
+        <div class="progress">
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-label="Progresso da triagem"
+            [attr.aria-valuenow]="progress()"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <i [style.width.%]="progress()"></i>
+          </div>
+          <span class="mono-label num">{{ progress() }}% compl.</span>
+        </div>
       </div>
 
-      <ol class="steps" aria-label="Etapas da triagem">
-        @for (label of steps; track label; let i = $index) {
-          <li [class.done]="i < step()" [attr.aria-current]="i === step() ? 'step' : null">{{ label }}</li>
+      <header class="page-head">
+        <span class="eyebrow">Etapa 0{{ step() + 1 }} · {{ steps[step()].eyebrow }}</span>
+        @switch (step()) {
+          @case (0) {
+            <h1>Qual é o <span class="hl">carro</span>?</h1>
+            <p>Busque pela placa, pelo nome ou pelo telefone do cliente. Se for a primeira visita, o cadastro é feito aqui mesmo.</p>
+          }
+          @case (1) {
+            <h1>Onde dói no <span class="hl">carro</span>?</h1>
+            <p>Arraste o carro para girar e clique nas zonas em laranja. Os atalhos ao lado fazem o mesmo e funcionam pelo teclado.</p>
+          }
+          @case (2) {
+            <h1>O que está <span class="hl">acontecendo</span>?</h1>
+            <p>Marque tudo o que o cliente descreveu. Para sintomas de outra parte do carro, volte ao mapa: o que já foi marcado fica guardado.</p>
+          }
+          @case (3) {
+            <h1>Conte um pouco <span class="hl">mais</span>.</h1>
+            <p>Respostas curtas ajudam o mecânico a chegar na causa. Pode deixar em branco o que o cliente não souber.</p>
+          }
+          @default {
+            <h1>Tudo <span class="hl">certo</span> no relato?</h1>
+            <p>Confira antes de salvar. A triagem fica pendente até virar ordem de serviço.</p>
+          }
         }
-      </ol>
+      </header>
 
       @if (vehicle(); as v) {
         <div class="sheet row-between">
@@ -144,12 +201,15 @@ const STEPS = ['Cliente e veículo', 'Sintomas', 'Detalhes', 'Revisão'] as cons
           <ps-vehicle-picker (picked)="pick($event)" />
         }
         @case (1) {
-          <ps-symptom-select [catalog]="catalog()" [(value)]="symptoms" />
+          <ps-zone-map [catalog]="catalog()" [value]="symptoms()" [(zone)]="zone" />
         }
         @case (2) {
-          <ps-symptom-questions [catalog]="catalog()" [(value)]="symptoms" />
+          <ps-symptom-select [catalog]="catalog()" [zone]="zone()" [(value)]="symptoms" />
         }
         @case (3) {
+          <ps-symptom-questions [catalog]="catalog()" [(value)]="symptoms" />
+        }
+        @case (4) {
           @if (saved(); as session) {
             <div class="notice notice-done" role="status"><strong>Triagem salva.</strong> Ela fica pendente até virar ordem de serviço.</div>
             <div class="row">
@@ -157,7 +217,7 @@ const STEPS = ['Cliente e veículo', 'Sintomas', 'Detalhes', 'Revisão'] as cons
               <a class="btn" routerLink="/triage">Deixar pendente</a>
             </div>
           } @else {
-            <div class="sheet stack">
+            <div class="sheet stripe stack">
               <h2>Confira o relato</h2>
               <ps-symptom-report [catalog]="catalog()" [symptoms]="symptoms()" />
               <label
@@ -171,13 +231,21 @@ const STEPS = ['Cliente e veículo', 'Sintomas', 'Detalhes', 'Revisão'] as cons
 
       @if (step() > 0 && !saved()) {
         <div class="row-between">
-          <button type="button" (click)="step.set(step() - 1)">Voltar</button>
-          @if (step() < 3) {
-            <button type="button" class="btn-primary" [disabled]="!symptoms().length" (click)="step.set(step() + 1)">
-              {{ symptoms().length ? 'Continuar' : 'Selecione ao menos um sintoma' }}
-            </button>
-          } @else {
-            <button type="button" class="btn-primary" (click)="save()">Salvar triagem</button>
+          <button type="button" (click)="step.set(step() - 1)">{{ step() === 2 ? '← Mapa' : 'Voltar' }}</button>
+          @switch (step()) {
+            @case (1) {
+              <button type="button" class="btn-primary" [disabled]="!zone()" (click)="step.set(2)">
+                {{ zone() ? 'Continuar' : 'Escolha uma zona do carro' }}
+              </button>
+            }
+            @case (4) {
+              <button type="button" class="btn-primary" (click)="save()">Salvar triagem</button>
+            }
+            @default {
+              <button type="button" class="btn-primary" [disabled]="!symptoms().length" (click)="step.set(step() + 1)">
+                {{ symptoms().length ? 'Continuar' : 'Selecione ao menos um sintoma' }}
+              </button>
+            }
           }
         </div>
       }
@@ -196,6 +264,9 @@ export class TriageWizardPage implements OnInit {
   readonly catalog = signal<SymptomCategory[]>([]);
   readonly symptoms = signal<ReportedSymptom[]>([]);
   readonly saved = signal<TriageSession | null>(null);
+  /** Zona do carro escolhida no mapa (código da categoria do catálogo). */
+  readonly zone = signal<string | null>(null);
+  readonly progress = computed(() => (this.saved() ? 100 : this.step() * 20));
   notes = '';
 
   async ngOnInit(): Promise<void> {

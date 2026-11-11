@@ -43,14 +43,20 @@ interface PortalIntro {
             </section>
           } @else {
             @if (data(); as d) {
+              <div class="row-between">
+                <span class="brand"
+                  ><span class="brand-mark">PS</span><span>{{ d.shop.name }}</span></span
+                >
+                <span class="mono-label">Portal seguro</span>
+              </div>
               <header class="portal-head">
-                <span class="muted">{{ d.shop.name }}</span>
-                <div class="row">
-                  <ps-plate [value]="d.vehicle.plate" [large]="true" />
-                  <span>{{ d.vehicle.brand }} {{ d.vehicle.model }} {{ d.vehicle.year }}</span>
-                </div>
+                <span class="mono-label signal">Ordem de serviço {{ d.order.number }}, aberta em {{ d.order.opened_at | day }}</span>
+                <h1>Seu carro está em <span class="hl">boas mãos</span>.</h1>
                 <div class="row-between">
-                  <span>Ordem de serviço {{ d.order.number }}, aberta em {{ d.order.opened_at | day }}</span>
+                  <div class="row">
+                    <ps-plate [value]="d.vehicle.plate" [large]="true" />
+                    <span>{{ d.vehicle.brand }} {{ d.vehicle.model }} {{ d.vehicle.year }}</span>
+                  </div>
                   <ps-status [value]="d.order.status" />
                 </div>
               </header>
@@ -61,7 +67,10 @@ interface PortalIntro {
 
               @if (d.quote; as quote) {
                 <section class="sheet stack" aria-labelledby="quote-title">
-                  <h2 id="quote-title">Orçamento</h2>
+                  <header class="stack-sm">
+                    <span class="mono-label signal">Proposta da oficina</span>
+                    <h2 id="quote-title">Orçamento</h2>
+                  </header>
                   <div class="table-wrap">
                     <table>
                       <thead>
@@ -105,7 +114,7 @@ interface PortalIntro {
                       </form>
                     } @else {
                       @if (quote.expires_at) {
-                        <small>Orçamento válido até {{ quote.expires_at | day }}.</small>
+                        <small>Orçamento válido até {{ quote.expires_at | day }}. A oficina só inicia o serviço depois da sua aprovação.</small>
                       }
                       <div class="row">
                         <button type="button" class="btn-go btn-big grow" [disabled]="busy()" (click)="respond('approve')">Aprovar orçamento</button>

@@ -141,6 +141,8 @@ describe('Catálogo, dashboard e veículos', () => {
 
       const forReception = (await h.api('get', '/dashboard/summary', reception.token).expect(200)).body;
       expect(forReception.opened_today).toBeGreaterThanOrEqual(3);
+      // primeiros passos: já há equipe e OS aberta; o catálogo foi esvaziado no teste anterior
+      expect(forReception.onboarding).toEqual({ team: true, catalog: false, first_order: true });
       expect(forReception.needs_action.map((order: { id: string }) => order.id)).toEqual(expect.arrayContaining([mine.id, free.id, theirs.id]));
 
       // fila restrita (padrão): o mecânico conta só as próprias, mas enxerga as livres para poder assumir

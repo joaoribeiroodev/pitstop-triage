@@ -530,6 +530,8 @@ export interface DashboardSummary {
   completed_this_week: number;
   pending_triage: number;
   needs_action: ServiceOrderSummary[];
+  /** Primeiros passos da oficina: o que já foi feito. O painel esconde o cartão quando tudo está pronto. */
+  onboarding: { team: boolean; catalog: boolean; first_order: boolean };
 }
 
 // ───────────── admin ─────────────

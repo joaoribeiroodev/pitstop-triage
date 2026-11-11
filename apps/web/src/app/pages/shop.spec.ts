@@ -41,7 +41,15 @@ const VEHICLE: Vehicle = {
   customer_name: 'Marina Souza',
   customer_phone: '71988887777'
 };
-const SUMMARY: DashboardSummary = { opened_today: 2, awaiting_approval: 1, in_progress: 3, completed_this_week: 4, pending_triage: 2, needs_action: [] };
+const SUMMARY: DashboardSummary = {
+  opened_today: 2,
+  awaiting_approval: 1,
+  in_progress: 3,
+  completed_this_week: 4,
+  pending_triage: 2,
+  needs_action: [],
+  onboarding: { team: true, catalog: false, first_order: false }
+};
 const paged = <T>(data: T[]) => ({ data, total: data.length, page: 1, pageSize: 20 });
 
 describe('entrada e sessão', () => {
@@ -109,6 +117,14 @@ describe('entrada e sessão', () => {
     expect(page.text()).toContain('2 abertas hoje');
     expect(page.text()).toContain('2 triagens pendentes');
     expect(page.text()).toContain('Nada pendente por aqui.');
+    // recepção não vê os primeiros passos: é tarefa da gestão
+    expect(page.text()).not.toContain('Primeiros passos');
+
+    const owner = await mount(DashboardPage, { role: 'owner' });
+    await owner.respond('GET', '/dashboard/summary', SUMMARY);
+    expect(owner.text()).toContain('Primeiros passos');
+    expect((owner.fixture.nativeElement as HTMLElement).querySelectorAll('.onboard li.done').length).toBe(1);
+    expect(owner.component.showOnboarding({ ...SUMMARY, onboarding: { team: true, catalog: true, first_order: true } })).toBeFalse();
   });
 });
 

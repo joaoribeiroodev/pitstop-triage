@@ -8,20 +8,44 @@ import { AuthService, errorMessage } from '@front/core';
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="page page-narrow" style="padding-top: 12vh">
-      <header class="stack-sm">
-        <h1 style="font-size: 3.2rem">PitStop</h1>
-        <p class="muted">Triagem, ordens de serviço e orçamentos da oficina em um só lugar.</p>
-      </header>
-      <form class="sheet stack" (ngSubmit)="submit()">
-        <label>E-mail <input type="email" name="email" autocomplete="username" required [(ngModel)]="email" /></label>
-        <label>Senha <input type="password" name="password" autocomplete="current-password" required [(ngModel)]="password" /></label>
-        @if (error()) {
-          <p class="notice notice-stop" role="alert">{{ error() }}</p>
-        }
-        <button class="btn-primary btn-big" [disabled]="busy()">{{ busy() ? 'Entrando…' : 'Entrar' }}</button>
-      </form>
-      <p class="muted">O acesso é criado pelo responsável da oficina. Esqueceu a senha? Peça a ele um novo acesso.</p>
+    <main class="auth">
+      <section class="auth-hero" aria-label="PitStop">
+        <span class="brand"><span class="brand-mark">PS</span><span>PitStop</span></span>
+        <div class="stack">
+          <span class="eyebrow">Gestão da oficina</span>
+          <h1>A oficina inteira no mesmo <span class="hl">pit lane</span>.</h1>
+          <p class="muted">Triagem, ordens de serviço e orçamentos em um só lugar, do relato do cliente à entrega do veículo.</p>
+        </div>
+        <ul class="auth-points">
+          <li>
+            <span class="mono-label">01</span><strong>Triagem guiada</strong><span>O relato do cliente vira sintomas estruturados, por zona do carro.</span>
+          </li>
+          <li>
+            <span class="mono-label">02</span><strong>Sugestões que se explicam</strong
+            ><span>Causas, verificações e peças vindas do catálogo e do histórico da própria oficina.</span>
+          </li>
+          <li>
+            <span class="mono-label">03</span><strong>Aprovação por link</strong><span>O cliente aprova o orçamento e acompanha o serviço pelo celular.</span>
+          </li>
+        </ul>
+      </section>
+      <section class="auth-form">
+        <div>
+          <header class="stack-sm">
+            <span class="mono-label signal">Acesso da equipe</span>
+            <h2>Entrar na oficina</h2>
+          </header>
+          <form class="stack" (ngSubmit)="submit()">
+            <label>E-mail <input type="email" name="email" autocomplete="username" required [(ngModel)]="email" /></label>
+            <label>Senha <input type="password" name="password" autocomplete="current-password" required [(ngModel)]="password" /></label>
+            @if (error()) {
+              <p class="notice notice-stop" role="alert">{{ error() }}</p>
+            }
+            <button class="btn-primary btn-big" [disabled]="busy()">{{ busy() ? 'Entrando…' : 'Entrar' }}</button>
+          </form>
+          <p class="muted">O acesso é criado pelo responsável da oficina. Esqueceu a senha? Peça a ele um novo acesso.</p>
+        </div>
+      </section>
     </main>
   `
 })

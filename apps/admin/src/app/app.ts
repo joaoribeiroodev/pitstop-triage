@@ -24,19 +24,23 @@ export class AppComponent {}
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="page page-narrow" style="padding-top: 12vh">
-      <header class="stack-sm">
-        <h1 style="font-size: 2.8rem">PitStop Admin</h1>
-        <p class="muted">Painel central de provisionamento. Acesso restrito à equipe PitStop.</p>
-      </header>
-      <form class="sheet stack" (ngSubmit)="submit()">
-        <label>E-mail <input type="email" name="email" autocomplete="username" required [(ngModel)]="email" /></label>
-        <label>Senha <input type="password" name="password" autocomplete="current-password" required [(ngModel)]="password" /></label>
-        @if (error()) {
-          <p class="notice notice-stop" role="alert">{{ error() }}</p>
-        }
-        <button class="btn-primary btn-big" [disabled]="busy()">{{ busy() ? 'Entrando…' : 'Entrar' }}</button>
-      </form>
+    <main class="auth-admin">
+      <div>
+        <span class="brand"><span class="brand-mark">PS</span><span>PitStop</span></span>
+        <header class="page-head">
+          <span class="eyebrow">Painel central</span>
+          <h1>PitStop <span class="hl">Admin</span></h1>
+          <p>Provisionamento e suporte das oficinas. Acesso restrito à equipe PitStop.</p>
+        </header>
+        <form class="sheet stripe stack" (ngSubmit)="submit()">
+          <label>E-mail <input type="email" name="email" autocomplete="username" required [(ngModel)]="email" /></label>
+          <label>Senha <input type="password" name="password" autocomplete="current-password" required [(ngModel)]="password" /></label>
+          @if (error()) {
+            <p class="notice notice-stop" role="alert">{{ error() }}</p>
+          }
+          <button class="btn-primary btn-big" [disabled]="busy()">{{ busy() ? 'Entrando…' : 'Entrar' }}</button>
+        </form>
+      </div>
     </main>
   `
 })
@@ -74,10 +78,10 @@ export class LoginPage {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav class="admin-bar" aria-label="Navegação do painel">
-      <span class="brand">PitStop<small>Admin</small></span>
-      <a routerLink="/tenants" routerLinkActive="active">Oficinas</a>
-      <a routerLink="/metrics" routerLinkActive="active">Métricas</a>
-      <a routerLink="/audit" routerLinkActive="active">Auditoria</a>
+      <span class="brand"><span class="brand-mark">PS</span><span>PitStop</span><small>Admin</small></span>
+      <a class="nav" routerLink="/tenants" routerLinkActive="active">Oficinas</a>
+      <a class="nav" routerLink="/metrics" routerLinkActive="active">Métricas</a>
+      <a class="nav" routerLink="/audit" routerLinkActive="active">Auditoria</a>
       <span class="who">{{ auth.me()?.email }} <button type="button" (click)="logout()">Sair</button></span>
     </nav>
     <router-outlet />

@@ -23,7 +23,7 @@ export class DashboardController {
     const actionParams = ctx.role === 'mechanic' ? [...params, ctx.memberId] : params;
 
     return this.db.tenant(rls(ctx), async (db) => {
-      const kpis = await db.one<Omit<DashboardSummary, 'needs_action' | 'pending_triage'>>(
+      const kpis = await db.one<Omit<DashboardSummary, 'needs_action' | 'pending_triage' | 'onboarding'>>(
         `select count(*) filter (where o.opened_at >= date_trunc('day', now()))::int as opened_today,
                 count(*) filter (where o.status = 'awaiting_approval')::int as awaiting_approval,
                 count(*) filter (where o.status = 'in_progress')::int as in_progress,
@@ -33,7 +33,12 @@ export class DashboardController {
       );
       const triage = await db.one<{ pending_triage: number }>(`select count(*)::int as pending_triage from public.triage_sessions where status = 'pending'`);
       const needsAction = await db.many<ServiceOrderSummary>(`${ORDER_SUMMARY_SQL} where ${actionable} ${scope} order by o.updated_at limit 20`, actionParams);
-      return { ...kpis, ...triage, needs_action: needsAction };
+      const onboarding = await db.one<DashboardSummary['onboarding']>(
+        `select (select count(*) from public.tenant_users where is_active) > 1 as team,
+                exists (select 1 from public.shop_services_catalog) or exists (select 1 from public.shop_parts_catalog) as catalog,
+                exists (select 1 from public.service_orders) as first_order`
+      );
+      return { ...kpis, ...triage, needs_action: needsAction, onboarding };
     });
   }
 }

@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, Injectable, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, Injectable, input, model, signal } from '@angular/core';
 import { Api, silent } from '@front/core';
+import { Car3dComponent } from './car-3d/car-3d.component';
+import { isZona, zonasCatalogo } from './zones';
 import type { AnswerValue, FollowUpQuestion, ReportedSymptom, Symptom, SymptomCategory } from '@pitstop/shared-types';
 
 /** Catálogo global de sintomas: muda raramente, então é buscado uma vez por sessão do app. */
@@ -28,55 +30,177 @@ export function formatAnswer(value: AnswerValue | undefined): string {
   return String(value);
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  freios: '🛑',
-  motor: '⚙️',
-  transmissao: '🔩',
-  suspensao: '🛞',
-  eletrica: '🔋',
-  arrefecimento: '🌡️'
-};
+/** Rótulo, ícone e descrição de uma categoria: usa a zona do carro quando o código bate, senão o próprio catálogo. */
+export function zoneOf(category: SymptomCategory): { label: string; icone: string; descricao: string; sistemas: string[] } {
+  if (isZona(category.code)) return zonasCatalogo[category.code];
+  return { label: category.name, icone: '🔧', descricao: category.description ?? '', sistemas: [] };
+}
 
-/** Etapa "o que está acontecendo": sintomas do catálogo, agrupados por categoria. */
+/**
+ * Etapa "onde dói no carro?": o modelo 3D do PitStop Triage, com as zonas clicáveis, e os atalhos ao lado.
+ * Os atalhos são a via acessível por teclado e a que funciona onde não há WebGL.
+ */
+@Component({
+  selector: 'ps-zone-map',
+  standalone: true,
+  imports: [Car3dComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="zone-layout">
+      <section class="sheet stripe zone-stage" aria-label="Modelo do veículo">
+        <div class="zone-stage-head"><span class="mono-label">Visualização 3D · Telemetria</span></div>
+        <div class="zone-canvas">
+          @if (no3d()) {
+            <p class="placeholder">O modelo 3D não está disponível neste aparelho. Escolha a zona nos atalhos.</p>
+          } @else {
+            @defer (on viewport) {
+              <ps-car-3d [selectedZone]="zone()" (zoneSelected)="zone.set($event)" (unavailable)="no3d.set(true)" />
+            } @placeholder {
+              <p class="placeholder">Carregando o modelo do veículo…</p>
+            }
+          }
+        </div>
+      </section>
+
+      <div class="stack">
+        <section class="sheet zone-info" aria-live="polite">
+          <span class="mono-label">Área selecionada</span>
+          @if (current(); as c) {
+            <div class="zone-title">
+              <span class="zone-icon" aria-hidden="true">{{ c.meta.icone }}</span>
+              <h2>{{ c.meta.label }}</h2>
+            </div>
+            <p class="muted">{{ c.meta.descricao }}</p>
+            @if (c.meta.sistemas.length) {
+              <ul class="chips">
+                @for (sistema of c.meta.sistemas; track sistema) {
+                  <li>{{ sistema }}</li>
+                }
+              </ul>
+            }
+          } @else {
+            <p class="muted">Clique em uma zona do carro ou use os atalhos abaixo.</p>
+          }
+        </section>
+
+        <section class="sheet stack-sm">
+          <span class="mono-label">Atalhos rápidos</span>
+          <div class="zone-shortcuts">
+            @for (option of options(); track option.code) {
+              <button type="button" [attr.aria-pressed]="zone() === option.code" (click)="zone.set(option.code)">
+                <span class="zone-icon" aria-hidden="true">{{ option.meta.icone }}</span>
+                <span>{{ option.meta.label }}</span>
+                @if (option.marked) {
+                  <span class="count">{{ option.marked }} {{ option.marked === 1 ? 'marcado' : 'marcados' }}</span>
+                }
+              </button>
+            } @empty {
+              <p class="muted">Carregando zonas…</p>
+            }
+          </div>
+        </section>
+      </div>
+    </div>
+  `
+})
+export class ZoneMapComponent {
+  readonly catalog = input.required<SymptomCategory[]>();
+  /** Sintomas já marcados: cada atalho mostra quantos são da sua zona. */
+  readonly value = input<ReportedSymptom[]>([]);
+  /** Código da categoria escolhida. */
+  readonly zone = model<string | null>(null);
+  readonly no3d = signal(false);
+
+  readonly options = computed(() => {
+    const marked = new Set(this.value().map((item) => item.symptom_code));
+    return this.catalog().map((category) => ({
+      code: category.code,
+      meta: zoneOf(category),
+      marked: category.symptoms.filter((symptom) => marked.has(symptom.code)).length
+    }));
+  });
+  readonly current = computed(() => this.options().find((option) => option.code === this.zone()) ?? null);
+}
+
+/** Etapa "o que está acontecendo?": cartões de sintoma da zona escolhida e o resumo da escuta ao lado. */
 @Component({
   selector: 'ps-symptom-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="stack">
-      @for (category of catalog(); track category.id) {
-        <fieldset class="symptom-group">
-          <legend>
-            <span aria-hidden="true">{{ icon(category) }}</span> {{ category.name }}
-          </legend>
-          <div class="symptom-grid">
-            @for (symptom of category.symptoms; track symptom.code) {
-              <label class="symptom-opt">
-                <input type="checkbox" [checked]="selected().has(symptom.code)" (change)="toggle(symptom.code)" />
-                <span>
-                  {{ symptom.name }}
-                  @if (symptom.description) {
-                    <br /><small>{{ symptom.description }}</small>
-                  }
-                </span>
-              </label>
+    <div class="symptom-layout">
+      <div class="stack">
+        @for (category of visible(); track category.id) {
+          <fieldset class="symptom-group">
+            <legend class="sr-only">{{ category.name }}</legend>
+            <div class="symptom-grid">
+              @for (symptom of category.symptoms; track symptom.code) {
+                <label class="symptom-opt">
+                  <span class="mono-label signal">{{ category.name }}</span>
+                  <input type="checkbox" [checked]="selected().has(symptom.code)" (change)="toggle(symptom.code)" />
+                  <span>
+                    {{ symptom.name }}
+                    @if (symptom.description) {
+                      <br /><small>{{ symptom.description }}</small>
+                    }
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+        } @empty {
+          <p class="empty">Carregando catálogo de sintomas…</p>
+        }
+      </div>
+
+      <aside class="sheet listen" aria-label="Resumo da escuta">
+        <header class="stack-sm">
+          <span class="mono-label signal">Telemetria</span>
+          <h2>Resumo da escuta</h2>
+          <p>
+            <span class="hl num">{{ value().length }}</span> {{ value().length === 1 ? 'sintoma marcado' : 'sintomas marcados' }}
+          </p>
+        </header>
+        @if (marked().length) {
+          <ul class="listen-list">
+            @for (item of marked(); track item.code) {
+              <li>
+                <span
+                  >{{ item.name }}<br /><small>{{ item.zone }}</small></span
+                >
+                <button type="button" class="btn-quiet" [attr.aria-label]="'Desmarcar ' + item.name" (click)="toggle(item.code)">Tirar</button>
+              </li>
             }
-          </div>
-        </fieldset>
-      } @empty {
-        <p class="empty">Carregando catálogo de sintomas…</p>
-      }
+          </ul>
+        } @else {
+          <p class="listen-empty">Nenhum sintoma marcado ainda.</p>
+        }
+        <ng-content />
+      </aside>
     </div>
   `
 })
 export class SymptomSelectComponent {
   readonly catalog = input.required<SymptomCategory[]>();
   readonly value = model.required<ReportedSymptom[]>();
+  /** Código da zona escolhida no mapa. Sem zona, mostra o catálogo inteiro. */
+  readonly zone = input<string | null>(null);
   readonly selected = computed(() => new Set(this.value().map((item) => item.symptom_code)));
-
-  icon(category: SymptomCategory): string {
-    return CATEGORY_ICONS[category.code] ?? '🔧';
-  }
+  readonly visible = computed(() => {
+    const zone = this.zone();
+    const match = this.catalog().filter((category) => category.code === zone);
+    return match.length ? match : this.catalog();
+  });
+  readonly marked = computed(() => {
+    const names = new Map(
+      this.catalog().flatMap((category) => category.symptoms.map((symptom) => [symptom.code, { name: symptom.name, zone: category.name }] as const))
+    );
+    return this.value().map((item) => ({
+      code: item.symptom_code,
+      name: names.get(item.symptom_code)?.name ?? item.symptom_code,
+      zone: names.get(item.symptom_code)?.zone ?? ''
+    }));
+  });
 
   toggle(code: string): void {
     this.value.update((list) =>

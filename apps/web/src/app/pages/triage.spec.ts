@@ -91,12 +91,30 @@ describe('triagem no balcão', () => {
     page.component.pick(VEHICLE);
     await page.settle();
     expect(page.component.step()).toBe(1);
+    expect(page.text()).toContain('Onde dói no carro?');
+    expect(page.text()).toContain('Escolha uma zona do carro');
+    expect(page.component.progress()).toBe(20);
+
+    // o mapa: a zona é escolhida pelos atalhos (o modelo 3D só carrega no navegador de verdade)
+    const shortcut = (page.fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.zone-shortcuts button')!;
+    shortcut.click();
+    await page.settle();
+    expect(page.component.zone()).toBe('freios');
+    expect(shortcut.getAttribute('aria-pressed')).toBe('true');
+    expect(page.text()).toContain('Frenagem hidráulica');
+    await page.click('Continuar');
+    expect(page.text()).toContain('O que está acontecendo?');
     expect(page.text()).toContain('Selecione ao menos um sintoma');
+    expect(page.text()).toContain('Nenhum sintoma marcado ainda.');
 
     const box = (page.fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[type=checkbox]')!;
     box.click();
     await page.settle();
     expect(page.component.symptoms()).toEqual([{ symptom_code: 'brake_noise', answers: {} }]);
+    expect(page.text()).toContain('1 sintoma marcado');
+    await page.click('← Mapa');
+    expect(page.text()).toContain('1 marcado');
+    await page.click('Continuar');
     await page.click('Continuar');
     expect(page.text()).toContain('Quando acontece?');
     const select = (page.fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>('select')!;
@@ -106,7 +124,7 @@ describe('triagem no balcão', () => {
     expect(page.text()).toContain('Confira o relato');
     expect(page.text()).toContain('Só a frio');
     await page.click('Voltar');
-    expect(page.component.step()).toBe(2);
+    expect(page.component.step()).toBe(3);
     await page.click('Continuar');
 
     page.component.notes = '  Barulho na descida ';
@@ -197,8 +215,12 @@ describe('triagem pública', () => {
 
     page.component.contact = { name: 'João', phone: '(71) 99999-0000', plate: '', vehicle: 'Ford Ka' };
     page.component.step.set(1);
+    page.component.zone.set('freios');
     page.component.symptoms.set([{ symptom_code: 'soft_pedal', answers: {} }]);
     await page.settle();
+    expect(page.text()).toContain('Onde dói no carro?');
+    await page.click('Continuar');
+    expect(page.text()).toContain('O que está acontecendo?');
     await page.click('Continuar');
     expect(page.text()).toContain('Só mais alguns detalhes');
 

@@ -55,6 +55,7 @@ const log = (message) => console.log(`✓ ${message}`);
 try {
   // ── recepção: cliente, veículo, triagem, OS ──
   const reception = await session(WEB, 'recepcao@demo.local');
+  await shot(reception, 'painel');
   await reception.goto(`${WEB}/triage/new`);
   await reception.getByLabel('Placa, nome ou telefone do cliente').fill(PLATE);
   await reception.getByRole('button', { name: 'Buscar' }).click();
@@ -69,6 +70,15 @@ try {
   await reception.getByRole('button', { name: 'Cadastrar veículo' }).click();
   log('cliente e veículo cadastrados');
 
+  // etapa do mapa: a zona pode ser escolhida no carro 3D ou nos atalhos (via acessível, usada aqui)
+  await reception.getByRole('button', { name: /Freios/ }).click();
+  await reception
+    .locator('ps-car-3d canvas')
+    .waitFor({ timeout: 15000 })
+    .catch(() => undefined);
+  await reception.waitForTimeout(1200);
+  await shot(reception, 'triagem-mapa');
+  await reception.getByRole('button', { name: 'Continuar' }).click();
   await reception.getByRole('checkbox').first().check();
   await shot(reception, 'triagem-sintomas');
   await reception.getByRole('button', { name: 'Continuar' }).click();
@@ -123,7 +133,7 @@ try {
   const customer = await customerContext.newPage();
   await customer.goto(`${WEB}${new URL(portalUrl).pathname}`);
   await customer.getByRole('button', { name: 'Li e concordo, continuar' }).click();
-  await customer.getByRole('heading', { name: 'Orçamento' }).waitFor();
+  await customer.getByRole('heading', { name: 'Orçamento', exact: true }).waitFor();
   const portalText = await customer.locator('main').innerText();
   assert.ok(portalText.includes('Troca de pastilhas dianteiras'), 'o cliente vê os itens do orçamento');
   assert.ok(!portalText.includes(SECRET_DIAGNOSIS), 'o diagnóstico interno nunca aparece no portal');
