@@ -110,7 +110,7 @@ jobs:
           npm run dev:api > api.log 2>&1 &
           npm run dev:web > web.log 2>&1 &
           npm run dev:admin > admin.log 2>&1 &
-          npx --yes wait-on@8 -t 180s http-get://127.0.0.1:3000/api/v1/health http-get://127.0.0.1:4200 http-get://127.0.0.1:4300
+          npx --yes wait-on@8 -t 180s http-get://127.0.0.1:3000/api/v1/health http-get://localhost:4200 http-get://localhost:4300
       - run: npm run test:e2e
       - if: failure()
         run: tail -n 80 api.log web.log admin.log
