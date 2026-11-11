@@ -501,7 +501,7 @@ describe('Regras de workflow, portal, RBAC e admin', () => {
         .send({ reason: 'Chamado #482: cliente não consegue enviar orçamento' })
         .expect(200);
       expect(session.body.expires_in).toBe(900);
-      expect(session.body.app_url).toBe('http://localhost:4200');
+      expect(session.body.app_url).toBe('https://app.pitstop.test');
 
       const me = await h.api('get', '/auth/me', session.body.access_token).expect(200);
       expect(me.body).toMatchObject({ impersonated_by: h.adminEmail, is_super_admin: false, tenant: { id: target.id }, membership: { role: 'owner' } });
