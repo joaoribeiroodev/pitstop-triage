@@ -23,7 +23,7 @@
     "db:up": "docker compose up -d db",
     "db:migrate": "npm run db:migrate -w @pitstop/api",
     "db:reset": "npm run db:reset -w @pitstop/api",
-    "seed:dev": "npm run seed:dev -w @pitstop/api",
+    "seed:dev": "npm run build:types && npm run seed:dev -w @pitstop/api",
     "test": "npm run build:types && npm test -w @pitstop/api",
     "test:unit": "npm run build:types && npm run test:unit -w @pitstop/api",
     "test:web": "ng test web --watch=false --browsers=ChromeHeadlessCI --code-coverage && ng test admin --watch=false --browsers=ChromeHeadlessCI",
