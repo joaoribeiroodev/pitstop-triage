@@ -4,7 +4,7 @@ SaaS B2B multi-tenant de gestão para oficinas mecânicas: triagem de sintomas, 
 
 A triagem e as sugestões ao mecânico são **determinísticas** (catálogo curado + histórico da própria oficina). Não há IA no caminho crítico: o produto funciona inteiro sem ela. A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO.md).
 
-> Esta é a versão 2 do projeto. A versão anterior (PitStop Triage, triagem para o motorista com OpenAI) permanece na branch `main` até o merge.
+> Esta é a versão 2 do projeto. A versão anterior (PitStop Triage, triagem para o motorista com OpenAI, projeto do curso Ford Enter) está preservada na branch `tcc-ford-enter`.
 
 Como usar o sistema depois de instalado: [`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md).
 
