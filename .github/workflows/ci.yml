@@ -95,6 +95,8 @@ jobs:
       APP_JWT_SECRET: ci-only-secret-ci-only-secret-ci-only-secret
       THROTTLE_DISABLED: 'true'
       LOG_LEVEL: warn
+      # O runner já traz o Google Chrome: evita baixar o Chromium e as dependências de sistema a cada execução.
+      PW_CHANNEL: chrome
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -102,7 +104,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
       - run: npm run db:migrate && npm run seed:dev
       - name: Sobe API, app da oficina e painel admin
         run: |

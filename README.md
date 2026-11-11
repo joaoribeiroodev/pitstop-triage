@@ -73,7 +73,7 @@ npm run check           # tudo acima, menos o E2E, mais os builds
 
 - Metas de cobertura da especificação, verificadas no CI: backend com 70% de linhas no geral e 100% nos fluxos críticos (guards de autenticação, tokens, transição de status e portal); app da oficina com 50% de linhas. Hoje estão em cerca de 95% e 97%.
 - Os testes de integração recriam o banco `pitstop_test` e aplicam as migrations reais. Para outro Postgres: `TEST_DATABASE_URL=postgres://...`.
-- O E2E (`e2e/acceptance.mjs`) percorre o checklist da seção 18 da especificação: cadastro, triagem, OS, diagnóstico ignorando as sugestões, orçamento, aprovação pelo portal, entrega, histórico do veículo e suspensão/reativação pelo admin. Na primeira vez: `npx playwright install chromium`. Com `E2E_SCREENSHOTS=pasta` ele salva capturas de cada etapa.
+- O E2E (`e2e/acceptance.mjs`) percorre o checklist da seção 18 da especificação: cadastro, triagem, OS, diagnóstico ignorando as sugestões, orçamento, aprovação pelo portal, entrega, histórico do veículo e suspensão/reativação pelo admin. Na primeira vez: `npx playwright install chromium` (ou use o Chrome já instalado com `PW_CHANNEL=chrome`). Com `E2E_SCREENSHOTS=pasta` ele salva capturas de cada etapa.
 - O CI (`.github/workflows/ci.yml`) roda lint, formato, tipos, testes do backend, testes e builds dos frontends, o E2E e o build da imagem Docker em todo PR e em push para `main` e `develop`.
 
 ## Deploy

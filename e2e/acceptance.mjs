@@ -24,7 +24,8 @@ const PLATE = `${letters()}${Math.floor(Math.random() * 10)}E${String(Math.floor
 const CUSTOMER = `Cliente E2E ${PLATE}`;
 const SECRET_DIAGNOSIS = `Diagnóstico interno ${PLATE}: pastilhas no fim`;
 
-const browser = await chromium.launch();
+// PW_CHANNEL=chrome usa o Chrome já instalado na máquina (é o caso do CI) em vez do Chromium baixado pelo Playwright.
+const browser = await chromium.launch(process.env.PW_CHANNEL ? { channel: process.env.PW_CHANNEL } : {});
 let step = 0;
 /** Página do admin enquanto a oficina demo está suspensa pelo teste. */
 let suspendedOn = null;
