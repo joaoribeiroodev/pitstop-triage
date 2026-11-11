@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://TROQUE-PELO-DOMINIO-DO-BACKEND/api/:path*"
+      "destination": "https://pitstop-api-ct5p.onrender.com/api/:path*"
     },
     {
       "source": "/((?!api/|.*\\..*).*)",
