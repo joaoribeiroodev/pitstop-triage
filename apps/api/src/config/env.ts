@@ -14,6 +14,8 @@ export interface Env {
   corsOrigins: string[];
   portalBaseUrl: string;
   privacyPolicyVersion: string;
+  /** Contato do encarregado (DPO) exibido na política de privacidade. Vazio: a política manda procurar a oficina. */
+  dpoContactEmail: string;
   fipePlateApiUrl: string;
   logLevel: string;
 }
@@ -56,6 +58,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       .filter(Boolean),
     portalBaseUrl: (source.PORTAL_BASE_URL ?? 'http://localhost:4200').replace(/\/$/, ''),
     privacyPolicyVersion: source.PRIVACY_POLICY_VERSION ?? '2026-11',
+    dpoContactEmail: (source.DPO_CONTACT_EMAIL ?? '').trim(),
     fipePlateApiUrl: source.FIPE_PLATE_API_URL ?? '',
     logLevel: source.LOG_LEVEL ?? (nodeEnv === 'test' ? 'silent' : 'info')
   };

@@ -1,0 +1,37 @@
+# Blueprint do backend no Render (plano gratuito). O mesmo Dockerfile roda no Railway ou em VPS com Coolify.
+# No plano gratuito o serviço hiberna após 15 minutos sem acesso: a primeira requisição depois disso leva
+# perto de um minuto. Serve para staging e piloto; para uso contínuo, troque `plan` por `starter`.
+services:
+  - type: web
+    name: pitstop-api
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_PROVIDER
+        value: supabase
+      - key: DATABASE_SSL
+        value: 'true'
+      - key: APP_JWT_SECRET
+        generateValue: true
+      # sync: false = o valor é informado no painel do Render e nunca fica no repositório
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PORTAL_BASE_URL
+        sync: false
+      - key: DPO_CONTACT_EMAIL
+        sync: false

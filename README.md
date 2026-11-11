@@ -78,22 +78,22 @@ npm run check           # tudo acima, menos o E2E, mais os builds
 
 ## Deploy
 
-| Parte          | Onde                   | Como                                                                                        |
-| -------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
-| Banco e Auth   | Supabase               | `supabase db push` aplica `supabase/migrations`. Ative o Custom Access Token Hook (abaixo). |
-| Backend        | Railway                | `railway.json` aponta para `apps/api/Dockerfile`. Variáveis conforme `.env.example`.        |
-| App da oficina | Vercel                 | Projeto com `apps/web/vercel.json` (build `npm run build:web`, saída `dist/web/browser`).   |
-| Painel admin   | Vercel (outro projeto) | `apps/admin/vercel.json`, em subdomínio próprio (`admin.<domínio>`).                        |
+| Parte          | Onde                   | Como                                                                                          |
+| -------------- | ---------------------- | --------------------------------------------------------------------------------------------- |
+| Banco e Auth   | Supabase               | `supabase db push` aplica `supabase/migrations`. Ative o Custom Access Token Hook (abaixo).   |
+| Backend        | Render ou Railway      | `render.yaml` (plano gratuito) ou `railway.json`, ambos apontando para `apps/api/Dockerfile`. |
+| App da oficina | Vercel                 | Projeto com `apps/web/vercel.json` (build `npm run build:web`, saída `dist/web/browser`).     |
+| Painel admin   | Vercel (outro projeto) | `apps/admin/vercel.json`, em subdomínio próprio (`admin.<domínio>`).                          |
 
 Passos que dependem das suas contas:
 
 1. **Supabase**: crie o projeto, rode as migrations e, em Authentication → Hooks, selecione a função `public.custom_access_token_hook` como Custom Access Token Hook. É ela que coloca `tenant_id`, `role` e `is_super_admin` no JWT.
 2. **Primeiro super admin**: crie o usuário no Supabase Auth e insira o e-mail em `public.super_admins`.
-3. **Railway**: defina `AUTH_PROVIDER=supabase`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_JWT_SECRET`, `CORS_ORIGINS` e `PORTAL_BASE_URL`.
-4. **Vercel**: nos dois `vercel.json`, troque `TROQUE-PELO-DOMINIO-DO-BACKEND` pelo domínio do backend no Railway. O frontend chama `/api` no próprio domínio e a Vercel repassa ao backend.
+3. **Backend (Render ou Railway)**: defina `AUTH_PROVIDER=supabase`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_JWT_SECRET`, `CORS_ORIGINS`, `PORTAL_BASE_URL` e, se quiser, `DPO_CONTACT_EMAIL` (contato do encarregado mostrado na política de privacidade). No Render, use a conexão do pooler do Supabase (Session pooler), porque a conexão direta é só IPv6. No plano gratuito do Render o serviço hiberna após 15 minutos sem acesso e a primeira requisição seguinte demora perto de um minuto.
+4. **Vercel**: nos dois `vercel.json`, troque `TROQUE-PELO-DOMINIO-DO-BACKEND` pelo domínio do backend. O frontend chama `/api` no próprio domínio e a Vercel repassa ao backend.
 5. O painel admin abre a sessão de suporte em `app.<domínio>` quando está em `admin.<domínio>`. Para outro endereço, adicione `<meta name="pitstop-app-url" content="https://...">` em `apps/admin/src/index.html`.
 
-A imagem do backend é a mesma para Railway ou VPS com Coolify:
+A imagem do backend é a mesma para Render, Railway ou VPS com Coolify:
 
 ```bash
 docker build -f apps/api/Dockerfile -t pitstop-api .

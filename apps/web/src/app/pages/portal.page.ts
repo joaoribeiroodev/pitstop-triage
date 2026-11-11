@@ -301,9 +301,32 @@ export class PortalPage implements OnInit {
           seu cadastro direto no sistema.
         </p>
         <h2>Encarregado (DPO)</h2>
-        <p>Para falar com o encarregado pelo tratamento de dados do PitStop: <a href="mailto:privacidade@pitstop.app">privacidade&#64;pitstop.app</a>.</p>
+        @if (dpoEmail(); as email) {
+          <p>
+            Para falar com o encarregado pelo tratamento de dados do PitStop: <a [href]="'mailto:' + email">{{ email }}</a
+            >.
+          </p>
+        } @else {
+          <p>Para falar com o encarregado pelo tratamento de dados, procure a oficina que atende você: ela encaminha o pedido ao PitStop.</p>
+        }
+        <small>Versão da política: {{ version() }}</small>
       </section>
     </main>
   `
 })
-export class PrivacyPage {}
+export class PrivacyPage implements OnInit {
+  private readonly api = inject(Api);
+  /** Contato do encarregado, definido por ambiente no backend (DPO_CONTACT_EMAIL). */
+  readonly dpoEmail = signal<string | null>(null);
+  readonly version = signal('');
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const info = await this.api.get<{ policy_version: string; dpo_email: string | null }>('/privacy', undefined, anonymous());
+      this.dpoEmail.set(info.dpo_email);
+      this.version.set(info.policy_version);
+    } catch {
+      // a política continua legível mesmo sem o backend: só fica sem o contato direto
+    }
+  }
+}

@@ -138,6 +138,10 @@ describe('portal do cliente', () => {
 
   it('política de privacidade explica controlador, base legal, retenção e contato', async () => {
     const page = await mount(PrivacyPage, { anonymous: true });
+    expect(page.text()).toContain('procure a oficina que atende você');
+    await page.respond('GET', '/privacy', { policy_version: '2026-11', dpo_email: 'dpo@exemplo.com' });
+    expect(page.text()).toContain('dpo@exemplo.com');
+    expect(page.text()).not.toContain('procure a oficina');
     for (const expected of ['Quem trata os seus dados', 'Base legal', 'Por quanto tempo', 'Seus direitos', 'Encarregado'])
       expect(page.text()).toContain(expected);
   });

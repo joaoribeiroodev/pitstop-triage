@@ -1,4 +1,4 @@
-import { Controller, Get, Module } from '@nestjs/common';
+import { Controller, Get, Inject, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
@@ -11,6 +11,7 @@ import { Public } from './common/decorators';
 import { AppThrottlerGuard } from './common/throttler.guard';
 import { CustomersModule } from './customers/customers.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ENV, Env } from './config/env';
 import { DatabaseModule } from './database/database.module';
 import { DatabaseService } from './database/database.service';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
@@ -31,6 +32,18 @@ export class HealthController {
   async health() {
     await this.db.admin((db) => db.one('select 1 as ok'));
     return { status: 'ok' };
+  }
+}
+
+/** Dados públicos da política de privacidade: o que muda por ambiente sem exigir novo build do frontend. */
+@Controller('privacy')
+export class PrivacyController {
+  constructor(@Inject(ENV) private readonly env: Env) {}
+
+  @Public()
+  @Get()
+  privacy() {
+    return { policy_version: this.env.privacyPolicyVersion, dpo_email: this.env.dpoContactEmail || null };
   }
 }
 
@@ -71,7 +84,7 @@ export class HealthController {
     DashboardModule,
     AdminModule
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, PrivacyController],
   providers: [
     // A ordem importa: limite de taxa → JWT → super admin → tenant → papéis/feature flags.
     { provide: APP_GUARD, useClass: AppThrottlerGuard },

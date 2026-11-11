@@ -10,6 +10,7 @@ describe('Catálogo, dashboard e veículos', () => {
 
   beforeAll(async () => {
     process.env.FIPE_PLATE_API_URL = 'https://placas.test/consulta/{plate}';
+    process.env.DPO_CONTACT_EMAIL = ' dpo@pitstop.test ';
     h = await Harness.start();
     shop = await h.createTenant();
     reception = await h.createUser(shop, 'receptionist');
@@ -18,6 +19,7 @@ describe('Catálogo, dashboard e veículos', () => {
 
   afterAll(async () => {
     delete process.env.FIPE_PLATE_API_URL;
+    delete process.env.DPO_CONTACT_EMAIL;
     global.fetch = realFetch;
     await h.stop();
   });
@@ -114,6 +116,13 @@ describe('Catálogo, dashboard e veículos', () => {
       await h.api('post', '/auth/logout', reception.token).expect(204);
       const me = await h.api('get', '/auth/me', reception.token).expect(200);
       expect(me.body).toMatchObject({ is_super_admin: false, membership: { role: 'receptionist' }, tenant: { id: shop.id, slug: shop.slug } });
+    });
+  });
+
+  describe('política de privacidade', () => {
+    it('expõe versão e contato do encarregado sem exigir login', async () => {
+      const info = await h.api('get', '/privacy').expect(200);
+      expect(info.body).toEqual({ policy_version: '2026-11', dpo_email: 'dpo@pitstop.test' });
     });
   });
 
