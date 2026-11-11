@@ -197,11 +197,18 @@ describe('painel super admin', () => {
 
     page.component.supportReason = ' chamado 123: orçamento não envia ';
     let opening = page.component.impersonate();
-    expect(await page.respond('POST', '/admin/tenants/t-1/impersonate', { access_token: 'tok en', expires_in: 900, tenant_slug: 'oficina-demo' })).toEqual({
+    expect(
+      await page.respond('POST', '/admin/tenants/t-1/impersonate', {
+        access_token: 'tok en',
+        expires_in: 900,
+        tenant_slug: 'oficina-demo',
+        app_url: 'https://app.pitstop.test/'
+      })
+    ).toEqual({
       reason: 'chamado 123: orçamento não envia'
     });
     await opening;
-    expect(tab.location.href).toMatch(/\/suporte#token=tok%20en$/);
+    expect(tab.location.href).toBe('https://app.pitstop.test/suporte#token=tok%20en');
     expect(tab.location.href).not.toContain('?');
 
     page.component.supportReason = 'outro chamado';

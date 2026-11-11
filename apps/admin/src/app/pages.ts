@@ -46,11 +46,12 @@ const ACTION_LABELS: Record<string, string> = {
   'catalog.reloaded': 'Catálogo recarregado'
 };
 
-/** Endereço do app da oficina, para abrir a sessão de suporte. Convenção: admin.<domínio> ↔ app.<domínio>. */
-function shopAppUrl(): string {
-  const configured = document.querySelector<HTMLMetaElement>('meta[name="pitstop-app-url"]')?.content;
-  if (configured) return configured.replace(/\/$/, '');
-  if (location.hostname.startsWith('admin.')) return `${location.protocol}//app.${location.hostname.slice(6)}`;
+/**
+ * Endereço do app da oficina para abrir a sessão de suporte. O backend informa o endereço público do ambiente
+ * (PORTAL_BASE_URL); em desenvolvimento ele aponta para localhost, então vale a porta local do app.
+ */
+function shopAppUrl(fromBackend?: string): string {
+  if (fromBackend && !/\/\/(localhost|127\.0\.0\.1)(:|$)/.test(fromBackend)) return fromBackend.replace(/\/$/, '');
   return `${location.protocol}//${location.hostname}:4200`;
 }
 
@@ -513,8 +514,10 @@ export class TenantDetailPage implements OnInit {
     // A aba é aberta antes da chamada para não ser barrada como pop-up; o token viaja no fragmento, fora de logs de servidor.
     const tab = window.open('about:blank', '_blank');
     try {
-      const session = await this.api.post<{ access_token: string }>(`/admin/tenants/${this.id()}/impersonate`, { reason: this.supportReason.trim() });
-      const url = `${shopAppUrl()}/suporte#token=${encodeURIComponent(session.access_token)}`;
+      const session = await this.api.post<{ access_token: string; app_url?: string }>(`/admin/tenants/${this.id()}/impersonate`, {
+        reason: this.supportReason.trim()
+      });
+      const url = `${shopAppUrl(session.app_url)}/suporte#token=${encodeURIComponent(session.access_token)}`;
       if (tab) tab.location.href = url;
       else location.href = url;
       this.supportReason = '';

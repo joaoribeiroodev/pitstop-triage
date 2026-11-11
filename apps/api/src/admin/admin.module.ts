@@ -15,6 +15,7 @@ import {
   Post,
   Query
 } from '@nestjs/common';
+import { ENV, Env } from '../config/env';
 import { AdminMetrics, AdminTenantRow, AuditLogEntry, Paginated, Tenant, TenantUser } from '@pitstop/shared-types';
 import { AUTH_PROVIDER, AuthProvider } from '../auth/providers/auth-provider';
 import { TokenService } from '../auth/token.service';
@@ -46,7 +47,8 @@ export class AdminService {
     private readonly db: DatabaseService,
     private readonly tokens: TokenService,
     private readonly triage: TriageService,
-    @Inject(AUTH_PROVIDER) private readonly auth: AuthProvider
+    @Inject(AUTH_PROVIDER) private readonly auth: AuthProvider,
+    @Inject(ENV) private readonly env: Env
   ) {}
 
   private async audit(db: Db, admin: SuperAdminContext, tenant: Pick<Tenant, 'id' | 'slug'> | null, action: string, payload: unknown): Promise<void> {
@@ -202,7 +204,11 @@ export class AdminService {
   }
 
   /** Acesso de suporte: JWT curto com papel de owner, sempre registrado em auditoria com o motivo. */
-  async impersonate(admin: SuperAdminContext, id: string, dto: ImpersonateDto): Promise<{ access_token: string; expires_in: number; tenant_slug: string }> {
+  async impersonate(
+    admin: SuperAdminContext,
+    id: string,
+    dto: ImpersonateDto
+  ): Promise<{ access_token: string; expires_in: number; tenant_slug: string; app_url: string }> {
     const tenant = await this.db.admin(async (db) => {
       const found = await this.find(db, id);
       await this.audit(db, admin, found, 'tenant.impersonated', { reason: dto.reason, ttl_seconds: IMPERSONATION_TTL_SECONDS });
@@ -218,7 +224,8 @@ export class AdminService {
       },
       IMPERSONATION_TTL_SECONDS
     );
-    return { access_token: accessToken, expires_in: IMPERSONATION_TTL_SECONDS, tenant_slug: tenant.slug };
+    // app_url: onde o painel deve abrir a sessão. É o mesmo endereço público do app da oficina usado nos links do portal.
+    return { access_token: accessToken, expires_in: IMPERSONATION_TTL_SECONDS, tenant_slug: tenant.slug, app_url: this.env.portalBaseUrl };
   }
 
   auditLog(query: AuditQuery): Promise<Paginated<AuditLogEntry>> {
