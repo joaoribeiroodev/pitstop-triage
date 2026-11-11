@@ -78,12 +78,12 @@ npm run check           # tudo acima, menos o E2E, mais os builds
 
 ## Deploy
 
-| Parte          | Onde                   | Como                                                                                          |
-| -------------- | ---------------------- | --------------------------------------------------------------------------------------------- |
-| Banco e Auth   | Supabase               | `supabase db push` aplica `supabase/migrations`. Ative o Custom Access Token Hook (abaixo).   |
-| Backend        | Render ou Railway      | `render.yaml` (plano gratuito) ou `railway.json`, ambos apontando para `apps/api/Dockerfile`. |
-| App da oficina | Vercel                 | Projeto com `apps/web/vercel.json` (build `npm run build:web`, saída `dist/web/browser`).     |
-| Painel admin   | Vercel (outro projeto) | `apps/admin/vercel.json`, em subdomínio próprio (`admin.<domínio>`).                          |
+| Parte          | Onde                   | Como                                                                                                         |
+| -------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Banco e Auth   | Supabase               | `supabase db push` aplica `supabase/migrations`. Ative o Custom Access Token Hook (abaixo).                  |
+| Backend        | Render ou Railway      | `render.yaml` (plano gratuito) ou `railway.json`, ambos apontando para `apps/api/Dockerfile`.                |
+| App da oficina | Vercel                 | Projeto com Root Directory `apps/web`; o `vercel.json` de lá instala e compila a partir da raiz do monorepo. |
+| Painel admin   | Vercel (outro projeto) | Root Directory `apps/admin`, em domínio próprio (`admin.<domínio>`).                                         |
 
 Passos que dependem das suas contas:
 

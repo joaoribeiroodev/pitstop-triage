@@ -1,20 +1,45 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build:web",
-  "outputDirectory": "dist/web/browser",
+  "framework": null,
+  "installCommand": "cd ../.. && npm ci",
+  "buildCommand": "cd ../.. && npm run build:web && rm -rf apps/web/out && cp -r dist/web/browser apps/web/out",
+  "outputDirectory": "out",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://pitstop-api-ct5p.onrender.com/api/:path*" },
-    { "source": "/((?!api/|ngsw|.*\\..*).*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://pitstop-api-ct5p.onrender.com/api/:path*"
+    },
+    {
+      "source": "/((?!api/|ngsw|.*\\..*).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "no-referrer" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
       ]
     },
-    { "source": "/ngsw-worker.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    {
+      "source": "/ngsw-worker.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
   ]
 }

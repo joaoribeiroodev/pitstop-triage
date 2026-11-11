@@ -1,7 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build:admin",
-  "outputDirectory": "dist/admin/browser",
+  "framework": null,
+  "installCommand": "cd ../.. && npm ci",
+  "buildCommand": "cd ../.. && npm run build:admin && rm -rf apps/admin/out && cp -r dist/admin/browser apps/admin/out",
+  "outputDirectory": "out",
   "rewrites": [
     {
       "source": "/api/:path*",
