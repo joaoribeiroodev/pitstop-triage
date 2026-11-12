@@ -82,6 +82,7 @@ export class LoginPage {
       <a class="nav" routerLink="/tenants" routerLinkActive="active">Oficinas</a>
       <a class="nav" routerLink="/metrics" routerLinkActive="active">Métricas</a>
       <a class="nav" routerLink="/audit" routerLinkActive="active">Auditoria</a>
+      <a class="nav" routerLink="/email" routerLinkActive="active">E-mail</a>
       <span class="who">{{ auth.me()?.email }} <button type="button" (click)="logout()">Sair</button></span>
     </nav>
     <router-outlet />
@@ -109,7 +110,8 @@ export const routes: Routes = [
       { path: 'tenants/new', loadComponent: () => import('./pages').then((m) => m.NewTenantPage) },
       { path: 'tenants/:id', loadComponent: () => import('./pages').then((m) => m.TenantDetailPage) },
       { path: 'metrics', loadComponent: () => import('./pages').then((m) => m.MetricsPage) },
-      { path: 'audit', loadComponent: () => import('./pages').then((m) => m.AuditPage) }
+      { path: 'audit', loadComponent: () => import('./pages').then((m) => m.AuditPage) },
+      { path: 'email', loadComponent: () => import('./pages').then((m) => m.EmailSettingsPage) }
     ]
   },
   { path: '**', redirectTo: '' }

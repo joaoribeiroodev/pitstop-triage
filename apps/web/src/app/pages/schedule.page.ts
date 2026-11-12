@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, AuthService, errorMessage, silent, ToastService } from '@front/core';
-import { FORMAT_PIPES, type Tone } from '@front/format';
+import { FORMAT_PIPES, localDay, type Tone } from '@front/format';
 import { APPOINTMENT_STATUS_LABELS, type Appointment, type AppointmentStatus, type TenantUser, type Vehicle } from '@pitstop/shared-types';
 
 type Assignable = Pick<TenantUser, 'id' | 'full_name' | 'role'>;
@@ -10,11 +10,6 @@ type Assignable = Pick<TenantUser, 'id' | 'full_name' | 'role'>;
 const TONES: Record<AppointmentStatus, Tone> = { scheduled: 'wait', confirmed: 'work', done: 'done', cancelled: 'idle', no_show: 'stop' };
 const TIME = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const LONG_DAY = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-/** Data local no formato YYYY-MM-DD (o `toISOString` daria o dia em UTC). */
-export function localDay(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
 
 /** Agenda do dia: horários por box e por mecânico. O backend recusa dois agendamentos no mesmo box ou com o mesmo responsável. */
 @Component({

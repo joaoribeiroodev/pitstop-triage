@@ -69,4 +69,6 @@ Pelo link, o cliente vê o veículo, o andamento, o orçamento item a item e os 
 - **Financeiro** (plano Pro, gestão): cada OS concluída vira uma conta a receber. Dê baixa em **Recebi** e lance as despesas em **Novo lançamento**.
 - **Indicadores** (gestão): faturamento, ticket médio, conversão de orçamentos e o que mais rende, por período.
 - **Avisos ao cliente** (plano Pro): na aba Orçamento da OS, **Avisar o cliente** monta a mensagem de WhatsApp com o link de acompanhamento. Os textos ficam em **Ajustes → Avisos ao cliente**.
+- **Veículo pela FIPE**: no cadastro do veículo, abra **Buscar na tabela FIPE**, escolha marca, modelo e ano e o formulário é preenchido.
+- **Senha**: quem esqueceu a senha usa **Esqueci minha senha** na tela de login. Em Ajustes → Usuários, **Enviar link de acesso** manda um novo link para a pessoa.
 - **LGPD**: na ficha do cliente, o proprietário pode exportar os dados ou anonimizar o cadastro.

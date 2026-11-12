@@ -5,6 +5,20 @@ const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 const DATE = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const DATE_TIME = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
+/**
+ * Datas de calendário ('2026-11-13', como vencimento e validade) não são instantes: lidas como UTC,
+ * apareceriam como o dia anterior no Brasil. Aqui elas valem no dia local; instantes completos seguem como são.
+ */
+export function toDate(value: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value);
+}
+
+/** Dia local (YYYY-MM-DD) de um instante, para preencher campos de data. */
+export function localDay(value: Date | string): string {
+  const date = typeof value === 'string' ? toDate(value) : value;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function formatBRL(value: number | null | undefined): string {
   return BRL.format(value ?? 0);
 }
@@ -63,14 +77,14 @@ export class PhonePipe implements PipeTransform {
 @Pipe({ name: 'day', standalone: true })
 export class DayPipe implements PipeTransform {
   transform(value: string | null | undefined): string {
-    return value ? DATE.format(new Date(value)) : '—';
+    return value ? DATE.format(toDate(value)) : '—';
   }
 }
 
 @Pipe({ name: 'moment', standalone: true })
 export class MomentPipe implements PipeTransform {
   transform(value: string | null | undefined): string {
-    return value ? DATE_TIME.format(new Date(value)).replace(',', ' às') : '—';
+    return value ? DATE_TIME.format(toDate(value)).replace(',', ' às') : '—';
   }
 }
 

@@ -5,7 +5,7 @@ import { AuthService, errorMessage } from '@front/core';
 
 @Component({
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="auth">
@@ -43,7 +43,7 @@ import { AuthService, errorMessage } from '@front/core';
             }
             <button class="btn-primary btn-big" [disabled]="busy()">{{ busy() ? 'Entrando…' : 'Entrar' }}</button>
           </form>
-          <p class="muted">O acesso é criado pelo responsável da oficina. Esqueceu a senha? Peça a ele um novo acesso.</p>
+          <p class="muted"><a routerLink="/recuperar-senha">Esqueci minha senha</a> · O acesso é criado pelo responsável da oficina.</p>
         </div>
       </section>
     </main>

@@ -120,6 +120,20 @@ docker build -f apps/api/Dockerfile -t pitstop-api .
 - Rate limit global e reforçado em login e portal; Helmet; CORS por origem; validação de payload em todos os endpoints.
 - LGPD: consentimento registrado no primeiro acesso ao portal, exportação e anonimização por cliente.
 
+## E-mail, convites e senha
+
+O e-mail da plataforma é configurado dentro do sistema, no painel admin em **E-mail**: uma conta Gmail e a **senha de app** dela (myaccount.google.com/apppasswords, com verificação em duas etapas ligada). A senha de app é cifrada antes de ir ao banco e nunca volta para a tela. Sem essa configuração, todo usuário novo precisa ter a senha definida no cadastro.
+
+Com o e-mail configurado:
+
+- usuário ou proprietário criado sem senha recebe um link para criar a própria (vale 7 dias, uso único);
+- "Esqueci minha senha" na tela de login envia um link de redefinição (vale 1 hora);
+- o responsável pode reenviar o link de acesso em Ajustes → Usuários.
+
+## Tabela FIPE
+
+No cadastro do veículo, **Buscar na tabela FIPE** preenche marca, modelo, ano e combustível e mostra o valor de referência. Usa a API pública e gratuita da Parallelum (`fipe.parallelum.com.br`, cerca de 1.000 consultas por dia sem cadastro), com cache no banco. `FIPE_API_TOKEN` é opcional e aumenta o limite. A FIPE não tem consulta por placa; para isso continua existindo `FIPE_PLATE_API_URL`, que depende de um provedor pago.
+
 ## Datas e horários
 
 - **Armazenamento**: todo instante é `TIMESTAMPTZ` (UTC no banco); a única coluna `DATE` é o vencimento financeiro, que é data de calendário.

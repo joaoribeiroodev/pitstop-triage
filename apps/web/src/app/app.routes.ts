@@ -4,6 +4,8 @@ import { authGuard, featureFlagGuard, roleGuard } from '@front/core';
 export const routes: Routes = [
   // públicas
   { path: 'login', loadComponent: () => import('./pages/login.page').then((m) => m.LoginPage) },
+  { path: 'recuperar-senha', loadComponent: () => import('./pages/account.page').then((m) => m.ForgotPasswordPage) },
+  { path: 'definir-senha/:token', loadComponent: () => import('./pages/account.page').then((m) => m.SetPasswordPage) },
   { path: 'bloqueado', loadComponent: () => import('./pages/login.page').then((m) => m.BlockedPage) },
   { path: 'suporte', loadComponent: () => import('./pages/login.page').then((m) => m.SupportSessionPage) },
   { path: 'portal/:token', loadComponent: () => import('./pages/portal.page').then((m) => m.PortalPage) },

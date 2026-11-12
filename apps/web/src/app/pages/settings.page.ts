@@ -180,7 +180,7 @@ export class SettingsPage {
               <input name="password" type="password" minlength="8" autocomplete="new-password" [(ngModel)]="draft.password" />
             </label>
           </div>
-          <small>Sem senha, a pessoa recebe um convite por e-mail para criar a própria.</small>
+          <small>Sem senha, a pessoa recebe por e-mail um link para criar a própria.</small>
           <div><button class="btn-primary" [disabled]="form.invalid">Criar usuário</button></div>
         </form>
       }
@@ -213,6 +213,11 @@ export class SettingsPage {
                   <span class="status" [attr.data-tone]="user.is_active ? 'done' : 'idle'">{{ user.is_active ? 'Ativo' : 'Desativado' }}</span>
                 </td>
                 <td class="right">
+                  @if (user.is_active) {
+                    <button type="button" class="btn-quiet" [attr.aria-label]="'Enviar link de acesso para ' + user.full_name" (click)="reinvite(user)">
+                      Enviar link de acesso
+                    </button>
+                  }
                   <button type="button" class="btn-quiet" (click)="update(user, { is_active: !user.is_active })">
                     {{ user.is_active ? 'Desativar' : 'Reativar' }}
                   </button>
@@ -251,6 +256,12 @@ export class UsersPage implements OnInit {
     this.draft = { full_name: '', email: '', role: 'mechanic', password: '' };
     this.adding.set(false);
     await this.load();
+  }
+
+  /** Manda (de novo) o e-mail com o link para a pessoa criar a senha. */
+  async reinvite(user: TenantUser): Promise<void> {
+    await this.api.post(`/users/${user.id}/invite`, {});
+    this.toast.ok(`Link de acesso enviado para ${user.email}`);
   }
 
   async update(user: TenantUser, patch: Partial<Pick<TenantUser, 'role' | 'is_active'>>): Promise<void> {

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, On
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Api, ToastService } from '@front/core';
-import { FORMAT_PIPES, ROLE_LABELS } from '@front/format';
+import { FORMAT_PIPES, localDay, ROLE_LABELS } from '@front/format';
 import {
   FEATURE_FLAGS,
   PLAN_DEFAULTS,
@@ -12,6 +12,7 @@ import {
   type AdminMetrics,
   type AdminTenantRow,
   type AuditLogEntry,
+  type EmailSettings,
   type FeatureFlag,
   type FeatureFlags,
   type Paginated,
@@ -238,7 +239,7 @@ const WIZARD_STEPS = ['Oficina', 'Plano', 'Proprietário', 'Revisão'];
             <label
               >Senha inicial (opcional)
               <input name="owner_password" type="password" minlength="8" autocomplete="new-password" [(ngModel)]="draft.owner_password" />
-              <small>Sem senha, o proprietário recebe um convite por e-mail para criar a própria.</small>
+              <small>Sem senha, o proprietário recebe um convite por e-mail para criar a própria (exige o e-mail da plataforma configurado em E-mail).</small>
             </label>
           }
           @case (3) {
@@ -474,7 +475,7 @@ export class TenantDetailPage implements OnInit {
       contact_email: tenant.contact_email ?? '',
       contact_phone: tenant.contact_phone ?? '',
       plan: tenant.plan,
-      expires_at: tenant.expires_at?.slice(0, 10) ?? '',
+      expires_at: tenant.expires_at ? localDay(tenant.expires_at) : '',
       is_trial: tenant.is_trial
     };
     this.limits = resolveLimits(tenant.plan, tenant.limits);
@@ -717,5 +718,119 @@ export class AuditPage {
   payload(entry: AuditLogEntry): string {
     const keys = Object.keys(entry.payload ?? {});
     return keys.length ? JSON.stringify(entry.payload, null, 1) : '';
+  }
+}
+
+/** E-mail da plataforma: a conta Gmail que envia convites e redefinições de senha. */
+@Component({
+  standalone: true,
+  imports: [FormsModule, ...FORMAT_PIPES],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <main class="page">
+      <header class="page-head">
+        <span class="eyebrow">Plataforma</span>
+        <h1>E-mail</h1>
+        <p>Convites de acesso e "esqueci minha senha" saem por esta conta do Gmail.</p>
+      </header>
+
+      @if (settings(); as current) {
+        <p class="notice" [class.notice-done]="current.configured" [class.notice-wait]="!current.configured" role="status">
+          @if (current.configured) {
+            Configurado: os e-mails saem de <strong>{{ current.user }}</strong> como "{{ current.from_name }}". Atualizado em {{ current.updated_at | moment }}.
+          } @else if (current.user) {
+            A senha de app salva não pôde ser lida. Informe a senha de app de novo para voltar a enviar.
+          } @else {
+            Ainda não configurado. Até lá, todo usuário novo precisa ter a senha definida na hora do cadastro.
+          }
+        </p>
+
+        <form class="sheet stack" (ngSubmit)="save()" #form="ngForm">
+          <div class="cols-form">
+            <label
+              >Conta Gmail <input name="user" type="email" required placeholder="suaoficina@gmail.com" autocomplete="off" [(ngModel)]="draft.user"
+            /></label>
+            <label>Nome do remetente <input name="from_name" maxlength="80" placeholder="PitStop" [(ngModel)]="draft.from_name" /></label>
+            <label
+              >Senha de app do Google
+              <input
+                name="app_password"
+                type="password"
+                autocomplete="new-password"
+                minlength="8"
+                maxlength="64"
+                [required]="!current.configured"
+                [placeholder]="current.configured ? 'Em branco mantém a atual' : '16 letras'"
+                [(ngModel)]="draft.app_password"
+              />
+            </label>
+          </div>
+          <small>
+            A senha de app não é a senha do Gmail. Crie uma em myaccount.google.com/apppasswords (a conta precisa ter a verificação em duas etapas ligada). Ela
+            é guardada cifrada e nunca mais é mostrada.
+          </small>
+          <div class="row">
+            <button class="btn-primary" [disabled]="form.invalid">Salvar</button>
+            @if (current.user) {
+              <button type="button" class="btn-quiet" (click)="remove()">Remover configuração</button>
+            }
+          </div>
+        </form>
+
+        @if (current.configured) {
+          <form class="sheet stack" (ngSubmit)="test()">
+            <h2>Enviar um e-mail de teste</h2>
+            <label>Para (em branco: o seu e-mail) <input name="to" type="email" [(ngModel)]="testTo" /></label>
+            <div>
+              <button [disabled]="testing()">{{ testing() ? 'Enviando…' : 'Enviar teste' }}</button>
+            </div>
+          </form>
+        }
+      }
+    </main>
+  `
+})
+export class EmailSettingsPage implements OnInit {
+  private readonly api = inject(Api);
+  private readonly toast = inject(ToastService);
+  readonly settings = signal<EmailSettings | null>(null);
+  readonly testing = signal(false);
+  draft = { user: '', from_name: '', app_password: '' };
+  testTo = '';
+
+  ngOnInit(): void {
+    void this.api.get<EmailSettings>('/admin/email-settings').then((settings) => this.apply(settings));
+  }
+
+  private apply(settings: EmailSettings): void {
+    this.draft = { user: settings.user ?? '', from_name: settings.from_name ?? '', app_password: '' };
+    this.settings.set(settings);
+  }
+
+  async save(): Promise<void> {
+    const { app_password, from_name, user } = this.draft;
+    this.apply(
+      await this.api.put<EmailSettings>('/admin/email-settings', {
+        user: user.trim(),
+        ...(from_name.trim() ? { from_name: from_name.trim() } : {}),
+        ...(app_password ? { app_password } : {})
+      })
+    );
+    this.toast.ok('E-mail da plataforma salvo');
+  }
+
+  async remove(): Promise<void> {
+    if (!confirm('Remover a configuração de e-mail? Convites e redefinições de senha deixam de ser enviados.')) return;
+    this.apply(await this.api.delete<EmailSettings>('/admin/email-settings'));
+  }
+
+  async test(): Promise<void> {
+    this.testing.set(true);
+    try {
+      await this.api.post('/admin/email-settings/test', this.testTo.trim() ? { to: this.testTo.trim() } : {});
+      this.toast.ok('E-mail de teste enviado. Confira a caixa de entrada.');
+    } finally {
+      this.testing.set(false);
+    }
   }
 }

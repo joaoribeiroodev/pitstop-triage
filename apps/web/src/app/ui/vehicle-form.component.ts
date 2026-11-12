@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, input, OnInit, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api, errorMessage, silent, ToastService } from '@front/core';
-import type { Vehicle } from '@pitstop/shared-types';
+import { FORMAT_PIPES } from '@front/format';
+import { FIPE_VEHICLE_TYPE_LABELS, FIPE_VEHICLE_TYPES, type FipeOption, type FipePrice, type FipeVehicleType, type Vehicle } from '@pitstop/shared-types';
 
 interface PlateLookup {
   brand: string | null;
@@ -14,10 +15,62 @@ interface PlateLookup {
 @Component({
   selector: 'ps-vehicle-form',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ...FORMAT_PIPES],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="stack" (ngSubmit)="save()">
+      <details class="fipe" (toggle)="openFipe($event)">
+        <summary>Buscar na tabela FIPE</summary>
+        <div class="cols-form">
+          <label
+            >Tipo
+            <select name="fipe_type" [ngModel]="fipeType()" (ngModelChange)="setFipeType($event)">
+              @for (type of fipeTypes; track type) {
+                <option [value]="type">{{ fipeTypeLabels[type] }}</option>
+              }
+            </select>
+          </label>
+          <label
+            >Marca (FIPE)
+            <select name="fipe_brand" [ngModel]="fipeBrand()" (ngModelChange)="setFipeBrand($event)" [disabled]="!fipeBrands().length">
+              <option value="">Escolha a marca</option>
+              @for (option of fipeBrands(); track option.code) {
+                <option [value]="option.code">{{ option.name }}</option>
+              }
+            </select>
+          </label>
+          <label
+            >Modelo (FIPE)
+            <select name="fipe_model" [ngModel]="fipeModel()" (ngModelChange)="setFipeModel($event)" [disabled]="!fipeModels().length">
+              <option value="">Escolha o modelo</option>
+              @for (option of fipeModels(); track option.code) {
+                <option [value]="option.code">{{ option.name }}</option>
+              }
+            </select>
+          </label>
+          <label
+            >Ano (FIPE)
+            <select name="fipe_year" [ngModel]="fipeYear()" (ngModelChange)="setFipeYear($event)" [disabled]="!fipeYears().length">
+              <option value="">Escolha o ano</option>
+              @for (option of fipeYears(); track option.code) {
+                <option [value]="option.code">{{ option.name }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        @if (fipePrice(); as found) {
+          <p class="notice notice-done" role="status">
+            {{ found.brand }} {{ found.model }}{{ found.year ? ', ' + found.year : '' }}. Valor de referência FIPE:
+            <strong>{{ found.price === null ? 'não informado' : (found.price | brl) }}</strong>
+            @if (found.reference_month) {
+              ({{ found.reference_month }})
+            }
+          </p>
+        }
+        @if (fipeError()) {
+          <p class="notice notice-wait" role="status">{{ fipeError() }}</p>
+        }
+      </details>
       <div class="cols-form">
         <label
           >Placa
@@ -50,6 +103,21 @@ interface PlateLookup {
         <button class="btn-primary">{{ vehicle() ? 'Salvar veículo' : 'Cadastrar veículo' }}</button>
       </div>
     </form>
+  `,
+  styles: `
+    .fipe {
+      border: 1px dashed var(--line);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+    }
+    .fipe summary {
+      cursor: pointer;
+      color: var(--coverall);
+      font-weight: 600;
+    }
+    .fipe[open] summary {
+      margin-bottom: 0.75rem;
+    }
   `
 })
 export class VehicleFormComponent implements OnInit {
@@ -60,6 +128,18 @@ export class VehicleFormComponent implements OnInit {
   readonly initialPlate = input<string>('');
   readonly saved = output<Vehicle>();
   readonly hint = signal('');
+  // ── tabela FIPE: marca → modelo → ano preenchem o cadastro ──
+  readonly fipeTypes = FIPE_VEHICLE_TYPES;
+  readonly fipeTypeLabels = FIPE_VEHICLE_TYPE_LABELS;
+  readonly fipeType = signal<FipeVehicleType>('cars');
+  readonly fipeBrands = signal<FipeOption[]>([]);
+  readonly fipeModels = signal<FipeOption[]>([]);
+  readonly fipeYears = signal<FipeOption[]>([]);
+  readonly fipeBrand = signal('');
+  readonly fipeModel = signal('');
+  readonly fipeYear = signal('');
+  readonly fipePrice = signal<FipePrice | null>(null);
+  readonly fipeError = signal('');
   form = { plate: '', brand: '', model: '', year: null as number | null, color: '', fuel_type: '', current_mileage: null as number | null, vin: '' };
 
   ngOnInit(): void {
@@ -78,6 +158,75 @@ export class VehicleFormComponent implements OnInit {
     } else {
       this.form.plate = this.initialPlate();
     }
+  }
+
+  private async fipe<T>(path: string): Promise<T | null> {
+    this.fipeError.set('');
+    try {
+      return await this.api.get<T>(`/fipe/${this.fipeType()}/${path}`, undefined, silent());
+    } catch (error) {
+      this.fipeError.set(errorMessage(error));
+      return null;
+    }
+  }
+
+  /** As marcas só são buscadas quando a pessoa abre a seção. */
+  openFipe(event: Event): void {
+    if ((event.target as HTMLDetailsElement).open && !this.fipeBrands().length) void this.setFipeType(this.fipeType());
+  }
+
+  /** Limpa as escolhas a partir de um nível (cada nível depende do anterior). */
+  private resetFipe(from: 'brand' | 'model' | 'year'): void {
+    if (from === 'brand') {
+      this.fipeBrand.set('');
+      this.fipeBrands.set([]);
+    }
+    if (from !== 'year') {
+      if (from === 'brand') this.fipeModels.set([]);
+      this.fipeModel.set('');
+      this.fipeYears.set([]);
+    }
+    this.fipeYear.set('');
+    this.fipePrice.set(null);
+  }
+
+  async setFipeType(type: FipeVehicleType): Promise<void> {
+    this.fipeType.set(type);
+    this.resetFipe('brand');
+    this.fipeBrands.set((await this.fipe<FipeOption[]>('brands')) ?? []);
+  }
+
+  async setFipeBrand(code: string): Promise<void> {
+    this.resetFipe('model');
+    this.fipeModels.set([]);
+    this.fipeBrand.set(code);
+    if (code) this.fipeModels.set((await this.fipe<FipeOption[]>(`brands/${code}/models`)) ?? []);
+  }
+
+  async setFipeModel(code: string): Promise<void> {
+    this.resetFipe('model');
+    this.fipeModel.set(code);
+    if (code) this.fipeYears.set((await this.fipe<FipeOption[]>(`brands/${this.fipeBrand()}/models/${code}/years`)) ?? []);
+  }
+
+  async setFipeYear(code: string): Promise<void> {
+    this.resetFipe('year');
+    this.fipeYear.set(code);
+    if (!code) return;
+    const found = await this.fipe<FipePrice>(`brands/${this.fipeBrand()}/models/${this.fipeModel()}/years/${code}`);
+    if (!found) return;
+    this.fipePrice.set(found);
+    const fuels = ['Flex', 'Gasolina', 'Etanol', 'Diesel', 'GNV', 'Híbrido', 'Elétrico'];
+    const fuel = fuels.find((option) => option.toLowerCase() === (found.fuel ?? '').toLowerCase());
+    this.form = {
+      ...this.form,
+      brand: found.brand ?? this.form.brand,
+      model: found.model ?? this.form.model,
+      // a FIPE usa 32000 para "zero km"
+      year: found.year && found.year <= 2100 ? found.year : this.form.year,
+      fuel_type: fuel ?? this.form.fuel_type
+    };
+    this.hint.set('Marca, modelo e ano preenchidos pela tabela FIPE. Confira antes de salvar.');
   }
 
   async lookup(): Promise<void> {

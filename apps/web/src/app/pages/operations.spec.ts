@@ -9,7 +9,8 @@ import { FinancialPage } from './financial.page';
 import { InventoryPage } from './inventory.page';
 import { OrderDetailPage } from './order-detail.page';
 import { ReportsPage } from './reports.page';
-import { localDay, SchedulePage } from './schedule.page';
+import { localDay } from '@front/format';
+import { SchedulePage } from './schedule.page';
 import { NotificationsSettingsPage, SettingsPage } from './settings.page';
 
 const ITEM: InventoryItem = {

@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Api } from '@front/core';
-import { FORMAT_PIPES } from '@front/format';
+import { FORMAT_PIPES, localDay } from '@front/format';
 import type { ReportsOverview } from '@pitstop/shared-types';
-import { localDay } from './schedule.page';
 
 const PERIODS = [
   { days: 30, label: '30 dias' },

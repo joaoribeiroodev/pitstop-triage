@@ -4,7 +4,7 @@ import { AuthService, ToastService } from '@front/core';
 import type { AdminTenantRow, TenantUser } from '@pitstop/shared-types';
 import { me, mount } from '../../../web/src/testing/harness';
 import { LoginPage, ShellComponent, superAdminGuard } from './app';
-import { AuditPage, MetricsPage, NewTenantPage, TenantDetailPage, TenantsPage } from './pages';
+import { AuditPage, EmailSettingsPage, MetricsPage, NewTenantPage, TenantDetailPage, TenantsPage } from './pages';
 
 const ADMIN = { ...me(), email: 'admin@pitstop.app', is_super_admin: true, membership: null, tenant: null };
 const OWNER: TenantUser = {
@@ -29,7 +29,7 @@ const tenant = (overrides: Partial<AdminTenantRow> = {}): AdminTenantRow => ({
   status: 'active',
   plan: 'pro',
   is_trial: false,
-  expires_at: '2026-11-15T00:00:00Z',
+  expires_at: '2026-11-15T15:00:00Z',
   suspended_at: null,
   feature_flags: { inventory: true },
   limits: { max_users: 20 },
@@ -268,5 +268,48 @@ describe('painel super admin', () => {
     expect(audit.text()).toContain('Oficina suspensa');
     expect(audit.text()).toContain('inadimplência');
     expect(audit.text()).toContain('Catálogo recarregado');
+  });
+
+  it('configura o e-mail da plataforma com Gmail e senha de app, testa o envio e remove', async () => {
+    const empty = { configured: false, user: null, from_name: null, updated_at: null };
+    const ready = { configured: true, user: 'pitstop@gmail.com', from_name: 'PitStop', updated_at: '2026-11-11T12:00:00Z' };
+    const page = await mountAdmin(EmailSettingsPage);
+    await page.respond('GET', '/admin/email-settings', empty);
+    expect(page.text()).toContain('Ainda não configurado');
+    expect(page.text()).not.toContain('Enviar um e-mail de teste');
+
+    page.component.draft = { user: ' pitstop@gmail.com ', from_name: ' ', app_password: 'abcd efgh ijkl mnop' };
+    let saving = page.component.save();
+    expect(await page.respond('PUT', '/admin/email-settings', ready)).toEqual({ user: 'pitstop@gmail.com', app_password: 'abcd efgh ijkl mnop' });
+    await saving;
+    await page.settle();
+    expect(page.text()).toContain('os e-mails saem de pitstop@gmail.com');
+    // a senha nunca volta para a tela
+    expect(page.component.draft.app_password).toBe('');
+
+    page.component.draft.from_name = 'Oficinas';
+    saving = page.component.save();
+    expect(await page.respond('PUT', '/admin/email-settings', ready)).toEqual({ user: 'pitstop@gmail.com', from_name: 'Oficinas' });
+    await saving;
+
+    let testing = page.component.test();
+    expect(await page.respond('POST', '/admin/email-settings/test', {}, 204)).toEqual({});
+    await testing;
+    expect(TestBed.inject(ToastService).items().at(-1)?.text).toContain('teste enviado');
+    page.component.testTo = ' outro@teste.com ';
+    testing = page.component.test().catch(() => undefined);
+    expect(await page.respond('POST', '/admin/email-settings/test', { message: 'E-mail não enviado: o Gmail recusou o login.' }, 502)).toEqual({
+      to: 'outro@teste.com'
+    });
+    await testing;
+    expect(page.component.testing()).toBeFalse();
+
+    spyOn(window, 'confirm').and.returnValues(false, true);
+    await page.component.remove();
+    const removing = page.component.remove();
+    await page.respond('DELETE', '/admin/email-settings', { ...empty, user: 'pitstop@gmail.com' });
+    await removing;
+    await page.settle();
+    expect(page.text()).toContain('não pôde ser lida');
   });
 });
