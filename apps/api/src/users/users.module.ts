@@ -18,6 +18,7 @@ import {
 } from '@nestjs/common';
 import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { TENANT_ROLES, TenantRole, TenantUser } from '@pitstop/shared-types';
+import { AccountLinksService, temporaryPassword } from '../auth/account-links.service';
 import { AUTH_PROVIDER, AuthProvider } from '../auth/providers/auth-provider';
 import type { TenantContext } from '../common/context';
 import { Ctx, Roles } from '../common/decorators';
@@ -67,7 +68,8 @@ const COLUMNS = 'id, tenant_id, user_id, role, full_name, email, is_active, crea
 export class UsersService {
   constructor(
     private readonly db: DatabaseService,
-    @Inject(AUTH_PROVIDER) private readonly auth: AuthProvider
+    @Inject(AUTH_PROVIDER) private readonly auth: AuthProvider,
+    private readonly links: AccountLinksService
   ) {}
 
   list(ctx: TenantContext): Promise<TenantUser[]> {
@@ -93,9 +95,13 @@ export class UsersService {
     const taken = await this.db.admin((db) => db.maybeOne('select 1 from public.tenant_users where lower(email) = $1', [email]));
     if (taken) throw new ConflictException('Este e-mail já está vinculado a uma oficina.');
 
+    // Sem senha, a pessoa entra por convite: o backend cria a conta com uma senha provisória que ninguém vê
+    // e manda por e-mail o link para ela definir a própria.
+    const invite = !dto.password;
+    if (invite) await this.links.assertCanInvite();
     const created = await this.auth.createUser({
       email,
-      password: dto.password,
+      password: dto.password ?? temporaryPassword(),
       appMetadata: { tenant_id: ctx.tenantId, role: dto.role }
     });
     const user = await this.db.tenant(rls(ctx), (db) =>
@@ -105,7 +111,21 @@ export class UsersService {
         [ctx.tenantId, created.id, dto.role, dto.full_name.trim(), email]
       )
     );
-    return { ...user, invited: created.invited };
+    if (invite) await this.links.sendInvite({ userId: created.id, email, name: user.full_name, shopName: ctx.tenant.name });
+    return { ...user, invited: invite };
+  }
+
+  /** Reenvia o convite (por exemplo, se o primeiro expirou ou o e-mail falhou na hora do cadastro). */
+  async reinvite(ctx: TenantContext, id: string): Promise<void> {
+    const user = await this.db.tenant(rls(ctx), (db) =>
+      db.maybeOne<{ user_id: string; email: string; full_name: string }>(
+        'select user_id, email, full_name from public.tenant_users where id = $1 and is_active',
+        [id]
+      )
+    );
+    if (!user) throw new NotFoundException('Usuário não encontrado.');
+    await this.links.assertCanInvite();
+    await this.links.sendInvite({ userId: user.user_id, email: user.email, name: user.full_name, shopName: ctx.tenant.name });
   }
 
   async update(ctx: TenantContext, id: string, dto: UpdateUserDto): Promise<TenantUser> {
@@ -168,6 +188,13 @@ export class UsersController {
   @Post()
   create(@Ctx() ctx: TenantContext, @Body() dto: CreateUserDto) {
     return this.users.create(ctx, dto);
+  }
+
+  @Roles('owner')
+  @HttpCode(204)
+  @Post(':id/invite')
+  reinvite(@Ctx() ctx: TenantContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.users.reinvite(ctx, id);
   }
 
   @Roles('owner')

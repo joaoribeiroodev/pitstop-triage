@@ -17,6 +17,7 @@ import { DatabaseService } from './database/database.service';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { FinancialModule } from './financial/financial.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PortalModule } from './portal/portal.module';
 import { QuotesModule } from './quotes/quotes.module';
@@ -86,6 +87,7 @@ export class PrivacyController {
     ServiceOrdersModule,
     QuotesModule,
     PortalModule,
+    MailModule,
     DashboardModule,
     InventoryModule,
     FinancialModule,

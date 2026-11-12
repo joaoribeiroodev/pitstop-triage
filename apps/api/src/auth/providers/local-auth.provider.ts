@@ -67,6 +67,11 @@ export class LocalAuthProvider implements AuthProvider {
     );
   }
 
+  async findUserId(email: string): Promise<string | null> {
+    const user = await this.db.admin((db) => db.maybeOne<{ id: string }>('select id from auth.users where email = $1', [email.toLowerCase()]));
+    return user?.id ?? null;
+  }
+
   async setPassword(userId: string, password: string): Promise<void> {
     const updated = await this.db.admin((db) =>
       db.exec('update auth.users set encrypted_password = $2, updated_at = now() where id = $1', [userId, hashPassword(password)])

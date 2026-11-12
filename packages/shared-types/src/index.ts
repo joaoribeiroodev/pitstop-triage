@@ -740,3 +740,37 @@ export interface ReportsOverview {
   by_mechanic: Array<{ mechanic_name: string; orders: number; revenue: number }>;
   by_month: Array<{ month: string; orders: number; revenue: number }>;
 }
+
+// ───────────────────────── tabela FIPE ─────────────────────────
+export const FIPE_VEHICLE_TYPES = ['cars', 'motorcycles', 'trucks'] as const;
+export type FipeVehicleType = (typeof FIPE_VEHICLE_TYPES)[number];
+export const FIPE_VEHICLE_TYPE_LABELS: Record<FipeVehicleType, string> = { cars: 'Carro', motorcycles: 'Moto', trucks: 'Caminhão' };
+
+export interface FipeOption {
+  code: string;
+  name: string;
+}
+
+export interface FipePrice {
+  brand: string | null;
+  model: string | null;
+  year: number | null;
+  fuel: string | null;
+  fipe_code: string | null;
+  /** Preço médio de referência em reais. */
+  price: number | null;
+  reference_month: string | null;
+}
+
+// ───────────────────────── e-mail da plataforma e links de conta ─────────────────────────
+export interface EmailSettings {
+  configured: boolean;
+  user: string | null;
+  from_name: string | null;
+  updated_at: string | null;
+}
+
+export interface AccountLinkInfo {
+  email: string;
+  purpose: 'invite' | 'reset';
+}

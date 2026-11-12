@@ -27,6 +27,7 @@ import { blankToNull, buildUpdate, rls } from '../common/rls';
 import { ENV, Env } from '../config/env';
 import { DatabaseService } from '../database/database.service';
 import { ORDER_SUMMARY_SQL } from '../service-orders/order-sql';
+import { FipeController, FipeService } from './fipe.service';
 
 /** Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23). */
 export const PLATE_PATTERN = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
@@ -367,5 +368,5 @@ export class VehiclesController {
   }
 }
 
-@Module({ controllers: [VehiclesController], providers: [VehiclesService], exports: [VehiclesService] })
+@Module({ controllers: [VehiclesController, FipeController], providers: [VehiclesService, FipeService], exports: [VehiclesService] })
 export class VehiclesModule {}

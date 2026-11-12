@@ -10,7 +10,7 @@ export interface AppMetadata {
 
 export interface CreateUserInput {
   email: string;
-  /** Sem senha: o usuário recebe convite por e-mail e define a própria senha. */
+  /** Quem convida por e-mail passa uma senha provisória aleatória: a pessoa define a própria pelo link do convite. */
   password?: string;
   appMetadata: AppMetadata;
 }
@@ -28,5 +28,7 @@ export interface AuthProvider {
   createUser(input: CreateUserInput): Promise<{ id: string; invited: boolean }>;
   updateAppMetadata(userId: string, appMetadata: AppMetadata): Promise<void>;
   setPassword(userId: string, password: string): Promise<void>;
+  /** Id do usuário no provedor a partir do e-mail, ou null. */
+  findUserId(email: string): Promise<string | null>;
   deleteUser(userId: string): Promise<void>;
 }

@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { MeResponse, SessionTokens, Tenant, TenantRole } from '@pitstop/shared-types';
 import type { RequestWithAuth } from '../common/context';
 import { Public, SessionOnly } from '../common/decorators';
 import { DatabaseService } from '../database/database.service';
-import { LoginDto, RefreshDto } from './auth.dto';
+import { AccountLinksService } from './account-links.service';
+import { LoginDto, NewPasswordDto, PasswordResetDto, RefreshDto } from './auth.dto';
 import { toTenantInfo } from './guards';
 import { AUTH_PROVIDER, AuthProvider } from './providers/auth-provider';
 
@@ -12,7 +13,8 @@ import { AUTH_PROVIDER, AuthProvider } from './providers/auth-provider';
 export class AuthController {
   constructor(
     @Inject(AUTH_PROVIDER) private readonly provider: AuthProvider,
-    private readonly db: DatabaseService
+    private readonly db: DatabaseService,
+    private readonly links: AccountLinksService
   ) {}
 
   @Public()
@@ -29,6 +31,31 @@ export class AuthController {
   @Post('refresh')
   refresh(@Body() dto: RefreshDto): Promise<SessionTokens> {
     return this.provider.refresh(dto.refresh_token);
+  }
+
+  /** "Esqueci minha senha": a resposta é a mesma exista ou não uma conta com este e-mail. */
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @HttpCode(204)
+  @Post('password-reset')
+  async requestReset(@Body() dto: PasswordResetDto): Promise<void> {
+    await this.links.requestReset(dto.email);
+  }
+
+  /** Link de convite ou de redefinição: a tela consulta antes de pedir a senha nova. */
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Get('links/:token')
+  describeLink(@Param('token', ParseUUIDPipe) token: string) {
+    return this.links.describe(token);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('links/:token')
+  redeemLink(@Param('token', ParseUUIDPipe) token: string, @Body() dto: NewPasswordDto) {
+    return this.links.redeem(token, dto.password);
   }
 
   @SessionOnly()

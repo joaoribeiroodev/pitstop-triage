@@ -3,6 +3,7 @@ import {
   Body,
   ConflictException,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
@@ -13,10 +14,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query
 } from '@nestjs/common';
 import { ENV, Env } from '../config/env';
 import { AdminMetrics, AdminTenantRow, AuditLogEntry, Paginated, Tenant, TenantUser } from '@pitstop/shared-types';
+import { AccountLinksService, temporaryPassword } from '../auth/account-links.service';
 import { AUTH_PROVIDER, AuthProvider } from '../auth/providers/auth-provider';
 import { TokenService } from '../auth/token.service';
 import type { SuperAdminContext } from '../common/context';
@@ -24,8 +27,9 @@ import { Admin, SuperAdminOnly } from '../common/decorators';
 import { offsetOf, paginated } from '../common/pagination';
 import { blankToNull, buildUpdate, onlyDigits } from '../common/rls';
 import { DatabaseService, Db } from '../database/database.service';
+import { actionEmail, MailService } from '../mail/mail.module';
 import { TriageModule, TriageService } from '../triage/triage.module';
-import { AuditQuery, ConfirmSlugDto, CreateTenantDto, ImpersonateDto, TenantListQuery, UpdateTenantDto } from './admin.dto';
+import { AuditQuery, ConfirmSlugDto, CreateTenantDto, EmailSettingsDto, ImpersonateDto, TenantListQuery, TestEmailDto, UpdateTenantDto } from './admin.dto';
 
 const IMPERSONATION_TTL_SECONDS = 15 * 60;
 
@@ -48,8 +52,20 @@ export class AdminService {
     private readonly tokens: TokenService,
     private readonly triage: TriageService,
     @Inject(AUTH_PROVIDER) private readonly auth: AuthProvider,
+    private readonly links: AccountLinksService,
+    private readonly mail: MailService,
     @Inject(ENV) private readonly env: Env
   ) {}
+
+  /**
+   * "Expira em 13/11" quer dizer que a oficina usa o sistema até o fim do dia 13, no fuso da plataforma.
+   * Uma data sem hora vira 23:59:59 daquele dia; um instante completo é respeitado como veio.
+   */
+  private async expiry(db: Db, value: string | null | undefined): Promise<string | null | undefined> {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const row = await db.one<{ at: Date }>(`select ($1::date + 1)::timestamptz - interval '1 second' as at`, [value]);
+    return row.at.toISOString();
+  }
 
   private async audit(db: Db, admin: SuperAdminContext, tenant: { id: string | null; slug: string } | null, action: string, payload: unknown): Promise<void> {
     await db.exec(
@@ -57,6 +73,11 @@ export class AdminService {
        values ($1, $2, $3, $4, $5)`,
       [tenant?.id ?? null, tenant?.slug ?? null, admin.email, action, JSON.stringify(payload ?? {})]
     );
+  }
+
+  /** Registro de ações da plataforma que não pertencem a uma oficina. */
+  record(admin: SuperAdminContext, action: string, payload: unknown): Promise<void> {
+    return this.db.admin((db) => this.audit(db, admin, null, action, payload));
   }
 
   private async find(db: Db, id: string, lock = false): Promise<Tenant> {
@@ -107,6 +128,9 @@ export class AdminService {
         throw new ConflictException('O e-mail do proprietário já está vinculado a outra oficina.');
       }
     });
+    // Sem senha, o proprietário entra por convite enviado pelo e-mail da plataforma.
+    const invite = !dto.owner_password;
+    if (invite) await this.links.assertCanInvite();
 
     // 1) tenant + auditoria; 2) usuário no provedor de identidade já com as claims; 3) vínculo de owner.
     const tenant = await this.db.admin(async (db) => {
@@ -122,7 +146,7 @@ export class AdminService {
           onlyDigits(dto.contact_phone),
           dto.plan,
           dto.is_trial ?? false,
-          dto.expires_at ?? null
+          (await this.expiry(db, dto.expires_at)) ?? null
         ]
       );
       await this.audit(db, admin, created, 'tenant.created', { plan: dto.plan, expires_at: dto.expires_at ?? null, owner_email: ownerEmail });
@@ -132,7 +156,7 @@ export class AdminService {
     try {
       const owner = await this.auth.createUser({
         email: ownerEmail,
-        password: dto.owner_password,
+        password: dto.owner_password ?? temporaryPassword(),
         appMetadata: { tenant_id: tenant.id, role: 'owner' }
       });
       await this.db.admin((db) =>
@@ -143,7 +167,8 @@ export class AdminService {
           ownerEmail
         ])
       );
-      return { ...tenant, owner_invited: owner.invited };
+      if (invite) await this.links.sendInvite({ userId: owner.id, email: ownerEmail, name: dto.owner_name.trim(), shopName: tenant.name });
+      return { ...tenant, owner_invited: invite };
     } catch (error) {
       // Sem proprietário a oficina é inutilizável: desfaz a criação para o admin poder tentar de novo com o mesmo slug.
       await this.db.admin(async (db) => {
@@ -166,7 +191,7 @@ export class AdminService {
           contact_phone: dto.contact_phone === undefined ? undefined : onlyDigits(dto.contact_phone),
           plan: dto.plan,
           is_trial: dto.is_trial,
-          expires_at: dto.expires_at,
+          expires_at: await this.expiry(db, dto.expires_at),
           // flags e limites são mesclados: o painel envia só o que mudou.
           feature_flags: dto.feature_flags ? JSON.stringify({ ...current.feature_flags, ...dto.feature_flags }) : undefined,
           limits: dto.limits ? JSON.stringify({ ...current.limits, ...dto.limits }) : undefined
@@ -277,7 +302,15 @@ export class AdminService {
 @SuperAdminOnly()
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  private readonly portalUrl: string;
+
+  constructor(
+    private readonly admin: AdminService,
+    private readonly mail: MailService,
+    @Inject(ENV) env: Env
+  ) {
+    this.portalUrl = env.portalBaseUrl;
+  }
 
   @Get('tenants')
   list(@Query() query: TenantListQuery) {
@@ -325,6 +358,43 @@ export class AdminController {
   @Get('metrics')
   metrics() {
     return this.admin.metrics();
+  }
+
+  // ── e-mail da plataforma (Gmail + senha de app) ──
+  @Get('email-settings')
+  emailSettings() {
+    return this.mail.settings();
+  }
+
+  @Put('email-settings')
+  async saveEmailSettings(@Admin() admin: SuperAdminContext, @Body() dto: EmailSettingsDto) {
+    const saved = await this.mail.save(dto, admin.email);
+    await this.admin.record(admin, 'platform.email_updated', { user: saved.user, password_changed: !!dto.app_password });
+    return saved;
+  }
+
+  @Delete('email-settings')
+  async removeEmailSettings(@Admin() admin: SuperAdminContext) {
+    const cleared = await this.mail.remove();
+    await this.admin.record(admin, 'platform.email_removed', {});
+    return cleared;
+  }
+
+  /** Envia um e-mail de teste para confirmar que o Gmail aceitou a conta e a senha de app. */
+  @HttpCode(204)
+  @Post('email-settings/test')
+  async testEmail(@Admin() admin: SuperAdminContext, @Body() dto: TestEmailDto): Promise<void> {
+    await this.mail.send({
+      to: dto.to?.trim().toLowerCase() || admin.email,
+      subject: 'Teste de e-mail do PitStop',
+      ...actionEmail({
+        title: 'O e-mail está funcionando',
+        intro: 'Este é um envio de teste do painel admin do PitStop. Convites e redefinições de senha sairão por esta conta.',
+        action: 'Abrir o PitStop',
+        url: this.portalUrl,
+        footer: 'Nenhuma ação é necessária.'
+      })
+    });
   }
 
   @HttpCode(200)

@@ -19,6 +19,9 @@ export interface Env {
   /** Contato do encarregado (DPO) exibido na política de privacidade. Vazio: a política manda procurar a oficina. */
   dpoContactEmail: string;
   fipePlateApiUrl: string;
+  /** API pública da tabela FIPE (marcas, modelos, anos e preço). O token é opcional e só aumenta o limite diário. */
+  fipeApiUrl: string;
+  fipeApiToken: string;
   /** Integração opcional com a API oficial do WhatsApp (Meta Cloud API). Sem token e número, o envio automático fica desligado. */
   whatsapp: {
     apiUrl: string;
@@ -85,6 +88,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     privacyPolicyVersion: source.PRIVACY_POLICY_VERSION ?? '2026-11',
     dpoContactEmail: (source.DPO_CONTACT_EMAIL ?? '').trim(),
     fipePlateApiUrl: source.FIPE_PLATE_API_URL ?? '',
+    fipeApiUrl: (source.FIPE_API_URL ?? 'https://fipe.parallelum.com.br/api/v2').replace(/\/$/, ''),
+    fipeApiToken: source.FIPE_API_TOKEN ?? '',
     whatsapp: {
       apiUrl: (source.WHATSAPP_API_URL ?? 'https://graph.facebook.com/v21.0').replace(/\/$/, ''),
       token: source.WHATSAPP_API_TOKEN ?? '',

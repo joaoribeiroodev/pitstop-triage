@@ -184,3 +184,29 @@ export class AuditQuery extends PaginationQuery {
   @IsUUID()
   tenant_id?: string;
 }
+
+export class EmailSettingsDto {
+  /** Conta Gmail que envia os e-mails da plataforma. */
+  @IsEmail()
+  @MaxLength(254)
+  user: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  from_name?: string;
+
+  /** Senha de app do Google (16 letras). Em branco mantém a que já está salva. */
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(64)
+  app_password?: string;
+}
+
+export class TestEmailDto {
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(254)
+  to?: string;
+}

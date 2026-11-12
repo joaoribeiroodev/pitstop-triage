@@ -54,9 +54,14 @@ export class SupabaseAuthProvider implements AuthProvider {
     return { id: data.user.id, invited: true };
   }
 
-  private async adoptExisting(input: CreateUserInput, reason?: string): Promise<string> {
+  async findUserId(email: string): Promise<string | null> {
     const { data } = await this.adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    const existing = data?.users.find((user) => user.email?.toLowerCase() === input.email.toLowerCase());
+    return data?.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
+  }
+
+  private async adoptExisting(input: CreateUserInput, reason?: string): Promise<string> {
+    const existingId = await this.findUserId(input.email);
+    const existing = existingId ? { id: existingId } : null;
     if (!existing) throw new BadGatewayException(`Não foi possível criar o usuário no provedor de identidade: ${reason ?? 'erro desconhecido'}`);
     await this.updateAppMetadata(existing.id, input.appMetadata);
     return existing.id;
@@ -68,7 +73,8 @@ export class SupabaseAuthProvider implements AuthProvider {
   }
 
   async setPassword(userId: string, password: string): Promise<void> {
-    const { error } = await this.adminClient.auth.admin.updateUserById(userId, { password });
+    const { error } = await this.adminClient.auth.admin.updateUserById(userId, { password, email_confirm: true });
+    // Definir a senha também confirma o e-mail: quem chegou pelo link provou que é dono do endereço.
     if (error) throw new BadGatewayException(`Falha ao definir a senha: ${error.message}`);
   }
 

@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ENV, Env } from '../config/env';
 import { DatabaseService } from '../database/database.service';
+import { AccountLinksService } from './account-links.service';
 import { AuthController } from './auth.controller';
 import { JwtGuard, RolesGuard, SuperAdminGuard, TenantGuard } from './guards';
 import { AUTH_PROVIDER } from './providers/auth-provider';
@@ -13,6 +14,7 @@ import { TokenService } from './token.service';
   controllers: [AuthController],
   providers: [
     TokenService,
+    AccountLinksService,
     {
       provide: AUTH_PROVIDER,
       inject: [ENV, DatabaseService, TokenService],
@@ -24,6 +26,6 @@ import { TokenService } from './token.service';
     RolesGuard,
     SuperAdminGuard
   ],
-  exports: [TokenService, AUTH_PROVIDER, JwtGuard, TenantGuard, RolesGuard, SuperAdminGuard]
+  exports: [TokenService, AccountLinksService, AUTH_PROVIDER, JwtGuard, TenantGuard, RolesGuard, SuperAdminGuard]
 })
 export class AuthModule {}

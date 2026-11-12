@@ -120,6 +120,6 @@ describe('SupabaseAuthProvider', () => {
     admin.auth.admin.deleteUser.mockResolvedValue({ error: null });
     await expect(provider.setPassword('u-1', 'nova-senha')).resolves.toBeUndefined();
     await expect(provider.deleteUser('u-1')).resolves.toBeUndefined();
-    expect(admin.auth.admin.updateUserById).toHaveBeenLastCalledWith('u-1', { password: 'nova-senha' });
+    expect(admin.auth.admin.updateUserById).toHaveBeenLastCalledWith('u-1', { password: 'nova-senha', email_confirm: true });
   });
 });
