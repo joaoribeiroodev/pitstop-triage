@@ -51,7 +51,7 @@ export class AdminService {
     @Inject(ENV) private readonly env: Env
   ) {}
 
-  private async audit(db: Db, admin: SuperAdminContext, tenant: Pick<Tenant, 'id' | 'slug'> | null, action: string, payload: unknown): Promise<void> {
+  private async audit(db: Db, admin: SuperAdminContext, tenant: { id: string | null; slug: string } | null, action: string, payload: unknown): Promise<void> {
     await db.exec(
       `insert into public.tenant_audit_log (tenant_id, tenant_slug, super_admin_email, action, payload)
        values ($1, $2, $3, $4, $5)`,
@@ -148,7 +148,7 @@ export class AdminService {
       // Sem proprietário a oficina é inutilizável: desfaz a criação para o admin poder tentar de novo com o mesmo slug.
       await this.db.admin(async (db) => {
         await db.exec('delete from public.tenants where id = $1', [tenant.id]);
-        await this.audit(db, admin, null, 'tenant.creation_rolled_back', { slug: tenant.slug, reason: (error as Error).message });
+        await this.audit(db, admin, { id: null, slug: tenant.slug }, 'tenant.creation_rolled_back', { reason: (error as Error).message });
       });
       throw error;
     }

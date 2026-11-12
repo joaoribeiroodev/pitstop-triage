@@ -217,4 +217,37 @@ describe('RLS — isolamento entre tenants no banco', () => {
     await expect(h.db.admin((db) => db.exec('update public.tenant_audit_log set action = $1', ['adulterado']))).rejects.toThrow(/append-only/);
     await expect(h.db.admin((db) => db.exec('delete from public.tenant_audit_log'))).rejects.toThrow(/append-only/);
   });
+
+  it('se o provedor de identidade recusa o proprietário, a oficina é desfeita e o slug fica livre', async () => {
+    const body = {
+      name: 'Oficina Órfã',
+      slug: 'oficina-orfa',
+      plan: 'basic',
+      owner_email: 'dono@orfa.test',
+      owner_name: 'Dono',
+      owner_password: 'senha-forte-123'
+    };
+    const failure = jest.spyOn(h.auth, 'createUser').mockRejectedValueOnce(new Error('Invalid API key'));
+    await h.api('post', '/admin/tenants', h.adminToken).send(body).expect(500);
+    failure.mockRestore();
+
+    expect(await h.db.admin((db) => db.many('select 1 from public.tenants where slug = $1', ['oficina-orfa']))).toEqual([]);
+    const trail = await h.db.admin((db) =>
+      db.many<{ action: string; tenant_id: string | null }>(
+        `select action, tenant_id from public.tenant_audit_log where tenant_slug = 'oficina-orfa' order by created_at, action`
+      )
+    );
+    // a trilha sobrevive à remoção: perde só o vínculo com a oficina que deixou de existir
+    expect(trail).toEqual([
+      { action: 'tenant.created', tenant_id: null },
+      { action: 'tenant.creation_rolled_back', tenant_id: null }
+    ]);
+    // e continua imutável em todo o resto
+    await expect(
+      h.db.admin((db) => db.exec(`update public.tenant_audit_log set tenant_id = null, action = 'x' where tenant_slug = 'oficina-orfa'`))
+    ).rejects.toThrow(/append-only/);
+
+    const retry = await h.api('post', '/admin/tenants', h.adminToken).send(body).expect(201);
+    expect(retry.body.slug).toBe('oficina-orfa');
+  });
 });
