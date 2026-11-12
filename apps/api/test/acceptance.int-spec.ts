@@ -142,7 +142,10 @@ describe('Aceite do MVP (seção 18)', () => {
     portalToken = sent.body.portal_url.split('/').pop();
 
     // o banco guarda apenas o hash do token
-    const stored = await h.db.admin((db) => db.many<{ token_hash: string }>('select token_hash from public.customer_access_tokens'));
+    const stored = await h.db.admin((db) =>
+      db.many<{ token_hash: string }>('select token_hash from public.customer_access_tokens where service_order_id = $1', [order.id])
+    );
+    expect(stored.length).toBeGreaterThan(0);
     expect(stored.every((row) => row.token_hash !== portalToken && row.token_hash.length === 64)).toBe(true);
 
     expect((await h.api('get', `/service-orders/${order.id}`, reception.token)).body.status).toBe('awaiting_approval');
