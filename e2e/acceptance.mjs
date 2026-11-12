@@ -156,6 +156,8 @@ try {
   await reception.reload();
   await reception.getByRole('button', { name: 'Registrar entrega' }).click();
   await reception.getByRole('tab', { name: 'Timeline' }).click();
+  // a entrega é assíncrona: espera o último evento aparecer antes de ler a timeline
+  await reception.getByRole('tabpanel').getByText('Entregue').first().waitFor();
   const timeline = await reception.getByRole('tabpanel').innerText();
   for (const label of ['Rascunho', 'Em diagnóstico', 'Aguardando aprovação', 'Aprovada', 'Em execução', 'Concluída', 'Entregue']) {
     assert.ok(timeline.includes(label), `timeline registra "${label}"`);
